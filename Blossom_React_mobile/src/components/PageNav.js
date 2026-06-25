@@ -171,6 +171,7 @@ function NavItem({ label, onPress, transparent, highlight, badge = 0 }) {
       onPress={onPress}
       style={({ pressed }) => [
         styles.navItem,
+        transparent ? styles.navItemBorderTransparent : styles.navItemBorderLight,
         highlight && styles.navItemHighlight,
         pressed && (transparent ? styles.navItemPressedTransparent : styles.navItemPressedLight),
       ]}
@@ -220,19 +221,29 @@ const styles = StyleSheet.create({
   },
   navItem: {
     marginLeft: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: radius.pill,
+    borderWidth: 1.5,
+  },
+  navItemBorderLight: {
+    borderColor: "rgba(214,51,108,0.35)",
+  },
+  navItemBorderTransparent: {
+    borderColor: "rgba(255,255,255,0.35)",
   },
   navItemHighlight: {
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
     ...shadow.sm,
   },
   navItemPressedLight: {
     backgroundColor: colors.primarySoft,
+    borderColor: "rgba(214,51,108,0.6)",
   },
   navItemPressedTransparent: {
     backgroundColor: "rgba(255,255,255,0.18)",
+    borderColor: "rgba(255,255,255,0.6)",
   },
   navItemRow: {
     flexDirection: "row",
