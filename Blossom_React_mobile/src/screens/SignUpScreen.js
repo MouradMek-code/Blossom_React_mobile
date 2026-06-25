@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { ImageBackground, View, ScrollView, StyleSheet } from "react-native";
+import { ImageBackground, View, ScrollView, Text, StyleSheet } from "react-native";
 import PageNav from "../components/PageNav";
 import FormSignUp from "../components/FormSignUp";
 import StartProfile from "../components/StartProfile";
 import MultiImageUpload from "../components/MultiImageUpload";
 import Localisation from "../components/Localisation";
 import { BASE_URL } from "../api/config";
-import { getToken, setProfileId } from "../api/storage";
+import { getToken, setProfileId, getSignupDraft, clearSignupDraft } from "../api/storage";
 
 export default function SignUpScreen() {
   const [isregistered, setRegistered] = useState(false);
@@ -16,6 +16,64 @@ export default function SignUpScreen() {
   const [photos, setPhoto] = useState(false);
   const [located, setlocated] = useState(false);
   const [verify, setVerified] = useState(false);
+  const [checkingResume, setCheckingResume] = useState(true);
+  const [resumeIndex, setResumeIndex] = useState(0);
+  const [resumeAutoStart, setResumeAutoStart] = useState(false);
+  const [prefill, setPrefill] = useState(null);
+
+  // A token alone means signup + email/OTP verification already
+  // succeeded in a previous session - figure out how much further the
+  // user got before resuming instead of restarting at the signup form.
+  useEffect(() => {
+    async function checkResume() {
+      const token = await getToken();
+      if (!token || token === "null") {
+        // No real token yet, but they may have already sent themselves
+        // an OTP and abandoned the verification screen - resume straight
+        // there instead of having them retype name/email/phone.
+        const draft = await getSignupDraft();
+        if (draft?.stage === "verify_otp") {
+          setVerified(true);
+          setPrefill({
+            username: draft.username,
+            email: draft.email,
+            phoneNumber: draft.phoneNumber,
+          });
+        }
+        setCheckingResume(false);
+        return;
+      }
+      try {
+        const resp = await fetch(`${BASE_URL}/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (resp.status === 200) {
+          // Profile already exists, so localisation + every question were
+          // already answered (createProfile only runs after the last
+          // question) - only the photo step could still be unfinished.
+          await clearSignupDraft();
+          setRegistered(true);
+          setlocated(true);
+          setPhoto(true);
+        } else {
+          const draft = await getSignupDraft();
+          setRegistered(true);
+          if (draft) {
+            setAnswer(draft.answer || {});
+            setlocated(!!draft.located);
+            setResumeIndex(draft.questionIndex || 0);
+            setResumeAutoStart(!!draft.started);
+          }
+        }
+      } catch (err) {
+        // Network hiccup while checking resume state - fall back to a
+        // fresh start rather than getting stuck on a loading screen.
+      } finally {
+        setCheckingResume(false);
+      }
+    }
+    checkResume();
+  }, []);
 
   async function createLanguage(token) {
     await Promise.all(
@@ -70,11 +128,21 @@ export default function SignUpScreen() {
       if (!token || token === "null") return;
       await createProfile(token);
       await createLanguage(token);
+      await clearSignupDraft();
       setQuestionEnded(false);
       setPhoto(true);
     }
     submit();
   }, [questionEnded]);
+
+  if (checkingResume) {
+    return (
+      <View style={styles.loadingHead}>
+        <PageNav variant="transparent" />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <ImageBackground
@@ -93,6 +161,7 @@ export default function SignUpScreen() {
               setError={setError}
               setVerified={setVerified}
               verify={verify}
+              prefill={prefill}
             />
           )}
           {isregistered === true && located === false && (
@@ -106,6 +175,8 @@ export default function SignUpScreen() {
                 answer={answer}
                 setAnswer={setAnswer}
                 setQuestionEnded={setQuestionEnded}
+                initialIndex={resumeIndex}
+                autoStart={resumeAutoStart}
               />
             )}
           {photos === true && <MultiImageUpload />}
@@ -117,6 +188,8 @@ export default function SignUpScreen() {
 
 const styles = StyleSheet.create({
   head: { flex: 1 },
+  loadingHead: { flex: 1, backgroundColor: "#fff" },
+  loadingText: { textAlign: "center", marginTop: 40 },
   overlay: {
     position: "absolute",
     top: 0,

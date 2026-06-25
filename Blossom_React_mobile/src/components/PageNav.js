@@ -12,6 +12,8 @@ export default function PageNav({ variant = "light" }) {
   const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState(null);
   const [token, setTokenState] = useState(null);
+  const [matchCount, setMatchCount] = useState(0);
+  const [likeCount, setLikeCount] = useState(0);
 
   const isTokenMissing = !token || token === "null" || token === "undefined";
   const isTransparent = variant === "transparent";
@@ -47,6 +49,41 @@ export default function PageNav({ variant = "light" }) {
     fetchProfile();
     return () => {
       isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchCounts() {
+      const storedToken = await getToken();
+      if (!storedToken || storedToken === "null") return;
+
+      try {
+        const [matchedResp, likedResp] = await Promise.all([
+          fetch(`${BASE_URL}/matches/unseen_count`, {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          }),
+          fetch(`${BASE_URL}/likes/profile_likes/unseen_count`, {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          }),
+        ]);
+        const matched = matchedResp.ok ? await matchedResp.json() : { count: 0 };
+        const liked = likedResp.ok ? await likedResp.json() : { count: 0 };
+        if (!isMounted) return;
+        setMatchCount(matched.count || 0);
+        setLikeCount(liked.count || 0);
+      } catch (err) {
+        // Leave counts as-is if the backend is unreachable - a missing
+        // badge isn't worth disrupting the rest of the nav for.
+      }
+    }
+
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 30000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
     };
   }, []);
 
@@ -87,11 +124,13 @@ export default function PageNav({ variant = "light" }) {
               label="Matches"
               onPress={() => navigation.navigate("MatchedList")}
               transparent={isTransparent}
+              badge={matchCount}
             />
             <NavItem
               label="Likes You"
               onPress={() => navigation.navigate("LikedYou")}
               transparent={isTransparent}
+              badge={likeCount}
             />
             <NavItem
               label="Logout"
@@ -126,7 +165,7 @@ export default function PageNav({ variant = "light" }) {
   );
 }
 
-function NavItem({ label, onPress, transparent, highlight }) {
+function NavItem({ label, onPress, transparent, highlight, badge = 0 }) {
   return (
     <Pressable
       onPress={onPress}
@@ -136,16 +175,23 @@ function NavItem({ label, onPress, transparent, highlight }) {
         pressed && (transparent ? styles.navItemPressedTransparent : styles.navItemPressedLight),
       ]}
     >
-      <Text
-        style={[
-          styles.navText,
-          transparent ? styles.navTextTransparent : styles.navTextLight,
-          highlight && styles.navTextHighlight,
-        ]}
-        numberOfLines={1}
-      >
-        {label}
-      </Text>
+      <View style={styles.navItemRow}>
+        <Text
+          style={[
+            styles.navText,
+            transparent ? styles.navTextTransparent : styles.navTextLight,
+            highlight && styles.navTextHighlight,
+          ]}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
+        {badge > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{badge > 9 ? "9+" : badge}</Text>
+          </View>
+        )}
+      </View>
     </Pressable>
   );
 }
@@ -187,6 +233,25 @@ const styles = StyleSheet.create({
   },
   navItemPressedTransparent: {
     backgroundColor: "rgba(255,255,255,0.18)",
+  },
+  navItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  badge: {
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: "#ff2d55",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "700",
   },
   navText: {
     fontSize: 13,

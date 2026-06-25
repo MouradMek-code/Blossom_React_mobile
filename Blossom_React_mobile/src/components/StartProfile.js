@@ -2,10 +2,17 @@ import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
 import questions from "../data/questions.json";
 import { colors, radius, spacing, shadow, typography } from "../theme";
+import { saveSignupDraft } from "../api/storage";
 
-export default function StartProfile({ setQuestionEnded, answer, setAnswer }) {
-  const [started, setStart] = useState(false);
-  const [indiceQuestion, setIndiceQuestion] = useState(0);
+export default function StartProfile({
+  setQuestionEnded,
+  answer,
+  setAnswer,
+  initialIndex = 0,
+  autoStart = false,
+}) {
+  const [started, setStart] = useState(autoStart);
+  const [indiceQuestion, setIndiceQuestion] = useState(initialIndex);
   const [clicked, setClicked] = useState(false);
 
   function handleClicked(question, value) {
@@ -22,6 +29,7 @@ export default function StartProfile({ setQuestionEnded, answer, setAnswer }) {
     setStart((s) => !s);
     setIndiceQuestion(0);
     setClicked(false);
+    saveSignupDraft({ started: true, questionIndex: 0, answer });
   }
 
   function handleNext() {
@@ -29,7 +37,9 @@ export default function StartProfile({ setQuestionEnded, answer, setAnswer }) {
     if (indiceQuestion >= questions.length - 1) {
       setQuestionEnded((c) => !c);
     }
-    setIndiceQuestion((c) => c + 1);
+    const nextIndex = indiceQuestion + 1;
+    setIndiceQuestion(nextIndex);
+    saveSignupDraft({ started: true, questionIndex: nextIndex, answer });
   }
 
   return (

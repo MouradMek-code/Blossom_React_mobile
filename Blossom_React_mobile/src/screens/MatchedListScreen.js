@@ -24,6 +24,21 @@ export default function MatchedListScreen() {
     }
   }
 
+  async function unmatch(profile) {
+    const token = await getToken();
+    try {
+      const resp = await fetch(`${BASE_URL}/matches/unmatch/${profile.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!resp.ok) throw new Error("Failed to unmatch");
+      setListMatchedProfiles((prev) => prev.filter((p) => p.id !== profile.id));
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+
   useEffect(() => {
     async function fetchMatchedProfile() {
       const token = await getToken();
@@ -40,6 +55,15 @@ export default function MatchedListScreen() {
           throw new Error(`error happeneded on matching service : ${data.detail?.[0]?.msg}`);
         }
         setListMatchedProfiles(data);
+
+        fetch(`${BASE_URL}/matches/mark_seen`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then((markResp) =>
+            markResp.text().then((body) => console.log("mark_seen status:", markResp.status, body)),
+          )
+          .catch((err) => console.log("mark_seen network error:", err));
       } catch (err) {
         await setToken(null);
         navigation.navigate("Login");
@@ -54,7 +78,7 @@ export default function MatchedListScreen() {
       <FlatList
         data={listMatchedProfiles}
         keyExtractor={(item) => String(item.id)}
-        numColumns={2}
+        numColumns={1}
         contentContainerStyle={styles.container}
         renderItem={({ item: profile }) => (
           <View style={styles.card}>
@@ -76,9 +100,20 @@ export default function MatchedListScreen() {
               </View>
             </Pressable>
 
-            <Pressable style={styles.messageButton} onPress={() => openConversation(profile)}>
-              <Text style={styles.messageButtonText}>💬 Message</Text>
-            </Pressable>
+            <View style={styles.actionsRow}>
+              <Pressable
+                style={[styles.actionButton, styles.messageButton]}
+                onPress={() => openConversation(profile)}
+              >
+                <Text style={styles.messageButtonText}>💬 Message</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.actionButton, styles.unmatchButton]}
+                onPress={() => unmatch(profile)}
+              >
+                <Text style={styles.unmatchButtonText}>Unmatch</Text>
+              </Pressable>
+            </View>
           </View>
         )}
       />
@@ -98,7 +133,7 @@ const styles = StyleSheet.create({
     ...shadow.sm,
   },
   imageWrapper: {
-    height: 220,
+    height: 320,
   },
   image: { width: "100%", height: "100%" },
   overlay: {
@@ -112,10 +147,18 @@ const styles = StyleSheet.create({
   name: { color: "#fff", fontWeight: "700" },
   location: { color: "#fff", fontSize: 12 },
   tag: { color: "#fff", fontSize: 12, marginTop: 2 },
+  actionsRow: { flexDirection: "row" },
+  actionButton: { paddingVertical: 12, alignItems: "center" },
   messageButton: {
+    flex: 2,
     backgroundColor: colors.primary,
-    paddingVertical: 12,
-    alignItems: "center",
   },
   messageButtonText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  unmatchButton: {
+    flex: 1,
+    backgroundColor: "#555",
+    borderLeftWidth: 1,
+    borderLeftColor: "rgba(255,255,255,0.3)",
+  },
+  unmatchButtonText: { color: "#fff", fontWeight: "700", fontSize: 12 },
 });

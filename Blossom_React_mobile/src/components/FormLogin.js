@@ -78,6 +78,13 @@ export default function FormLogin() {
       >
         <Text style={styles.buttonText}>Log In</Text>
       </Pressable>
+
+      <Pressable
+        style={styles.forgotLink}
+        onPress={() => navigation.navigate("ForgotPassword")}
+      >
+        <Text style={styles.forgotLinkText}>Forgot password?</Text>
+      </Pressable>
     </View>
   );
 }
@@ -128,4 +135,6 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16, letterSpacing: 0.3 },
+  forgotLink: { marginTop: spacing.md, alignItems: "center" },
+  forgotLinkText: { color: colors.primary, fontWeight: "600", fontSize: 14 },
 });

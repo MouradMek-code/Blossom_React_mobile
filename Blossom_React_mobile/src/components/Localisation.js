@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View, Text, Pressable, ActivityIndicator, StyleSheet } from "react-native";
 import * as Location from "expo-location";
+import { saveSignupDraft } from "../api/storage";
 
 export default function Localisation({ setlocated, setAnswer, answer }) {
   const [status, setStatus] = useState("idle"); // idle | loading | success | error
@@ -80,7 +81,13 @@ export default function Localisation({ setlocated, setAnswer, answer }) {
             <Text>
               📍 {locationData.city}, {locationData.country}
             </Text>
-            <Pressable style={styles.button} onPress={() => setlocated(true)}>
+            <Pressable
+              style={styles.button}
+              onPress={() => {
+                saveSignupDraft({ located: true, answer });
+                setlocated(true);
+              }}
+            >
               <Text style={styles.buttonText}>Continue</Text>
             </Pressable>
           </View>

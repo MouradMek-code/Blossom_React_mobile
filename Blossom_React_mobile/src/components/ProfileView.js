@@ -1,7 +1,39 @@
-import { View, Text, Image, ScrollView, StyleSheet } from "react-native";
+import { useState } from "react";
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  TextInput,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
-export default function ProfileView({ profile, showLocationLine = true }) {
+export default function ProfileView({
+  profile,
+  showLocationLine = true,
+  editable = false,
+  onSaveBio,
+  onAddPhotoPress,
+  onDeletePhoto,
+  uploadingPhoto = false,
+}) {
+  const [editingBio, setEditingBio] = useState(false);
+  const [bioDraft, setBioDraft] = useState(profile.bio || "");
+  const [savingBio, setSavingBio] = useState(false);
+
+  async function handleSaveBio() {
+    setSavingBio(true);
+    try {
+      await onSaveBio?.(bioDraft);
+      setEditingBio(false);
+    } finally {
+      setSavingBio(false);
+    }
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.heroCard}>
@@ -23,11 +55,35 @@ export default function ProfileView({ profile, showLocationLine = true }) {
         </View>
       </View>
 
-      <Section title="Photos">
+      <Section
+        title="Photos"
+        action={
+          editable && (
+            <Pressable
+              style={styles.actionButton}
+              onPress={onAddPhotoPress}
+              disabled={uploadingPhoto}
+            >
+              {uploadingPhoto ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Text style={styles.actionButtonText}>+ Add Photo</Text>
+              )}
+            </Pressable>
+          )
+        }
+      >
         <View style={styles.photosColumn}>
           {profile.photos?.length ? (
             profile.photos.map((p) => (
-              <Image key={p.id} source={{ uri: p.image_url }} style={styles.photo} />
+              <View key={p.id}>
+                <Image source={{ uri: p.image_url }} style={styles.photo} />
+                {editable && (
+                  <Pressable style={styles.deletePhotoButton} onPress={() => onDeletePhoto?.(p.id)}>
+                    <Text style={styles.deletePhotoButtonText}>✕</Text>
+                  </Pressable>
+                )}
+              </View>
             ))
           ) : (
             <Text style={styles.bodyMuted}>No photos added yet.</Text>
@@ -35,8 +91,50 @@ export default function ProfileView({ profile, showLocationLine = true }) {
         </View>
       </Section>
 
-      <Section title={`About ${profile.first_name}`}>
-        <Text style={styles.bio}>{profile.bio || "No bio added yet."}</Text>
+      <Section
+        title={`About ${profile.first_name}`}
+        action={
+          editable &&
+          !editingBio && (
+            <Pressable
+              style={styles.actionButtonOutline}
+              onPress={() => {
+                setBioDraft(profile.bio || "");
+                setEditingBio(true);
+              }}
+            >
+              <Text style={styles.actionButtonOutlineText}>Edit</Text>
+            </Pressable>
+          )
+        }
+      >
+        {editingBio ? (
+          <View>
+            <TextInput
+              style={styles.bioInput}
+              multiline
+              value={bioDraft}
+              onChangeText={setBioDraft}
+            />
+            <View style={styles.bioActions}>
+              <Pressable style={styles.actionButton} onPress={handleSaveBio} disabled={savingBio}>
+                {savingBio ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.actionButtonText}>Save</Text>
+                )}
+              </Pressable>
+              <Pressable
+                style={styles.actionButtonOutline}
+                onPress={() => setEditingBio(false)}
+              >
+                <Text style={styles.actionButtonOutlineText}>Cancel</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <Text style={styles.bio}>{profile.bio || "No bio added yet."}</Text>
+        )}
       </Section>
 
       <Section title="Basic Information">
@@ -78,10 +176,13 @@ export default function ProfileView({ profile, showLocationLine = true }) {
   );
 }
 
-function Section({ title, children }) {
+function Section({ title, children, action }) {
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>{title}</Text>
+      <View style={styles.cardHeader}>
+        <Text style={styles.cardTitle}>{title}</Text>
+        {action || null}
+      </View>
       {children}
     </View>
   );
@@ -125,7 +226,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     ...shadow.sm,
   },
-  cardTitle: { ...typography.h3, marginBottom: spacing.sm },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: spacing.sm,
+  },
+  cardTitle: { ...typography.h3 },
   photosColumn: { gap: spacing.sm },
   photo: {
     width: "100%",
@@ -133,6 +240,44 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     marginBottom: spacing.sm,
   },
+  deletePhotoButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deletePhotoButtonText: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  actionButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+  },
+  actionButtonText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  actionButtonOutline: {
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+  },
+  actionButtonOutlineText: { color: colors.primary, fontWeight: "700", fontSize: 13 },
+  bioInput: {
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    padding: spacing.md,
+    minHeight: 100,
+    textAlignVertical: "top",
+    color: colors.text,
+    ...typography.body,
+  },
+  bioActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
   bio: { ...typography.body, lineHeight: 22 },
   bodyMuted: { ...typography.bodyMuted },
   fact: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10 },
