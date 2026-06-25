@@ -49,12 +49,12 @@ export default function FormLogin() {
       )}
 
       <View style={styles.group}>
-        <Text style={styles.label}>NAME</Text>
+        <Text style={styles.label}>USERNAME OR EMAIL</Text>
         <TextInput
           style={styles.input}
           value={username}
           onChangeText={setUsername}
-          placeholder="Your username"
+          placeholder="Your username or email"
           placeholderTextColor={colors.textMuted}
           autoCapitalize="none"
         />
