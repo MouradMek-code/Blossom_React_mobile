@@ -9,9 +9,29 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
   const [email, setEmail] = useState(prefill?.email || "");
   const [password, setPassword] = useState("");
   const [phoneNumber, setPhoneNumber] = useState(prefill?.phoneNumber || "");
+  const [dateOfBirth, setDateOfBirth] = useState(prefill?.dateOfBirth || "");
 
   async function handleSignUp() {
     setError("");
+
+    const birth = new Date(dateOfBirth);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth) || isNaN(birth.getTime())) {
+      setError("Please enter your date of birth as YYYY-MM-DD");
+      return;
+    }
+    const today = new Date();
+    const age =
+      today.getFullYear() -
+      birth.getFullYear() -
+      (today.getMonth() < birth.getMonth() ||
+      (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())
+        ? 1
+        : 0);
+    if (age < 18) {
+      setError("You must be at least 18 years old to sign up");
+      return;
+    }
+
     try {
       const resp = await fetch(`${BASE_URL}/user/send_email`, {
         method: "POST",
@@ -21,6 +41,7 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
           email,
           password,
           phone_number: phoneNumber,
+          date_of_birth: dateOfBirth,
         }),
       });
       const data = await resp.json();
@@ -30,7 +51,7 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
       // No token until the OTP is verified - save just enough (no
       // password) to resume straight at the verification screen if the
       // app is closed now.
-      await saveSignupDraft({ stage: "verify_otp", username, email, phoneNumber });
+      await saveSignupDraft({ stage: "verify_otp", username, email, phoneNumber, dateOfBirth });
       setVerified((c) => !c);
       await setToken(data.access_token);
     } catch (err) {
@@ -99,6 +120,18 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
             />
           </View>
 
+          <View style={styles.group}>
+            <Text style={styles.label}>DATE OF BIRTH</Text>
+            <TextInput
+              style={styles.input}
+              value={dateOfBirth}
+              onChangeText={setDateOfBirth}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="numbers-and-punctuation"
+            />
+          </View>
+
           <Pressable
             style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
             onPress={handleSignUp}
@@ -114,6 +147,7 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
           email={email}
           password={password}
           phoneNumber={phoneNumber}
+          dateOfBirth={dateOfBirth}
           setError={setError}
           setRegistered={setRegistered}
         />
@@ -122,7 +156,7 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
   );
 }
 
-function VerificationForm({ username, email, password, phoneNumber, setError, setRegistered }) {
+function VerificationForm({ username, email, password, phoneNumber, dateOfBirth, setError, setRegistered }) {
   const [code, setCode] = useState("");
   // Resuming after the app was closed means the password was never
   // persisted (by design), so it has to be re-entered here to finish
@@ -148,7 +182,13 @@ function VerificationForm({ username, email, password, phoneNumber, setError, se
       const resp = await fetch(`${BASE_URL}/user`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password: effectivePassword, phone_number: phoneNumber }),
+        body: JSON.stringify({
+          username,
+          email,
+          password: effectivePassword,
+          phone_number: phoneNumber,
+          date_of_birth: dateOfBirth,
+        }),
       });
       const data = await resp.json();
       if (resp.status !== 200) {
