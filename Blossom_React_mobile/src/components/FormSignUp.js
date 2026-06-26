@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
-import { BASE_URL } from "../api/config";
+import { View, Text, TextInput, Pressable, StyleSheet, Linking } from "react-native";
+import { BASE_URL, PRIVACY_POLICY_URL } from "../api/config";
 import { setToken, saveSignupDraft, clearSignupDraft } from "../api/storage";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
@@ -138,6 +138,17 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
           >
             <Text style={styles.buttonText}>Create Account</Text>
           </Pressable>
+
+          <Text style={styles.policyText}>
+            By creating an account, you agree to our{" "}
+            <Text
+              style={styles.policyLink}
+              onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+            >
+              Privacy Policy
+            </Text>
+            .
+          </Text>
         </View>
       )}
 
@@ -294,6 +305,13 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16, letterSpacing: 0.3 },
+  policyText: {
+    marginTop: spacing.md,
+    textAlign: "center",
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  policyLink: { color: colors.primary, fontWeight: "700" },
   verifyCard: {
     alignItems: "center",
     padding: spacing.md,
