@@ -21,6 +21,9 @@ export default function ProfileView({
   uploadingPhoto = false,
   onDeleteAccount,
   deletingAccount = false,
+  onBlock,
+  onReport,
+  blocking = false,
 }) {
   const [editingBio, setEditingBio] = useState(false);
   const [bioDraft, setBioDraft] = useState(profile.bio || "");
@@ -55,6 +58,25 @@ export default function ProfileView({
           {profile.occupation ? <Text style={styles.badge}>💼 {profile.occupation}</Text> : null}
           {profile.education ? <Text style={styles.badge}>🎓 {profile.education}</Text> : null}
         </View>
+
+        {(onBlock || onReport) && (
+          <View style={styles.safetyRow}>
+            {onReport && (
+              <Pressable style={styles.reportButton} onPress={onReport}>
+                <Text style={styles.reportButtonText}>Report</Text>
+              </Pressable>
+            )}
+            {onBlock && (
+              <Pressable style={styles.blockButton} onPress={onBlock} disabled={blocking}>
+                {blocking ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.actionButtonText}>Block</Text>
+                )}
+              </Pressable>
+            )}
+          </View>
+        )}
       </View>
 
       <Section
@@ -231,6 +253,21 @@ const styles = StyleSheet.create({
   age: { fontWeight: "400", color: colors.textMuted },
   location: { ...typography.bodyMuted, marginTop: spacing.xs },
   badges: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm },
+  safetyRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
+  reportButton: {
+    borderWidth: 1,
+    borderColor: "#999",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+  },
+  reportButtonText: { color: "#555", fontWeight: "600", fontSize: 13 },
+  blockButton: {
+    backgroundColor: colors.danger,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+  },
   badge: {
     backgroundColor: colors.primarySoft,
     color: colors.primaryDark,
