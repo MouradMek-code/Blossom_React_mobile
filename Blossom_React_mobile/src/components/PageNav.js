@@ -222,8 +222,8 @@ const styles = StyleSheet.create({
     columnGap: 8,
   },
   navItem: {
-    paddingHorizontal: 11,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: radius.pill,
     borderWidth: 1.5,
   },
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   navText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "600",
   },
   navTextLight: {
