@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Logo from "./Logo";
@@ -102,12 +102,10 @@ export default function PageNav({ variant = "light" }) {
         isTransparent ? styles.headTransparent : styles.headLight,
       ]}
     >
-      <Logo size={40} />
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.nav}
-      >
+      <View style={styles.logoRow}>
+        <Logo size={40} />
+      </View>
+      <View style={styles.nav}>
         {!isTokenMissing && profile !== null && (
           <>
             <NavItem
@@ -160,7 +158,7 @@ export default function PageNav({ variant = "light" }) {
             />
           </>
         )}
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -199,10 +197,12 @@ function NavItem({ label, onPress, transparent, highlight, badge = 0 }) {
 
 const styles = StyleSheet.create({
   head: {
-    flexDirection: "row",
-    alignItems: "center",
     paddingHorizontal: 14,
     paddingBottom: 10,
+  },
+  logoRow: {
+    flexDirection: "row",
+    marginBottom: 8,
   },
   headLight: {
     backgroundColor: colors.surface,
@@ -215,14 +215,15 @@ const styles = StyleSheet.create({
   },
   nav: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
-    flexGrow: 1,
-    justifyContent: "flex-end",
+    justifyContent: "flex-start",
+    rowGap: 8,
+    columnGap: 8,
   },
   navItem: {
-    marginLeft: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
     borderRadius: radius.pill,
     borderWidth: 1.5,
   },
@@ -265,7 +266,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   navText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
   },
   navTextLight: {
