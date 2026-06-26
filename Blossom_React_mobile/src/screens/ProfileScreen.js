@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import PageNav from "../components/PageNav";
 import ProfileView from "../components/ProfileView";
 import { BASE_URL } from "../api/config";
-import { getToken, setProfileId, setToken } from "../api/storage";
+import { getToken, setProfileId, setToken, clearSession } from "../api/storage";
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const [profile, setProfile] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -110,6 +111,36 @@ export default function ProfileScreen() {
     }
   }
 
+  function handleDeleteAccount() {
+    Alert.alert(
+      "Delete account?",
+      "This will permanently remove your profile, photos, matches, and messages. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setDeletingAccount(true);
+            try {
+              const token = await getToken();
+              const resp = await fetch(`${BASE_URL}/user/me`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (resp.status !== 200) throw new Error("Failed to delete account");
+              await clearSession();
+              navigation.navigate("Home");
+            } catch (err) {
+              console.log("Account delete failed:", err);
+              setDeletingAccount(false);
+            }
+          },
+        },
+      ]
+    );
+  }
+
   if (!profile) {
     return (
       <View style={styles.head}>
@@ -129,6 +160,8 @@ export default function ProfileScreen() {
         onAddPhotoPress={handleAddPhotoPress}
         onDeletePhoto={handleDeletePhoto}
         uploadingPhoto={uploadingPhoto}
+        onDeleteAccount={handleDeleteAccount}
+        deletingAccount={deletingAccount}
       />
     </View>
   );

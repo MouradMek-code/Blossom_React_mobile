@@ -19,6 +19,8 @@ export default function ProfileView({
   onAddPhotoPress,
   onDeletePhoto,
   uploadingPhoto = false,
+  onDeleteAccount,
+  deletingAccount = false,
 }) {
   const [editingBio, setEditingBio] = useState(false);
   const [bioDraft, setBioDraft] = useState(profile.bio || "");
@@ -172,6 +174,25 @@ export default function ProfileView({
           )}
         </View>
       </Section>
+
+      {editable && (
+        <Section title="Danger Zone">
+          <Text style={styles.bodyMuted}>
+            Permanently delete your account, profile, photos, matches, and messages.
+          </Text>
+          <Pressable
+            style={styles.deleteAccountButton}
+            onPress={onDeleteAccount}
+            disabled={deletingAccount}
+          >
+            {deletingAccount ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.actionButtonText}>Delete Account</Text>
+            )}
+          </Pressable>
+        </Section>
+      )}
     </ScrollView>
   );
 }
@@ -259,6 +280,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   actionButtonText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  deleteAccountButton: {
+    backgroundColor: colors.danger,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: radius.pill,
+    alignItems: "center",
+    marginTop: spacing.sm,
+  },
   actionButtonOutline: {
     borderWidth: 1.5,
     borderColor: colors.primary,
