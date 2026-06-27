@@ -8,6 +8,13 @@ function ageInRange(age, bucket) {
   return num >= min && num <= max;
 }
 
+export function getDefaultFilters(ownProfile) {
+  if (!ownProfile || ownProfile.sexual_orientation !== "Straight") return {};
+  if (ownProfile.gender === "Man") return { gender: "Woman" };
+  if (ownProfile.gender === "Woman") return { gender: "Man" };
+  return {};
+}
+
 export function matchesFilters(profile, filters) {
   return Object.entries(filters).every(([field, value]) => {
     if (field === "language_name") {

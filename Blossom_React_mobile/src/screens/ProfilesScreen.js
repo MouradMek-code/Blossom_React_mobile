@@ -4,7 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import PageNav from "../components/PageNav";
 import SwipeCard from "../components/SwipeCard";
 import ProfileFilterModal from "../components/ProfileFilterModal";
-import { matchesFilters } from "../api/profileFilters";
+import { matchesFilters, getDefaultFilters } from "../api/profileFilters";
 import { BASE_URL } from "../api/config";
 import { getToken, setToken } from "../api/storage";
 import { colors, radius, spacing, shadow, typography } from "../theme";
@@ -86,6 +86,27 @@ export default function ProfilesScreen() {
       }
     }
     fetchProfiles();
+  }, []);
+
+  useEffect(() => {
+    async function fetchOwnProfile() {
+      const token = await getToken();
+      if (!token || token === "null") return;
+      try {
+        const resp = await fetch(`${BASE_URL}/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const defaults = getDefaultFilters(data);
+        setDraftFilters(defaults);
+        setAppliedFilters(defaults);
+      } catch (err) {
+        // Default opposite-gender filter is a convenience, not a
+        // requirement - silently skip it if the profile fetch fails.
+      }
+    }
+    fetchOwnProfile();
   }, []);
 
   const filteredProfiles = useMemo(
