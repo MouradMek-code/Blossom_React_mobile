@@ -164,7 +164,7 @@ export default function ProfileView({
       <Section title="Basic Information">
         <Fact label="Gender" value={profile.gender} />
         <Fact label="Orientation" value={profile.sexual_orientation} />
-        <Fact label="Height" value={profile.height_cm ? `${profile.height_cm} cm` : null} />
+        <Fact label="Height" value={profile.height_cm ? `${profile.height_cm}` : null} />
         <Fact label="Occupation" value={profile.occupation} />
         <Fact label="Education" value={profile.education} />
         <Fact label="Personality" value={profile.personality_type} last />
