@@ -23,6 +23,7 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [profileId, setProfileIdState] = useState(null);
+  const [error, setError] = useState("");
   const listRef = useRef(null);
   const insets = useSafeAreaInsets();
 
@@ -48,6 +49,7 @@ export default function ChatScreen() {
 
   async function sendMessage() {
     if (!text.trim()) return;
+    setError("");
     const token = await getToken();
     const resp = await fetch(`${BASE_URL}/messages/conversation/${conversationId}`, {
       method: "POST",
@@ -57,8 +59,14 @@ export default function ChatScreen() {
       },
       body: JSON.stringify({ content: text }),
     });
-    const newMessage = await resp.json();
-    setMessages((prev) => [...prev, newMessage]);
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      setError(data.detail || "Failed to send message");
+      return;
+    }
+
+    setMessages((prev) => [...prev, data]);
     setText("");
   }
 
@@ -87,6 +95,8 @@ export default function ChatScreen() {
         }}
       />
 
+      {error !== "" && <Text style={styles.errorText}>{error}</Text>}
+
       <View style={[styles.inputBox, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
         <TextInput
           value={text}
@@ -112,6 +122,12 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   messagesContainer: { padding: spacing.md },
+  errorText: {
+    color: colors.danger,
+    textAlign: "center",
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+  },
   row: { flexDirection: "row", marginBottom: spacing.sm },
   left: { justifyContent: "flex-start" },
   right: { justifyContent: "flex-end" },
