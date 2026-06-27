@@ -32,6 +32,7 @@ export default function StartHome() {
           <Text style={styles.ctaText}>Start Dating Now ❤️</Text>
         </Pressable>
       )}
+      <Text style={styles.trustLine}>Where she always makes the first move 💌</Text>
     </Animated.View>
   );
 }
@@ -74,5 +75,12 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 16,
+  },
+  trustLine: {
+    marginTop: 20,
+    fontSize: 14,
+    fontWeight: "500",
+    color: "rgba(255,255,255,0.75)",
+    textAlign: "center",
   },
 });
