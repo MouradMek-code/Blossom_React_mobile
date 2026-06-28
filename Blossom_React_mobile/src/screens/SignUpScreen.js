@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { ImageBackground, View, ScrollView, Text, StyleSheet } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { ImageBackground, View, ScrollView, Text, Pressable, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PageNav from "../components/PageNav";
 import FormSignUp from "../components/FormSignUp";
 import StartProfile from "../components/StartProfile";
@@ -20,6 +21,9 @@ export default function SignUpScreen() {
   const [resumeIndex, setResumeIndex] = useState(0);
   const [resumeAutoStart, setResumeAutoStart] = useState(false);
   const [prefill, setPrefill] = useState(null);
+  const [questionReady, setQuestionReady] = useState(false);
+  const startProfileRef = useRef(null);
+  const insets = useSafeAreaInsets();
 
   // A token alone means signup + email/OTP verification already
   // succeeded in a previous session - figure out how much further the
@@ -156,7 +160,9 @@ export default function SignUpScreen() {
     >
       <View style={styles.overlay} />
       <PageNav variant="transparent" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, questionReady && { paddingBottom: 100 }]}
+      >
         <View style={styles.card}>
           {isregistered === false && (
             <FormSignUp
@@ -176,16 +182,33 @@ export default function SignUpScreen() {
             questionEnded === false &&
             photos === false && (
               <StartProfile
+                ref={startProfileRef}
                 answer={answer}
                 setAnswer={setAnswer}
                 setQuestionEnded={setQuestionEnded}
                 initialIndex={resumeIndex}
                 autoStart={resumeAutoStart}
+                onReadyChange={setQuestionReady}
               />
             )}
           {photos === true && <MultiImageUpload />}
         </View>
       </ScrollView>
+
+      {located === true &&
+        isregistered === true &&
+        questionEnded === false &&
+        photos === false &&
+        questionReady && (
+          <View style={[styles.stickyFooter, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
+            <Pressable
+              style={({ pressed }) => [styles.nextButton, pressed && styles.nextButtonPressed]}
+              onPress={() => startProfileRef.current?.next()}
+            >
+              <Text style={styles.nextButtonText}>NEXT</Text>
+            </Pressable>
+          </View>
+        )}
     </ImageBackground>
   );
 }
@@ -217,4 +240,29 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 6,
   },
+  stickyFooter: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    backgroundColor: "rgba(255,255,255,0.96)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  nextButton: {
+    backgroundColor: "#d6336c",
+    borderRadius: 999,
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  nextButtonPressed: {
+    backgroundColor: "#b5174a",
+    transform: [{ scale: 0.98 }],
+  },
+  nextButtonText: { color: "#fff", fontWeight: "700", fontSize: 16, letterSpacing: 0.5 },
 });

@@ -1,19 +1,20 @@
-import { useState } from "react";
+import { useEffect, useImperativeHandle, useState, forwardRef } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
 import questions from "../data/questions.json";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 import { saveSignupDraft } from "../api/storage";
 
-export default function StartProfile({
-  setQuestionEnded,
-  answer,
-  setAnswer,
-  initialIndex = 0,
-  autoStart = false,
-}) {
+const StartProfile = forwardRef(function StartProfile(
+  { setQuestionEnded, answer, setAnswer, initialIndex = 0, autoStart = false, onReadyChange },
+  ref,
+) {
   const [started, setStart] = useState(autoStart);
   const [indiceQuestion, setIndiceQuestion] = useState(initialIndex);
   const [clicked, setClicked] = useState(false);
+
+  useEffect(() => {
+    onReadyChange?.(started && clicked);
+  }, [started, clicked, onReadyChange]);
 
   function handleClicked(question, value) {
     setClicked(true);
@@ -42,6 +43,8 @@ export default function StartProfile({
     saveSignupDraft({ started: true, questionIndex: nextIndex, answer });
   }
 
+  useImperativeHandle(ref, () => ({ next: handleNext }));
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Create Your Profile Here</Text>
@@ -55,7 +58,6 @@ export default function StartProfile({
       {started && indiceQuestion < questions.length && (
         <QuestionOption
           question={questions[indiceQuestion]}
-          onNext={handleNext}
           handleClicked={handleClicked}
           clicked={clicked}
           setAnswer={setAnswer}
@@ -65,7 +67,9 @@ export default function StartProfile({
       )}
     </View>
   );
-}
+});
+
+export default StartProfile;
 
 function LetsStartButton({ length, onPress }) {
   return (
@@ -97,7 +101,7 @@ function ProgressBar({ indiceQuestion, length }) {
   );
 }
 
-function QuestionOption({ question, onNext, handleClicked, clicked, setAnswer, answer, setClicked }) {
+function QuestionOption({ question, handleClicked, clicked, setAnswer, answer, setClicked }) {
   return (
     <View style={styles.questions}>
       <Text style={styles.questionTitle}>{question.question}</Text>
@@ -109,11 +113,6 @@ function QuestionOption({ question, onNext, handleClicked, clicked, setAnswer, a
         answer={answer}
         setClicked={setClicked}
       />
-      {clicked && (
-        <Pressable style={styles.button} onPress={onNext}>
-          <Text style={styles.buttonText}>NEXT</Text>
-        </Pressable>
-      )}
     </View>
   );
 }
