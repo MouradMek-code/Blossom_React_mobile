@@ -210,6 +210,60 @@
     ]
   },
   {
+    "field": "first_date_preference",
+    "question": "What's your ideal first date?",
+    "options": [
+      "Coffee",
+      "Restaurant",
+      "Drinks / Bar",
+      "Walk / Outdoors",
+      "Hiking / Nature",
+      "Bowling",
+      "Mini Golf",
+      "Arcade / Gaming",
+      "Movie",
+      "Museum / Art Gallery",
+      "Beach",
+      "Cooking Together",
+      "Concert / Live Music",
+      "Casual Hangout (no pressure)",
+      "Still figuring it out",
+      "Prefer not to say"
+    ]
+  },
+  {
+    "field": "past_relationships_count",
+    "question": "How many relationships have you had before?",
+    "options": [
+      "Never been in one",
+      "1",
+      "2-3",
+      "4-5",
+      "6-10",
+      "More than 10",
+      "Prefer not to say"
+    ]
+  },
+  {
+    "field": "last_breakup_reason",
+    "question": "What was the reason for your last breakup?",
+    "options": [
+      "Communication issues",
+      "Long distance",
+      "Grew apart",
+      "Different life goals",
+      "Different values/beliefs",
+      "Infidelity / Trust issues",
+      "Lack of time / Too busy",
+      "Family or external pressure",
+      "Wanted different things (kids, marriage, etc.)",
+      "Still figuring it out / unclear",
+      "Mutual decision",
+      "Other",
+      "Prefer not to say"
+    ]
+  },
+  {
     "field": "has_children",
     "question": "Do you currently have children?",
     "options": ["Yes", "No"]

@@ -164,7 +164,7 @@ export default function ProfileView({
       <Section title="Basic Information">
         <Fact label="Gender" value={profile.gender} />
         <Fact label="Orientation" value={profile.sexual_orientation} />
-        <Fact label="Height" value={profile.height_cm ? `${profile.height_cm}` : null} />
+        <Fact label="Height" value={profile.height_cm ? `${profile.height_cm} cm` : null} />
         <Fact label="Occupation" value={profile.occupation} />
         <Fact label="Education" value={profile.education} />
         <Fact label="Personality" value={profile.personality_type} last />
@@ -181,6 +181,12 @@ export default function ProfileView({
         <Fact label="Children" value={profile.has_children} />
         <Fact label="Wants children" value={profile.wants_children} />
         <Fact label="Goal" value={profile.relationship_goal} last />
+      </Section>
+
+      <Section title="Dating Preferences">
+        <Fact label="Ideal first date" value={profile.first_date_preference} />
+        <Fact label="Past relationships" value={profile.past_relationships_count} />
+        <Fact label="Last breakup reason" value={profile.last_breakup_reason} last />
       </Section>
 
       <Section title="Languages">
