@@ -4,8 +4,10 @@ import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { BASE_URL } from "../api/config";
 import { getToken } from "../api/storage";
+import { colors, radius, spacing, shadow } from "../theme";
 
 const MAX = 6;
+const MIN_REQUIRED = 2;
 
 export default function MultiImageUpload() {
   const [images, setImages] = useState([]);
@@ -68,6 +70,8 @@ export default function MultiImageUpload() {
     });
   }
 
+  const uploadedCount = images.filter((img) => img && !img.uploading && !img.failed).length;
+
   return (
     <View style={styles.wrapper}>
       <Text style={styles.title}>Upload Images (max 6)</Text>
@@ -104,9 +108,18 @@ export default function MultiImageUpload() {
         })}
       </View>
 
-      <Pressable style={styles.button} onPress={() => navigation.navigate("Profiles")}>
-        <Text style={styles.buttonText}>Go Check Profiles</Text>
-      </Pressable>
+      {uploadedCount < MIN_REQUIRED ? (
+        <Text style={styles.hint}>
+          Add {MIN_REQUIRED - uploadedCount} more photo{MIN_REQUIRED - uploadedCount > 1 ? "s" : ""} to continue
+        </Text>
+      ) : (
+        <Pressable
+          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+          onPress={() => navigation.navigate("Profiles")}
+        >
+          <Text style={styles.buttonText}>Go Check Profiles →</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -165,12 +178,25 @@ const styles = StyleSheet.create({
     fontSize: 9,
     textAlign: "center",
   },
-  button: {
-    marginTop: 20,
-    backgroundColor: "#d6336c",
-    borderRadius: 8,
-    padding: 14,
-    alignItems: "center",
+  hint: {
+    marginTop: spacing.lg,
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.textMuted,
+    textAlign: "center",
   },
-  buttonText: { color: "#fff", fontWeight: "700" },
+  button: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingVertical: 16,
+    paddingHorizontal: 36,
+    alignItems: "center",
+    ...shadow.md,
+  },
+  buttonPressed: {
+    backgroundColor: colors.primaryDark,
+    transform: [{ scale: 0.98 }],
+  },
+  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16, letterSpacing: 0.3 },
 });
