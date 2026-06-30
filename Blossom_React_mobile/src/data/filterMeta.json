@@ -2,7 +2,6 @@
   "gender": { "section": "Basic Info", "question": "Which gender are you interested in?" },
   "sexual_orientation": { "section": "Basic Info", "question": "Preferred orientation" },
   "age": { "section": "Basic Info", "question": "Preferred age range" },
-  "height_cm": { "section": "Basic Info", "question": "Preferred height" },
   "education": { "section": "Education", "question": "Preferred education level" },
   "smoking": { "section": "Lifestyle", "question": "Smoking preference" },
   "drinking": { "section": "Lifestyle", "question": "Drinking preference" },
