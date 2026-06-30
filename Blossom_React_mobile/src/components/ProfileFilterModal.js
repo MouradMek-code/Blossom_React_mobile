@@ -1,9 +1,23 @@
 import { useMemo } from "react";
 import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import questions from "../data/questions.json";
+import filterMeta from "../data/filterMeta.json";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
-const FILTERABLE = questions.filter((q) => q.field !== "bio" && q.field !== "occupation");
+const FILTERABLE = questions
+  .filter((q) => filterMeta[q.field])
+  .map((q) => ({ ...q, question: filterMeta[q.field].question, group: filterMeta[q.field].section }));
+
+const SECTION_ORDER = [
+  "Location",
+  "Basic Info",
+  "Lifestyle",
+  "Relationship",
+  "Dating Preferences",
+  "Personality",
+  "Languages",
+  "Education",
+];
 
 export default function ProfileFilterModal({
   visible,
@@ -17,12 +31,16 @@ export default function ProfileFilterModal({
     const countries = [...new Set(profiles.map((p) => p.country).filter(Boolean))].sort();
     const cities = [...new Set(profiles.map((p) => p.city).filter(Boolean))].sort();
     return [
-      { field: "country", question: "Country", options: countries },
-      { field: "city", question: "City", options: cities },
+      { field: "country", question: "Country", options: countries, group: "Location" },
+      { field: "city", question: "City", options: cities, group: "Location" },
     ].filter((section) => section.options.length > 0);
   }, [profiles]);
 
   const allSections = [...locationSections, ...FILTERABLE];
+  const groupedSections = SECTION_ORDER.map((group) => ({
+    group,
+    items: allSections.filter((s) => s.group === group),
+  })).filter((g) => g.items.length > 0);
 
   function toggleSingle(field, option) {
     onChange((prev) => {
@@ -69,31 +87,36 @@ export default function ProfileFilterModal({
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll}>
-          {allSections.map((q) => (
-            <View key={q.field} style={styles.section}>
-              <Text style={styles.sectionTitle}>{q.question}</Text>
-              <View style={styles.optionGrid}>
-                {q.options.map((option) => {
-                  const selected = q.multiple
-                    ? (filters[q.field] || []).includes(option)
-                    : filters[q.field] === option;
-                  return (
-                    <Pressable
-                      key={option}
-                      style={[styles.optionChip, selected && styles.optionChipSelected]}
-                      onPress={() =>
-                        q.multiple
-                          ? toggleMultiple(q.field, option)
-                          : toggleSingle(q.field, option)
-                      }
-                    >
-                      <Text style={selected ? styles.optionTextSelected : styles.optionText}>
-                        {option}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+          {groupedSections.map(({ group, items }) => (
+            <View key={group} style={styles.group}>
+              <Text style={styles.groupTitle}>{group}</Text>
+              {items.map((q) => (
+                <View key={q.field} style={styles.section}>
+                  <Text style={styles.sectionTitle}>{q.question}</Text>
+                  <View style={styles.optionGrid}>
+                    {q.options.map((option) => {
+                      const selected = q.multiple
+                        ? (filters[q.field] || []).includes(option)
+                        : filters[q.field] === option;
+                      return (
+                        <Pressable
+                          key={option}
+                          style={[styles.optionChip, selected && styles.optionChipSelected]}
+                          onPress={() =>
+                            q.multiple
+                              ? toggleMultiple(q.field, option)
+                              : toggleSingle(q.field, option)
+                          }
+                        >
+                          <Text style={selected ? styles.optionTextSelected : styles.optionText}>
+                            {option}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
             </View>
           ))}
         </ScrollView>
@@ -126,6 +149,18 @@ const styles = StyleSheet.create({
   title: { ...typography.h2 },
   closeText: { fontSize: 20, color: colors.textMuted },
   scroll: { padding: spacing.md },
+  group: { marginBottom: spacing.xl },
+  groupTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: colors.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: spacing.md,
+    paddingBottom: spacing.xs,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.primarySoft,
+  },
   section: { marginBottom: spacing.lg },
   sectionTitle: { ...typography.h3, fontSize: 15, marginBottom: spacing.sm },
   optionGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },

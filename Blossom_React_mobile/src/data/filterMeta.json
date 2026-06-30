@@ -1,0 +1,17 @@
+{
+  "gender": { "section": "Basic Info", "question": "Which gender are you interested in?" },
+  "sexual_orientation": { "section": "Basic Info", "question": "Preferred orientation" },
+  "age": { "section": "Basic Info", "question": "Preferred age range" },
+  "height_cm": { "section": "Basic Info", "question": "Preferred height" },
+  "education": { "section": "Education", "question": "Preferred education level" },
+  "smoking": { "section": "Lifestyle", "question": "Smoking preference" },
+  "drinking": { "section": "Lifestyle", "question": "Drinking preference" },
+  "exercise_frequency": { "section": "Lifestyle", "question": "Exercise preference" },
+  "has_pets": { "section": "Lifestyle", "question": "Pet preference" },
+  "relationship_goal": { "section": "Relationship", "question": "What should they be looking for?" },
+  "has_children": { "section": "Relationship", "question": "Do they have children?" },
+  "wants_children": { "section": "Relationship", "question": "Do they want children?" },
+  "first_date_preference": { "section": "Dating Preferences", "question": "Preferred first date type" },
+  "personality_type": { "section": "Personality", "question": "Preferred personality" },
+  "language_name": { "section": "Languages", "question": "What language should they speak?" }
+}
