@@ -42,18 +42,6 @@ export default function ProfileFilterModal({
     items: allSections.filter((s) => s.group === group),
   })).filter((g) => g.items.length > 0);
 
-  function toggleSingle(field, option) {
-    onChange((prev) => {
-      const next = { ...prev };
-      if (next[field] === option) {
-        delete next[field];
-      } else {
-        next[field] = option;
-      }
-      return next;
-    });
-  }
-
   function toggleMultiple(field, option) {
     onChange((prev) => {
       const current = prev[field] || [];
@@ -95,18 +83,12 @@ export default function ProfileFilterModal({
                   <Text style={styles.sectionTitle}>{q.question}</Text>
                   <View style={styles.optionGrid}>
                     {q.options.map((option) => {
-                      const selected = q.multiple
-                        ? (filters[q.field] || []).includes(option)
-                        : filters[q.field] === option;
+                      const selected = (filters[q.field] || []).includes(option);
                       return (
                         <Pressable
                           key={option}
                           style={[styles.optionChip, selected && styles.optionChipSelected]}
-                          onPress={() =>
-                            q.multiple
-                              ? toggleMultiple(q.field, option)
-                              : toggleSingle(q.field, option)
-                          }
+                          onPress={() => toggleMultiple(q.field, option)}
                         >
                           <Text style={selected ? styles.optionTextSelected : styles.optionText}>
                             {option}
