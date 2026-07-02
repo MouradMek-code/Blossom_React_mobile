@@ -3,6 +3,8 @@ import {
   ImageBackground,
   View,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
   Text,
   TextInput,
   Pressable,
@@ -77,7 +79,11 @@ export default function ForgotPasswordScreen() {
     >
       <View style={styles.overlay} />
       <PageNav variant="transparent" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
           <Text style={styles.title}>
             {step === "request" ? "Forgot Password" : "Reset Password"}
@@ -165,6 +171,7 @@ export default function ForgotPasswordScreen() {
           )}
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </ImageBackground>
   );
 }

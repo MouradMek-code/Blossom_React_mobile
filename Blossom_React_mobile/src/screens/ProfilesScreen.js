@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, Image, Pressable, StyleSheet } from "react-native";
+import { View, Text, Image, Pressable, ActivityIndicator, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import PageNav from "../components/PageNav";
 import SwipeCard from "../components/SwipeCard";
@@ -23,6 +23,7 @@ export default function ProfilesScreen() {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [draftFilters, setDraftFilters] = useState({});
   const [appliedFilters, setAppliedFilters] = useState({});
+  const [loading, setLoading] = useState(true);
 
   async function likeProfile(profile) {
     const token = await getToken();
@@ -57,56 +58,47 @@ export default function ProfilesScreen() {
   }
 
   useEffect(() => {
-    async function fetchProfiles() {
+    async function fetchAll() {
       const token = await getToken();
       if (!token || token === "null") {
         navigation.navigate("Login");
         return;
       }
       try {
-        const [profilesResp, likedResp] = await Promise.all([
+        const [profilesResp, likedResp, ownResp] = await Promise.all([
           fetch(`${BASE_URL}/profile/all_profile`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
           fetch(`${BASE_URL}/likes/profiles_i_liked`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
+          fetch(`${BASE_URL}/profile`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
         ]);
         const data = await profilesResp.json();
         if (profilesResp.status !== 200) {
-          throw new Error(`error happeneded on login : ${data.detail?.[0]?.msg}`);
+          throw new Error(`error happened on login : ${data.detail?.[0]?.msg}`);
         }
         const likedData = likedResp.ok ? await likedResp.json() : [];
         const likedIds = likedData.map(extractLikedId).filter((id) => id != null);
         setProfiles(data.filter((p) => !likedIds.includes(p.id)));
         setCurrentIndex(0);
+
+        if (ownResp.ok) {
+          const ownData = await ownResp.json();
+          const defaults = getDefaultFilters(ownData);
+          setDraftFilters(defaults);
+          setAppliedFilters(defaults);
+        }
       } catch (err) {
         await setToken(null);
         navigation.navigate("Login");
+      } finally {
+        setLoading(false);
       }
     }
-    fetchProfiles();
-  }, []);
-
-  useEffect(() => {
-    async function fetchOwnProfile() {
-      const token = await getToken();
-      if (!token || token === "null") return;
-      try {
-        const resp = await fetch(`${BASE_URL}/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!resp.ok) return;
-        const data = await resp.json();
-        const defaults = getDefaultFilters(data);
-        setDraftFilters(defaults);
-        setAppliedFilters(defaults);
-      } catch (err) {
-        // Default opposite-gender filter is a convenience, not a
-        // requirement - silently skip it if the profile fetch fails.
-      }
-    }
-    fetchOwnProfile();
+    fetchAll();
   }, []);
 
   const filteredProfiles = useMemo(
@@ -126,6 +118,17 @@ export default function ProfilesScreen() {
     setAppliedFilters(draftFilters);
     setCurrentIndex(0);
     setFilterModalVisible(false);
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.head}>
+        <PageNav />
+        <View style={styles.empty}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </View>
+    );
   }
 
   return (

@@ -1,4 +1,4 @@
-import { ImageBackground, View, ScrollView, StyleSheet } from "react-native";
+import { ImageBackground, View, ScrollView, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import PageNav from "../components/PageNav";
 import FormLogin from "../components/FormLogin";
 
@@ -11,11 +11,16 @@ export default function LoginScreen() {
     >
       <View style={styles.overlay} />
       <PageNav variant="transparent" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.card}>
-          <FormLogin />
-        </View>
-      </ScrollView>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          <View style={styles.card}>
+            <FormLogin />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </ImageBackground>
   );
 }

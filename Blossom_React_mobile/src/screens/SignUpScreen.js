@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ImageBackground, View, ScrollView, Text, Pressable, StyleSheet } from "react-native";
+import { ImageBackground, View, ScrollView, KeyboardAvoidingView, Platform, Text, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PageNav from "../components/PageNav";
 import FormSignUp from "../components/FormSignUp";
@@ -160,8 +160,13 @@ export default function SignUpScreen() {
     >
       <View style={styles.overlay} />
       <PageNav variant="transparent" />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
       <ScrollView
         contentContainerStyle={[styles.scrollContent, questionReady && { paddingBottom: 100 }]}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.card}>
           {isregistered === false && (
@@ -194,6 +199,7 @@ export default function SignUpScreen() {
           {photos === true && <MultiImageUpload />}
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {located === true &&
         isregistered === true &&

@@ -73,7 +73,8 @@ export default function ChatScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.chatContainer}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "android" ? 0 : 0}
     >
       <PageNav />
       <Text style={styles.header}>💬 Conversation</Text>
