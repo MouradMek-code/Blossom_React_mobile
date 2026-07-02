@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ImageBackground, View, ScrollView, KeyboardAvoidingView, Platform, Text, Pressable, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PageNav from "../components/PageNav";
 import FormSignUp from "../components/FormSignUp";
@@ -10,6 +11,7 @@ import { BASE_URL } from "../api/config";
 import { getToken, setProfileId, getSignupDraft, clearSignupDraft } from "../api/storage";
 
 export default function SignUpScreen() {
+  const { t } = useTranslation();
   const [isregistered, setRegistered] = useState(false);
   const [error, setError] = useState("");
   const [questionEnded, setQuestionEnded] = useState(false);
@@ -147,7 +149,7 @@ export default function SignUpScreen() {
     return (
       <View style={styles.loadingHead}>
         <PageNav variant="transparent" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}>{t("loading")}</Text>
       </View>
     );
   }
@@ -211,7 +213,7 @@ export default function SignUpScreen() {
               style={({ pressed }) => [styles.nextButton, pressed && styles.nextButtonPressed]}
               onPress={() => startProfileRef.current?.next()}
             >
-              <Text style={styles.nextButtonText}>NEXT</Text>
+              <Text style={styles.nextButtonText}>{t("signup_next")}</Text>
             </Pressable>
           </View>
         )}

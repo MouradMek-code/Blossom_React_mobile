@@ -1,0 +1,72 @@
+{
+  "nav": {
+    "profile": "ملفي الشخصي",
+    "browse": "تصفح",
+    "matches": "التطابقات",
+    "likesYou": "أعجبهم ملفك",
+    "logout": "تسجيل الخروج",
+    "home": "الرئيسية",
+    "signUp": "إنشاء حساب",
+    "login": "تسجيل الدخول"
+  },
+  "home": {
+    "title": "ابحث عن شخص يستحق اللقاء!!",
+    "subtitle": "تطابق اليوم. التقِ هذا الأسبوع",
+    "tagline": "تمرير ← دردشة ← لقاء",
+    "cta": "ابدأ المواعدة الآن ❤️",
+    "trustLine": "حيث تبدأ هي دائماً أولاً 💌"
+  },
+  "howItWorks": {
+    "heading": "كيف يعمل Blossom",
+    "step1Title": "أنشئ ملفك الشخصي",
+    "step1Text": "أخبرنا من أنت، وما يعجبك، وما الذي تبحث عنه.",
+    "step2Title": "تطابق بنية",
+    "step2Text": "تصفح الملفات وأحبّ من يشاركك نفس الاهتمامات.",
+    "step3Title": "خطط لموعد حقيقي",
+    "step3Text": "تطابقتم؟ تحدثوا قليلاً، ثم التقوا في الواقع - هذا هو الهدف."
+  },
+  "login": {
+    "eyebrow": "مرحباً بعودتك",
+    "title": "تسجيل الدخول",
+    "usernameLabel": "اسم المستخدم أو البريد الإلكتروني",
+    "usernamePlaceholder": "اسم المستخدم أو البريد الإلكتروني",
+    "passwordLabel": "كلمة المرور",
+    "button": "دخول",
+    "forgotPassword": "نسيت كلمة المرور؟"
+  },
+  "signup": {
+    "eyebrow": "انضم إلى BLOSSOM",
+    "title": "إنشاء حساب",
+    "nameLabel": "الاسم",
+    "emailLabel": "البريد الإلكتروني",
+    "passwordLabel": "كلمة المرور",
+    "phoneLabel": "رقم الهاتف",
+    "dobLabel": "تاريخ الميلاد",
+    "dobPlaceholder": "YYYY-MM-DD",
+    "button": "إنشاء حساب",
+    "privacyPolicy": "بالتسجيل فإنك توافق على",
+    "privacyPolicyLink": "سياسة الخصوصية"
+  },
+  "verify": {
+    "title": "تحقق من بريدك/هاتفك",
+    "subtitle": "أدخل الرمز المكون من 6 أرقام المرسل إلى هاتفك/بريدك",
+    "button": "متابعة",
+    "resend": "لم تستلم الرمز؟",
+    "resendLink": "إعادة الإرسال",
+    "reenterPassword": "أعد إدخال كلمة المرور"
+  },
+  "forgotPassword": {
+    "titleRequest": "نسيت كلمة المرور",
+    "titleReset": "إعادة تعيين كلمة المرور",
+    "description": "أدخل بريدك الإلكتروني وسنرسل لك رمز إعادة التعيين.",
+    "emailLabel": "البريد الإلكتروني",
+    "sendCode": "إرسال الرمز",
+    "backToLogin": "العودة لتسجيل الدخول",
+    "resetCodeLabel": "رمز إعادة التعيين",
+    "newPasswordLabel": "كلمة المرور الجديدة",
+    "updatePassword": "تحديث كلمة المرور",
+    "tryAgain": "لم تستلم الرمز؟ حاول مجدداً"
+  },
+  "signup_next": "التالي",
+  "loading": "جاري التحميل..."
+}

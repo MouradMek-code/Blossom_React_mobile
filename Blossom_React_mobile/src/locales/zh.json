@@ -1,0 +1,72 @@
+{
+  "nav": {
+    "profile": "我的资料",
+    "browse": "浏览",
+    "matches": "配对",
+    "likesYou": "喜欢你",
+    "logout": "退出登录",
+    "home": "首页",
+    "signUp": "注册",
+    "login": "登录"
+  },
+  "home": {
+    "title": "找到值得赴约的人！！",
+    "subtitle": "今天配对，本周相遇",
+    "tagline": "免费滑动 → 聊天 → 相遇",
+    "cta": "开始约会 ❤️",
+    "trustLine": "她永远先迈出第一步 💌"
+  },
+  "howItWorks": {
+    "heading": "Blossom 如何运作",
+    "step1Title": "创建你的资料",
+    "step1Text": "告诉我们你是谁，你喜欢什么，以及你在寻找什么。",
+    "step2Title": "有意义地匹配",
+    "step2Text": "浏览资料，喜欢与你志同道合的人——不需要无休止地滑动。",
+    "step3Title": "计划一次真实约会",
+    "step3Text": "配对成功？聊一聊，然后线下见面——这才是重点。"
+  },
+  "login": {
+    "eyebrow": "欢迎回来",
+    "title": "登录",
+    "usernameLabel": "用户名或邮箱",
+    "usernamePlaceholder": "你的用户名或邮箱",
+    "passwordLabel": "密码",
+    "button": "登录",
+    "forgotPassword": "忘记密码？"
+  },
+  "signup": {
+    "eyebrow": "加入 BLOSSOM",
+    "title": "创建账号",
+    "nameLabel": "姓名",
+    "emailLabel": "邮箱",
+    "passwordLabel": "密码",
+    "phoneLabel": "手机号码",
+    "dobLabel": "出生日期",
+    "dobPlaceholder": "YYYY-MM-DD",
+    "button": "创建账号",
+    "privacyPolicy": "注册即表示您同意我们的",
+    "privacyPolicyLink": "隐私政策"
+  },
+  "verify": {
+    "title": "验证您的邮箱/手机",
+    "subtitle": "请输入发送到您手机/邮箱的6位验证码",
+    "button": "继续",
+    "resend": "没有收到验证码？",
+    "resendLink": "重新发送",
+    "reenterPassword": "重新输入密码"
+  },
+  "forgotPassword": {
+    "titleRequest": "忘记密码",
+    "titleReset": "重置密码",
+    "description": "输入您的账号邮箱，我们将发送重置码给您。",
+    "emailLabel": "邮箱",
+    "sendCode": "发送重置码",
+    "backToLogin": "返回登录",
+    "resetCodeLabel": "重置码",
+    "newPasswordLabel": "新密码",
+    "updatePassword": "更新密码",
+    "tryAgain": "没有收到验证码？重试"
+  },
+  "signup_next": "下一步",
+  "loading": "加载中..."
+}

@@ -2,14 +2,30 @@ import { useEffect, useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import Logo from "./Logo";
 import { BASE_URL } from "../api/config";
 import { getToken, setToken, clearSession } from "../api/storage";
+import { changeLanguage } from "../i18n";
 import { colors, radius, shadow } from "../theme";
 
+const LANGUAGES = [
+  { code: "en", label: "EN" },
+  { code: "fr", label: "FR" },
+  { code: "zh", label: "中文" },
+  { code: "ar", label: "عربي" },
+];
+
 export default function PageNav({ variant = "light" }) {
+  const { t, i18n } = useTranslation();
+  const [activeLang, setActiveLang] = useState(i18n.language?.slice(0, 2) || "en");
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+
+  async function handleLangChange(code) {
+    await changeLanguage(code);
+    setActiveLang(code);
+  }
   const [profile, setProfile] = useState(null);
   const [token, setTokenState] = useState(null);
   const [matchCount, setMatchCount] = useState(0);
@@ -109,29 +125,29 @@ export default function PageNav({ variant = "light" }) {
         {!isTokenMissing && profile !== null && (
           <>
             <NavItem
-              label="Profile"
+              label={t("nav.profile")}
               onPress={() => navigation.navigate("Profile")}
               transparent={isTransparent}
             />
             <NavItem
-              label="Browse"
+              label={t("nav.browse")}
               onPress={() => navigation.navigate("Profiles")}
               transparent={isTransparent}
             />
             <NavItem
-              label="Matches"
+              label={t("nav.matches")}
               onPress={() => navigation.navigate("MatchedList")}
               transparent={isTransparent}
               badge={matchCount}
             />
             <NavItem
-              label="Likes You"
+              label={t("nav.likesYou")}
               onPress={() => navigation.navigate("LikedYou")}
               transparent={isTransparent}
               badge={likeCount}
             />
             <NavItem
-              label="Logout"
+              label={t("nav.logout")}
               onPress={handleLogout}
               transparent={isTransparent}
               highlight
@@ -141,23 +157,45 @@ export default function PageNav({ variant = "light" }) {
         {isTokenMissing && (
           <>
             <NavItem
-              label="Home"
+              label={t("nav.home")}
               onPress={() => navigation.navigate("Home")}
               transparent={isTransparent}
             />
             <NavItem
-              label="Sign Up"
+              label={t("nav.signUp")}
               onPress={() => navigation.navigate("SignUp")}
               transparent={isTransparent}
             />
             <NavItem
-              label="Login"
+              label={t("nav.login")}
               onPress={() => navigation.navigate("Login")}
               transparent={isTransparent}
               highlight
             />
           </>
         )}
+
+        <View style={styles.langRow}>
+          {LANGUAGES.map((l) => (
+            <Pressable
+              key={l.code}
+              onPress={() => handleLangChange(l.code)}
+              style={[
+                styles.langBtn,
+                isTransparent ? styles.langBtnTransparent : styles.langBtnLight,
+                activeLang === l.code && styles.langBtnActive,
+              ]}
+            >
+              <Text style={[
+                styles.langBtnText,
+                isTransparent ? styles.langBtnTextTransparent : styles.langBtnTextLight,
+                activeLang === l.code && styles.langBtnTextActive,
+              ]}>
+                {l.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -279,6 +317,41 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
   navTextHighlight: {
+    color: "#fff",
+  },
+  langRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 4,
+    marginTop: 4,
+  },
+  langBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  langBtnLight: {
+    borderColor: "rgba(214,51,108,0.35)",
+  },
+  langBtnTransparent: {
+    borderColor: "rgba(255,255,255,0.35)",
+  },
+  langBtnActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  langBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  langBtnTextLight: {
+    color: colors.primary,
+  },
+  langBtnTextTransparent: {
+    color: "#fff",
+  },
+  langBtnTextActive: {
     color: "#fff",
   },
 });

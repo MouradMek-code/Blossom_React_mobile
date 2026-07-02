@@ -1,0 +1,72 @@
+{
+  "nav": {
+    "profile": "Profile",
+    "browse": "Browse",
+    "matches": "Matches",
+    "likesYou": "Likes You",
+    "logout": "Logout",
+    "home": "Home",
+    "signUp": "Sign Up",
+    "login": "Login"
+  },
+  "home": {
+    "title": "Find someone worth showing up for !!",
+    "subtitle": "Match today. Meet this week",
+    "tagline": "Free swipe → chat → maybe meet",
+    "cta": "Start Dating Now ❤️",
+    "trustLine": "Where she always makes the first move 💌"
+  },
+  "howItWorks": {
+    "heading": "How Blossom works",
+    "step1Title": "Build your profile",
+    "step1Text": "Tell us who you are, what you're into, and what you're looking for.",
+    "step2Title": "Match with intent",
+    "step2Text": "Browse profiles and like the ones who share your vibe - no endless swiping.",
+    "step3Title": "Plan a real date",
+    "step3Text": "Matched? Chat for a bit, then take it offline - that's the whole point."
+  },
+  "login": {
+    "eyebrow": "WELCOME BACK",
+    "title": "Log In",
+    "usernameLabel": "USERNAME OR EMAIL",
+    "usernamePlaceholder": "Your username or email",
+    "passwordLabel": "PASSWORD",
+    "button": "Log In",
+    "forgotPassword": "Forgot password?"
+  },
+  "signup": {
+    "eyebrow": "JOIN BLOSSOM",
+    "title": "Create Account",
+    "nameLabel": "NAME",
+    "emailLabel": "EMAIL",
+    "passwordLabel": "PASSWORD",
+    "phoneLabel": "PHONE NUMBER",
+    "dobLabel": "DATE OF BIRTH",
+    "dobPlaceholder": "YYYY-MM-DD",
+    "button": "Create Account",
+    "privacyPolicy": "By signing up you agree to our",
+    "privacyPolicyLink": "Privacy Policy"
+  },
+  "verify": {
+    "title": "Verify your email/phone",
+    "subtitle": "Enter the 6-digit code sent to your phone/email",
+    "button": "Continue",
+    "resend": "Didn't receive the code?",
+    "resendLink": "Resend",
+    "reenterPassword": "Re-enter your password"
+  },
+  "forgotPassword": {
+    "titleRequest": "Forgot Password",
+    "titleReset": "Reset Password",
+    "description": "Enter your account email and we'll send you a reset code.",
+    "emailLabel": "EMAIL",
+    "sendCode": "Send Reset Code",
+    "backToLogin": "Back to login",
+    "resetCodeLabel": "RESET CODE",
+    "newPasswordLabel": "NEW PASSWORD",
+    "updatePassword": "Update Password",
+    "tryAgain": "Didn't get a code? Try again"
+  },
+  "signup_next": "NEXT",
+  "loading": "Loading..."
+}

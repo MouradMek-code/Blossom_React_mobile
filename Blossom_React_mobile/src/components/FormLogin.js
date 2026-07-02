@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { BASE_URL } from "../api/config";
 import { setToken } from "../api/storage";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 export default function FormLogin() {
+  const { t } = useTranslation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -39,8 +41,8 @@ export default function FormLogin() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.eyebrow}>WELCOME BACK</Text>
-      <Text style={styles.title}>Log In</Text>
+      <Text style={styles.eyebrow}>{t("login.eyebrow")}</Text>
+      <Text style={styles.title}>{t("login.title")}</Text>
 
       {error !== "" && (
         <View style={styles.errorBox}>
@@ -49,19 +51,19 @@ export default function FormLogin() {
       )}
 
       <View style={styles.group}>
-        <Text style={styles.label}>USERNAME OR EMAIL</Text>
+        <Text style={styles.label}>{t("login.usernameLabel")}</Text>
         <TextInput
           style={styles.input}
           value={username}
           onChangeText={setUsername}
-          placeholder="Your username or email"
+          placeholder={t("login.usernamePlaceholder")}
           placeholderTextColor={colors.textMuted}
           autoCapitalize="none"
         />
       </View>
 
       <View style={styles.group}>
-        <Text style={styles.label}>PASSWORD</Text>
+        <Text style={styles.label}>{t("login.passwordLabel")}</Text>
         <TextInput
           style={styles.input}
           value={password}
@@ -76,14 +78,14 @@ export default function FormLogin() {
         style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
         onPress={handleLogin}
       >
-        <Text style={styles.buttonText}>Log In</Text>
+        <Text style={styles.buttonText}>{t("login.button")}</Text>
       </Pressable>
 
       <Pressable
         style={styles.forgotLink}
         onPress={() => navigation.navigate("ForgotPassword")}
       >
-        <Text style={styles.forgotLinkText}>Forgot password?</Text>
+        <Text style={styles.forgotLinkText}>{t("login.forgotPassword")}</Text>
       </Pressable>
     </View>
   );

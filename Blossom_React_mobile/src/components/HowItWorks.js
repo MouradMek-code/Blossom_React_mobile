@@ -1,32 +1,22 @@
 import { View, Text, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 
 const STEPS = [
-  {
-    icon: "🌹",
-    title: "Build your profile",
-    text: "Tell us who you are, what you're into, and what you're looking for.",
-  },
-  {
-    icon: "💘",
-    title: "Match with intent",
-    text: "Browse profiles and like the ones who share your vibe - no endless swiping.",
-  },
-  {
-    icon: "📅",
-    title: "Plan a real date",
-    text: "Matched? Chat for a bit, then take it offline - that's the whole point.",
-  },
+  { icon: "🌹", titleKey: "howItWorks.step1Title", textKey: "howItWorks.step1Text" },
+  { icon: "💘", titleKey: "howItWorks.step2Title", textKey: "howItWorks.step2Text" },
+  { icon: "📅", titleKey: "howItWorks.step3Title", textKey: "howItWorks.step3Text" },
 ];
 
 export default function HowItWorks() {
+  const { t } = useTranslation();
   return (
     <View style={styles.section}>
-      <Text style={styles.heading}>How Blossom works</Text>
+      <Text style={styles.heading}>{t("howItWorks.heading")}</Text>
       {STEPS.map((step) => (
-        <View key={step.title} style={styles.card}>
+        <View key={step.titleKey} style={styles.card}>
           <Text style={styles.icon}>{step.icon}</Text>
-          <Text style={styles.cardTitle}>{step.title}</Text>
-          <Text style={styles.cardText}>{step.text}</Text>
+          <Text style={styles.cardTitle}>{t(step.titleKey)}</Text>
+          <Text style={styles.cardText}>{t(step.textKey)}</Text>
         </View>
       ))}
     </View>

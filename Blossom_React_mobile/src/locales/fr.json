@@ -1,0 +1,72 @@
+{
+  "nav": {
+    "profile": "Mon Profil",
+    "browse": "Explorer",
+    "matches": "Matchés",
+    "likesYou": "Vous aiment",
+    "logout": "Déconnexion",
+    "home": "Accueil",
+    "signUp": "S'inscrire",
+    "login": "Connexion"
+  },
+  "home": {
+    "title": "Trouvez quelqu'un qui en vaut la peine !!",
+    "subtitle": "Matchez aujourd'hui. Rencontrez cette semaine",
+    "tagline": "Swipez → chattez → rencontrez peut-être",
+    "cta": "Commencer à Draguer ❤️",
+    "trustLine": "Où elle fait toujours le premier pas 💌"
+  },
+  "howItWorks": {
+    "heading": "Comment fonctionne Blossom",
+    "step1Title": "Créez votre profil",
+    "step1Text": "Dites-nous qui vous êtes, ce qui vous plaît, et ce que vous cherchez.",
+    "step2Title": "Matchez avec intention",
+    "step2Text": "Parcourez les profils et aimez ceux qui partagent votre énergie.",
+    "step3Title": "Planifiez un vrai rendez-vous",
+    "step3Text": "Matché ? Chattez un peu, puis passez à l'offline - c'est tout le but."
+  },
+  "login": {
+    "eyebrow": "BON RETOUR",
+    "title": "Connexion",
+    "usernameLabel": "NOM D'UTILISATEUR OU EMAIL",
+    "usernamePlaceholder": "Votre nom d'utilisateur ou email",
+    "passwordLabel": "MOT DE PASSE",
+    "button": "Se connecter",
+    "forgotPassword": "Mot de passe oublié ?"
+  },
+  "signup": {
+    "eyebrow": "REJOINDRE BLOSSOM",
+    "title": "Créer un compte",
+    "nameLabel": "PRÉNOM",
+    "emailLabel": "EMAIL",
+    "passwordLabel": "MOT DE PASSE",
+    "phoneLabel": "NUMÉRO DE TÉLÉPHONE",
+    "dobLabel": "DATE DE NAISSANCE",
+    "dobPlaceholder": "AAAA-MM-JJ",
+    "button": "Créer un compte",
+    "privacyPolicy": "En vous inscrivant, vous acceptez notre",
+    "privacyPolicyLink": "Politique de confidentialité"
+  },
+  "verify": {
+    "title": "Vérifiez votre email/téléphone",
+    "subtitle": "Entrez le code à 6 chiffres envoyé à votre téléphone/email",
+    "button": "Continuer",
+    "resend": "Vous n'avez pas reçu le code ?",
+    "resendLink": "Renvoyer",
+    "reenterPassword": "Ressaisissez votre mot de passe"
+  },
+  "forgotPassword": {
+    "titleRequest": "Mot de passe oublié",
+    "titleReset": "Réinitialiser le mot de passe",
+    "description": "Entrez votre email et nous vous enverrons un code de réinitialisation.",
+    "emailLabel": "EMAIL",
+    "sendCode": "Envoyer le code",
+    "backToLogin": "Retour à la connexion",
+    "resetCodeLabel": "CODE DE RÉINITIALISATION",
+    "newPasswordLabel": "NOUVEAU MOT DE PASSE",
+    "updatePassword": "Mettre à jour",
+    "tryAgain": "Vous n'avez pas reçu le code ? Réessayez"
+  },
+  "signup_next": "SUIVANT",
+  "loading": "Chargement..."
+}

@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, Linking } from "react-native";
+import { useTranslation } from "react-i18next";
 import { BASE_URL, PRIVACY_POLICY_URL } from "../api/config";
 import { setToken, saveSignupDraft, clearSignupDraft } from "../api/storage";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 export default function FormSignUp({ setRegistered, error, setError, verify, setVerified, prefill }) {
+  const { t } = useTranslation();
   const [username, setUsername] = useState(prefill?.username || "");
   const [email, setEmail] = useState(prefill?.email || "");
   const [password, setPassword] = useState("");
@@ -63,8 +65,8 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
     <View style={styles.container}>
       {verify === false && (
         <View>
-          <Text style={styles.eyebrow}>JOIN BLOSSOM</Text>
-          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.eyebrow}>{t("signup.eyebrow")}</Text>
+          <Text style={styles.title}>{t("signup.title")}</Text>
 
           {error !== "" && (
             <View style={styles.errorBox}>
@@ -73,7 +75,7 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
           )}
 
           <View style={styles.group}>
-            <Text style={styles.label}>NAME</Text>
+            <Text style={styles.label}>{t("signup.nameLabel")}</Text>
             <TextInput
               style={styles.input}
               value={username}
@@ -84,7 +86,7 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
           </View>
 
           <View style={styles.group}>
-            <Text style={styles.label}>EMAIL</Text>
+            <Text style={styles.label}>{t("signup.emailLabel")}</Text>
             <TextInput
               style={styles.input}
               value={email}
@@ -97,7 +99,7 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
           </View>
 
           <View style={styles.group}>
-            <Text style={styles.label}>PASSWORD</Text>
+            <Text style={styles.label}>{t("signup.passwordLabel")}</Text>
             <TextInput
               style={styles.input}
               value={password}
@@ -109,7 +111,7 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
           </View>
 
           <View style={styles.group}>
-            <Text style={styles.label}>PHONE NUMBER</Text>
+            <Text style={styles.label}>{t("signup.phoneLabel")}</Text>
             <TextInput
               style={styles.input}
               value={phoneNumber}
@@ -121,12 +123,12 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
           </View>
 
           <View style={styles.group}>
-            <Text style={styles.label}>DATE OF BIRTH</Text>
+            <Text style={styles.label}>{t("signup.dobLabel")}</Text>
             <TextInput
               style={styles.input}
               value={dateOfBirth}
               onChangeText={setDateOfBirth}
-              placeholder="YYYY-MM-DD"
+              placeholder={t("signup.dobPlaceholder")}
               placeholderTextColor={colors.textMuted}
               keyboardType="numbers-and-punctuation"
             />
@@ -136,16 +138,16 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
             style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
             onPress={handleSignUp}
           >
-            <Text style={styles.buttonText}>Create Account</Text>
+            <Text style={styles.buttonText}>{t("signup.button")}</Text>
           </Pressable>
 
           <Text style={styles.policyText}>
-            By creating an account, you agree to our{" "}
+            {t("signup.privacyPolicy")}{" "}
             <Text
               style={styles.policyLink}
               onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
             >
-              Privacy Policy
+              {t("signup.privacyPolicyLink")}
             </Text>
             .
           </Text>
@@ -168,6 +170,7 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
 }
 
 function VerificationForm({ username, email, password, phoneNumber, dateOfBirth, setError, setRegistered }) {
+  const { t } = useTranslation();
   const [code, setCode] = useState("");
   // Resuming after the app was closed means the password was never
   // persisted (by design), so it has to be re-entered here to finish
@@ -219,10 +222,8 @@ function VerificationForm({ username, email, password, phoneNumber, dateOfBirth,
       <View style={styles.verifyIconWrap}>
         <Text style={styles.verifyIcon}>🔐</Text>
       </View>
-      <Text style={styles.verifyTitle}>Verify your email/phone</Text>
-      <Text style={styles.verifySubtitle}>
-        Enter the 6-digit verification code sent to your phone/email
-      </Text>
+      <Text style={styles.verifyTitle}>{t("verify.title")}</Text>
+      <Text style={styles.verifySubtitle}>{t("verify.subtitle")}</Text>
 
       <TextInput
         style={styles.codeInput}
@@ -237,7 +238,7 @@ function VerificationForm({ username, email, password, phoneNumber, dateOfBirth,
       {needsPassword && (
         <TextInput
           style={[styles.codeInput, styles.passwordResumeInput]}
-          placeholder="Re-enter your password"
+          placeholder={t("verify.reenterPassword")}
           placeholderTextColor={colors.textMuted}
           value={passwordInput}
           onChangeText={setPasswordInput}
@@ -249,11 +250,11 @@ function VerificationForm({ username, email, password, phoneNumber, dateOfBirth,
         style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
         onPress={signUp}
       >
-        <Text style={styles.buttonText}>Continue</Text>
+        <Text style={styles.buttonText}>{t("verify.button")}</Text>
       </Pressable>
 
       <Text style={styles.footerText}>
-        Didn't receive the code? <Text style={styles.footerLink}>Resend</Text>
+        {t("verify.resend")} <Text style={styles.footerLink}>{t("verify.resendLink")}</Text>
       </Text>
     </View>
   );

@@ -12,11 +12,13 @@ import {
   StyleSheet,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import PageNav from "../components/PageNav";
 import { BASE_URL } from "../api/config";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 export default function ForgotPasswordScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [step, setStep] = useState("request"); // "request" | "reset"
   const [email, setEmail] = useState("");
@@ -86,7 +88,7 @@ export default function ForgotPasswordScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
           <Text style={styles.title}>
-            {step === "request" ? "Forgot Password" : "Reset Password"}
+            {step === "request" ? t("forgotPassword.titleRequest") : t("forgotPassword.titleReset")}
           </Text>
 
           {error !== "" && (
@@ -97,11 +99,9 @@ export default function ForgotPasswordScreen() {
 
           {step === "request" ? (
             <View>
-              <Text style={styles.subtitle}>
-                Enter your account email and we'll send you a reset code.
-              </Text>
+              <Text style={styles.subtitle}>{t("forgotPassword.description")}</Text>
               <View style={styles.group}>
-                <Text style={styles.label}>EMAIL</Text>
+                <Text style={styles.label}>{t("forgotPassword.emailLabel")}</Text>
                 <TextInput
                   style={styles.input}
                   value={email}
@@ -120,18 +120,18 @@ export default function ForgotPasswordScreen() {
                 {submitting ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.buttonText}>Send Reset Code</Text>
+                  <Text style={styles.buttonText}>{t("forgotPassword.sendCode")}</Text>
                 )}
               </Pressable>
               <Pressable style={styles.linkRow} onPress={() => navigation.navigate("Login")}>
-                <Text style={styles.linkText}>Back to login</Text>
+                <Text style={styles.linkText}>{t("forgotPassword.backToLogin")}</Text>
               </Pressable>
             </View>
           ) : (
             <View>
               {info !== "" && <Text style={styles.info}>{info}</Text>}
               <View style={styles.group}>
-                <Text style={styles.label}>RESET CODE</Text>
+                <Text style={styles.label}>{t("forgotPassword.resetCodeLabel")}</Text>
                 <TextInput
                   style={styles.input}
                   value={otp}
@@ -143,7 +143,7 @@ export default function ForgotPasswordScreen() {
                 />
               </View>
               <View style={styles.group}>
-                <Text style={styles.label}>NEW PASSWORD</Text>
+                <Text style={styles.label}>{t("forgotPassword.newPasswordLabel")}</Text>
                 <TextInput
                   style={styles.input}
                   value={newPassword}
@@ -161,11 +161,11 @@ export default function ForgotPasswordScreen() {
                 {submitting ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.buttonText}>Update Password</Text>
+                  <Text style={styles.buttonText}>{t("forgotPassword.updatePassword")}</Text>
                 )}
               </Pressable>
               <Pressable style={styles.linkRow} onPress={() => setStep("request")}>
-                <Text style={styles.linkText}>Didn't get a code? Try again</Text>
+                <Text style={styles.linkText}>{t("forgotPassword.tryAgain")}</Text>
               </Pressable>
             </View>
           )}

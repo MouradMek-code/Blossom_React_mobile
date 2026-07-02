@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, View, Text, Pressable, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { getToken } from "../api/storage";
 
 export default function StartHome() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [hasToken, setHasToken] = useState(true);
   const fade = useRef(new Animated.Value(0)).current;
@@ -24,15 +26,15 @@ export default function StartHome() {
     <Animated.View
       style={[styles.center, { opacity: fade, transform: [{ translateY: slide }] }]}
     >
-      <Text style={styles.title}>Find someone worth showing up for !!</Text>
-      <Text style={styles.subtitle}>Match today. Meet this week</Text>
-      <Text style={styles.tagline}>Free swipe → chat → maybe meet</Text>
+      <Text style={styles.title}>{t("home.title")}</Text>
+      <Text style={styles.subtitle}>{t("home.subtitle")}</Text>
+      <Text style={styles.tagline}>{t("home.tagline")}</Text>
       {!hasToken && (
         <Pressable style={styles.cta} onPress={() => navigation.navigate("SignUp")}>
-          <Text style={styles.ctaText}>Start Dating Now ❤️</Text>
+          <Text style={styles.ctaText}>{t("home.cta")}</Text>
         </Pressable>
       )}
-      <Text style={styles.trustLine}>Where she always makes the first move 💌</Text>
+      <Text style={styles.trustLine}>{t("home.trustLine")}</Text>
     </Animated.View>
   );
 }
