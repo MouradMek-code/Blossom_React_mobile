@@ -19,7 +19,7 @@ const LANGUAGES = [
 
 export default function PageNav({ variant = "light" }) {
   const { t, i18n } = useTranslation();
-  const { dark, colors, toggleTheme } = useTheme();
+  const { colors } = useTheme();
   const [activeLang, setActiveLang] = useState(i18n.language?.slice(0, 2) || "en");
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -124,9 +124,6 @@ export default function PageNav({ variant = "light" }) {
     >
       <View style={styles.logoRow}>
         <Logo size={40} />
-        <Pressable onPress={toggleTheme} style={[styles.themeBtn, { borderColor: colors.border }]}>
-          <Text style={{ fontSize: 16 }}>{dark ? "☀️" : "🌙"}</Text>
-        </Pressable>
       </View>
       <View style={styles.nav}>
         {!isTokenMissing && profile !== null && (
@@ -217,15 +214,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  themeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headLight: {
+headLight: {
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,

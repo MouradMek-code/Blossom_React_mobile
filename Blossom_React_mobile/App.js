@@ -7,16 +7,15 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { I18nextProvider } from "react-i18next";
 import RootNavigator from "./src/navigation/RootNavigator";
 import i18n, { initI18n } from "./src/i18n";
-import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
+import { ThemeProvider } from "./src/context/ThemeContext";
 
 function AppInner() {
-  const { dark } = useTheme();
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <NavigationContainer>
           <RootNavigator />
-          <StatusBar style={dark ? "light" : "dark"} />
+          <StatusBar style="dark" />
         </NavigationContainer>
       </SafeAreaProvider>
     </GestureHandlerRootView>
