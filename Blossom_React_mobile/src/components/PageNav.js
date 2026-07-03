@@ -7,7 +7,8 @@ import Logo from "./Logo";
 import { BASE_URL } from "../api/config";
 import { getToken, setToken, clearSession } from "../api/storage";
 import { changeLanguage } from "../i18n";
-import { colors, radius, shadow } from "../theme";
+import { useTheme } from "../context/ThemeContext";
+import { radius, shadow } from "../theme";
 
 const LANGUAGES = [
   { code: "en", label: "EN" },
@@ -18,6 +19,7 @@ const LANGUAGES = [
 
 export default function PageNav({ variant = "light" }) {
   const { t, i18n } = useTranslation();
+  const { dark, colors, toggleTheme } = useTheme();
   const [activeLang, setActiveLang] = useState(i18n.language?.slice(0, 2) || "en");
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -115,63 +117,32 @@ export default function PageNav({ variant = "light" }) {
       style={[
         styles.head,
         { paddingTop: insets.top + 10 },
-        isTransparent ? styles.headTransparent : styles.headLight,
+        isTransparent
+          ? styles.headTransparent
+          : { backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 },
       ]}
     >
       <View style={styles.logoRow}>
         <Logo size={40} />
+        <Pressable onPress={toggleTheme} style={[styles.themeBtn, { borderColor: colors.border }]}>
+          <Text style={{ fontSize: 16 }}>{dark ? "☀️" : "🌙"}</Text>
+        </Pressable>
       </View>
       <View style={styles.nav}>
         {!isTokenMissing && profile !== null && (
           <>
-            <NavItem
-              label={t("nav.profile")}
-              onPress={() => navigation.navigate("Profile")}
-              transparent={isTransparent}
-            />
-            <NavItem
-              label={t("nav.browse")}
-              onPress={() => navigation.navigate("Profiles")}
-              transparent={isTransparent}
-            />
-            <NavItem
-              label={t("nav.matches")}
-              onPress={() => navigation.navigate("MatchedList")}
-              transparent={isTransparent}
-              badge={matchCount}
-            />
-            <NavItem
-              label={t("nav.likesYou")}
-              onPress={() => navigation.navigate("LikedYou")}
-              transparent={isTransparent}
-              badge={likeCount}
-            />
-            <NavItem
-              label={t("nav.logout")}
-              onPress={handleLogout}
-              transparent={isTransparent}
-              highlight
-            />
+            <NavItem label={t("nav.profile")} onPress={() => navigation.navigate("Profile")} transparent={isTransparent} colors={colors} />
+            <NavItem label={t("nav.browse")} onPress={() => navigation.navigate("Profiles")} transparent={isTransparent} colors={colors} />
+            <NavItem label={t("nav.matches")} onPress={() => navigation.navigate("MatchedList")} transparent={isTransparent} badge={matchCount} colors={colors} />
+            <NavItem label={t("nav.likesYou")} onPress={() => navigation.navigate("LikedYou")} transparent={isTransparent} badge={likeCount} colors={colors} />
+            <NavItem label={t("nav.logout")} onPress={handleLogout} transparent={isTransparent} highlight colors={colors} />
           </>
         )}
         {isTokenMissing && (
           <>
-            <NavItem
-              label={t("nav.home")}
-              onPress={() => navigation.navigate("Home")}
-              transparent={isTransparent}
-            />
-            <NavItem
-              label={t("nav.signUp")}
-              onPress={() => navigation.navigate("SignUp")}
-              transparent={isTransparent}
-            />
-            <NavItem
-              label={t("nav.login")}
-              onPress={() => navigation.navigate("Login")}
-              transparent={isTransparent}
-              highlight
-            />
+            <NavItem label={t("nav.home")} onPress={() => navigation.navigate("Home")} transparent={isTransparent} colors={colors} />
+            <NavItem label={t("nav.signUp")} onPress={() => navigation.navigate("SignUp")} transparent={isTransparent} colors={colors} />
+            <NavItem label={t("nav.login")} onPress={() => navigation.navigate("Login")} transparent={isTransparent} highlight colors={colors} />
           </>
         )}
 
@@ -201,22 +172,24 @@ export default function PageNav({ variant = "light" }) {
   );
 }
 
-function NavItem({ label, onPress, transparent, highlight, badge = 0 }) {
+function NavItem({ label, onPress, transparent, highlight, badge = 0, colors }) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.navItem,
-        transparent ? styles.navItemBorderTransparent : styles.navItemBorderLight,
-        highlight && styles.navItemHighlight,
-        pressed && (transparent ? styles.navItemPressedTransparent : styles.navItemPressedLight),
+        transparent
+          ? styles.navItemBorderTransparent
+          : { borderColor: colors.border },
+        highlight && { backgroundColor: colors.primary, borderColor: colors.primary },
+        pressed && (transparent ? styles.navItemPressedTransparent : { backgroundColor: colors.surfaceMuted }),
       ]}
     >
       <View style={styles.navItemRow}>
         <Text
           style={[
             styles.navText,
-            transparent ? styles.navTextTransparent : styles.navTextLight,
+            transparent ? styles.navTextTransparent : { color: colors.text },
             highlight && styles.navTextHighlight,
           ]}
           numberOfLines={1}
@@ -240,7 +213,17 @@ const styles = StyleSheet.create({
   },
   logoRow: {
     flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 8,
+  },
+  themeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   headLight: {
     backgroundColor: colors.surface,

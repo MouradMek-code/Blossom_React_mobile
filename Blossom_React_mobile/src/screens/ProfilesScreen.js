@@ -7,7 +7,8 @@ import ProfileFilterModal from "../components/ProfileFilterModal";
 import { matchesFilters, getDefaultFilters } from "../api/profileFilters";
 import { BASE_URL } from "../api/config";
 import { getToken, setToken } from "../api/storage";
-import { colors, radius, spacing, shadow, typography } from "../theme";
+import { useTheme } from "../context/ThemeContext";
+import { radius, spacing, shadow, typography } from "../theme";
 
 // /likes/profiles_i_liked may return plain ids or objects wrapping one.
 function extractLikedId(entry) {
@@ -16,6 +17,7 @@ function extractLikedId(entry) {
 }
 
 export default function ProfilesScreen() {
+  const { colors } = useTheme();
   const navigation = useNavigation();
   const [profiles, setProfiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -122,7 +124,7 @@ export default function ProfilesScreen() {
 
   if (loading) {
     return (
-      <View style={styles.head}>
+      <View style={[styles.head, { backgroundColor: colors.background }]}>
         <PageNav />
         <View style={styles.empty}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -132,12 +134,12 @@ export default function ProfilesScreen() {
   }
 
   return (
-    <View style={styles.head}>
+    <View style={[styles.head, { backgroundColor: colors.background }]}>
       <PageNav />
 
       <View style={styles.toolbar}>
-        <Pressable style={styles.filterButton} onPress={openFilters}>
-          <Text style={styles.filterButtonText}>
+        <Pressable style={[styles.filterButton, { borderColor: colors.primary, backgroundColor: colors.surface }]} onPress={openFilters}>
+          <Text style={[styles.filterButtonText, { color: colors.primary }]}>
             ⚙️ Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
           </Text>
         </Pressable>
@@ -154,7 +156,7 @@ export default function ProfilesScreen() {
 
       {matchedProfile && (
         <View style={styles.matchOverlay}>
-          <View style={styles.matchCard}>
+          <View style={[styles.matchCard, { backgroundColor: colors.surface }]}>
             <Text style={styles.matchHeart}>❤️</Text>
             <Text style={styles.matchTitle}>It's a Match!</Text>
             <Image
@@ -170,10 +172,16 @@ export default function ProfilesScreen() {
       <View style={styles.deck}>
         {remaining.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>
+            <Text style={styles.emptyIcon}>
+              {activeFilterCount > 0 ? "🔍" : "🌸"}
+            </Text>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              {activeFilterCount > 0 ? "No matches for your filters" : "You've seen everyone!"}
+            </Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
               {activeFilterCount > 0
-                ? "No profiles match your filters"
-                : "No more profiles for now"}
+                ? "Try widening your search — tap ⚙️ Filters to adjust."
+                : "Check back later — new people join every day 💌"}
             </Text>
           </View>
         ) : (
@@ -199,13 +207,13 @@ export default function ProfilesScreen() {
       {remaining.length > 0 && (
         <View style={styles.actions}>
           <Pressable
-            style={[styles.actionButton, styles.nopeButton]}
+            style={[styles.actionButton, styles.nopeButton, { backgroundColor: colors.surface }]}
             onPress={() => handleSwipeLeft()}
           >
             <Text style={styles.actionButtonText}>✕</Text>
           </Pressable>
           <Pressable
-            style={[styles.actionButton, styles.likeButton]}
+            style={[styles.actionButton, styles.likeButton, { backgroundColor: colors.surface }]}
             onPress={() => handleSwipeRight(remaining[0])}
           >
             <Text style={styles.actionButtonText}>❤️</Text>
@@ -217,7 +225,7 @@ export default function ProfilesScreen() {
 }
 
 const styles = StyleSheet.create({
-  head: { flex: 1, backgroundColor: colors.background },
+  head: { flex: 1 },
   toolbar: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -241,10 +249,23 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    padding: spacing.xl,
   },
-  emptyText: {
-    ...typography.bodyMuted,
-    fontSize: 16,
+  emptyIcon: {
+    fontSize: 56,
+    marginBottom: spacing.md,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: spacing.sm,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 22,
+    maxWidth: 280,
   },
   actions: {
     flexDirection: "row",
@@ -258,7 +279,6 @@ const styles = StyleSheet.create({
     borderRadius: 29,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.surface,
     ...shadow.md,
   },
   nopeButton: { borderWidth: 1.5, borderColor: colors.danger },
@@ -276,7 +296,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   matchCard: {
-    backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.lg,
     alignItems: "center",

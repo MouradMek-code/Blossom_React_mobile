@@ -7,6 +7,21 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { I18nextProvider } from "react-i18next";
 import RootNavigator from "./src/navigation/RootNavigator";
 import i18n, { initI18n } from "./src/i18n";
+import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
+
+function AppInner() {
+  const { dark } = useTheme();
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <RootNavigator />
+          <StatusBar style={dark ? "light" : "dark"} />
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
+}
 
 export default function App() {
   const [i18nReady, setI18nReady] = useState(false);
@@ -19,14 +34,9 @@ export default function App() {
 
   return (
     <I18nextProvider i18n={i18n}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaProvider>
-          <NavigationContainer>
-            <RootNavigator />
-            <StatusBar style="auto" />
-          </NavigationContainer>
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
+      <ThemeProvider>
+        <AppInner />
+      </ThemeProvider>
     </I18nextProvider>
   );
 }
