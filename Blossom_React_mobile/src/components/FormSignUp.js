@@ -256,6 +256,7 @@ function VerificationForm({ username, email, password, phoneNumber, dateOfBirth,
       <Text style={styles.footerText}>
         {t("verify.resend")} <Text style={styles.footerLink}>{t("verify.resendLink")}</Text>
       </Text>
+      <Text style={styles.spamHint}>📬 {t("verify.spamHint")}</Text>
     </View>
   );
 }
@@ -351,5 +352,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
   },
   footerText: { marginTop: spacing.md, ...typography.bodyMuted },
+  spamHint: { marginTop: spacing.xs, fontSize: 11, color: "#bbb", textAlign: "center" },
   footerLink: { color: colors.primary, fontWeight: "700" },
 });

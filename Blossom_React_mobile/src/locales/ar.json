@@ -53,7 +53,8 @@
     "button": "متابعة",
     "resend": "لم تستلم الرمز؟",
     "resendLink": "إعادة الإرسال",
-    "reenterPassword": "أعد إدخال كلمة المرور"
+    "reenterPassword": "أعد إدخال كلمة المرور",
+    "spamHint": "لم تجده؟ تحقق من مجلد البريد العشوائي."
   },
   "forgotPassword": {
     "titleRequest": "نسيت كلمة المرور",

@@ -53,7 +53,8 @@
     "button": "Continue",
     "resend": "Didn't receive the code?",
     "resendLink": "Resend",
-    "reenterPassword": "Re-enter your password"
+    "reenterPassword": "Re-enter your password",
+    "spamHint": "Can't find it? Check your spam or junk folder."
   },
   "forgotPassword": {
     "titleRequest": "Forgot Password",
