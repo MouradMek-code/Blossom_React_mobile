@@ -7,6 +7,9 @@ import ProfileFilterModal from "../components/ProfileFilterModal";
 import { matchesFilters, getDefaultFilters } from "../api/profileFilters";
 import { BASE_URL } from "../api/config";
 import { getToken, setToken } from "../api/storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const FILTERS_KEY = "blossom_filters";
 import { useTheme } from "../context/ThemeContext";
 import { radius, spacing, shadow, typography } from "../theme";
 
@@ -89,9 +92,11 @@ export default function ProfilesScreen() {
 
         if (ownResp.ok) {
           const ownData = await ownResp.json();
+          const saved = await AsyncStorage.getItem(FILTERS_KEY);
           const defaults = getDefaultFilters(ownData);
-          setDraftFilters(defaults);
-          setAppliedFilters(defaults);
+          const initial = saved !== null ? JSON.parse(saved) : defaults;
+          setDraftFilters(initial);
+          setAppliedFilters(initial);
         }
       } catch (err) {
         await setToken(null);
@@ -116,10 +121,11 @@ export default function ProfilesScreen() {
     setFilterModalVisible(true);
   }
 
-  function applyFilters() {
+  async function applyFilters() {
     setAppliedFilters(draftFilters);
     setCurrentIndex(0);
     setFilterModalVisible(false);
+    await AsyncStorage.setItem(FILTERS_KEY, JSON.stringify(draftFilters));
   }
 
   if (loading) {

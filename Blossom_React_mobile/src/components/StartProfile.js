@@ -70,6 +70,78 @@ const StartProfile = forwardRef(function StartProfile(
 });
 
 
+function HeightPicker({ field, options, answer, setAnswer, setClicked }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const selected = answer[field] || null;
+  const filtered = search.trim()
+    ? options.filter((o) => o.toLowerCase().includes(search.toLowerCase()))
+    : options;
+
+  function pick(opt) {
+    setAnswer((prev) => ({ ...prev, [field]: opt }));
+    setClicked(true);
+    setOpen(false);
+    setSearch("");
+  }
+
+  return (
+    <View style={styles.langPickerWrap}>
+      {selected && (
+        <View style={styles.langSelected}>
+          <Pressable style={styles.langChip} onPress={() => { setAnswer((prev) => { const n = { ...prev }; delete n[field]; return n; }); setClicked(false); }}>
+            <Text style={styles.langChipText}>📏 {selected} ✕</Text>
+          </Pressable>
+        </View>
+      )}
+      <Pressable style={styles.langTrigger} onPress={() => setOpen(true)}>
+        <Text style={styles.langTriggerText}>{selected ? "📏 " + selected : "📏 Select your height…"}</Text>
+        <Text style={styles.langTriggerArrow}>▼</Text>
+      </Pressable>
+      <Modal visible={open} animationType="slide" transparent>
+        <SafeAreaView style={styles.langModalOverlay}>
+          <View style={styles.langModalSheet}>
+            <View style={styles.langModalHeader}>
+              <Text style={styles.langModalTitle}>Select height</Text>
+              <Pressable style={styles.langModalDone} onPress={() => { setOpen(false); setSearch(""); }}>
+                <Text style={styles.langModalDoneText}>Done</Text>
+              </Pressable>
+            </View>
+            <TextInput
+              style={styles.langSearch}
+              placeholder="🔍 e.g. 170 cm"
+              placeholderTextColor={colors.textMuted}
+              value={search}
+              onChangeText={setSearch}
+            />
+            <FlatList
+              data={filtered}
+              keyExtractor={(item) => item}
+              numColumns={2}
+              columnWrapperStyle={{ gap: 8 }}
+              contentContainerStyle={{ padding: 12, gap: 8 }}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item: opt }) => {
+                const sel = selected === opt;
+                return (
+                  <Pressable
+                    style={[styles.langOption, sel && styles.langOptionSelected, { flex: 1 }]}
+                    onPress={() => pick(opt)}
+                  >
+                    <Text style={[styles.langOptionText, sel && styles.langOptionTextSelected]}>
+                      {sel ? "✓ " : ""}{opt}
+                    </Text>
+                  </Pressable>
+                );
+              }}
+            />
+          </View>
+        </SafeAreaView>
+      </Modal>
+    </View>
+  );
+}
+
 function LanguagePicker({ field, options, answer, setAnswer, setClicked }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -205,6 +277,18 @@ function Question({ question, handleClicked, answer, setAnswer, setClicked }) {
   if (question.field === "language_name" || question.field === "learning_language_name") {
     return (
       <LanguagePicker
+        field={question.field}
+        options={question.options}
+        answer={answer}
+        setAnswer={setAnswer}
+        setClicked={setClicked}
+      />
+    );
+  }
+
+  if (question.field === "height_cm") {
+    return (
+      <HeightPicker
         field={question.field}
         options={question.options}
         answer={answer}

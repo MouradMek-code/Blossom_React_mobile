@@ -216,7 +216,11 @@ export default function ProfileView({
       </Section>
 
       {profile.learning_languages?.length > 0 && (
-        <Section title="Learning">
+        <Section
+          title="📚 Learning"
+          cardStyle={styles.learningCard}
+          titleStyle={styles.learningCardTitle}
+        >
           <View style={styles.tags}>
             {profile.learning_languages.map((l, i) => (
               <Text key={i} style={[styles.tag, styles.learningTag]}>{l.language_name || l}</Text>
@@ -243,11 +247,11 @@ export default function ProfileView({
   );
 }
 
-function Section({ title, children, action }) {
+function Section({ title, children, action, cardStyle, titleStyle }) {
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, cardStyle]}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{title}</Text>
+        <Text style={[styles.cardTitle, titleStyle]}>{title}</Text>
         {action || null}
       </View>
       {children}
@@ -394,6 +398,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill,
   },
   learningTag: {
-    backgroundColor: "#ede9fe", color: "#6d28d9",
+    backgroundColor: "#ede9fe", color: "#6d28d9", borderWidth: 1, borderColor: "#c4b5fd",
+  },
+  learningCard: {
+    backgroundColor: "#f5f0ff",
+    borderWidth: 1.5,
+    borderColor: "#d8b4fe",
+  },
+  learningCardTitle: {
+    color: "#7c3aed",
   },
 });

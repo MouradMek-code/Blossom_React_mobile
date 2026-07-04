@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import questions from "../data/questions.json";
 import filterMeta from "../data/filterMeta.json";
 import { colors, radius, spacing, shadow, typography } from "../theme";
@@ -58,8 +59,9 @@ export default function ProfileFilterModal({
     });
   }
 
-  function resetFilters() {
+  async function resetFilters() {
     onChange({});
+    try { await AsyncStorage.removeItem("blossom_filters"); } catch {}
   }
 
   const activeCount = Object.keys(filters).length;
