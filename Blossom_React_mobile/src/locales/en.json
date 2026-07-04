@@ -14,7 +14,8 @@
     "subtitle": "Match today. Meet this week",
     "tagline": "Free swipe → chat → maybe meet",
     "cta": "Start Dating Now ❤️",
-    "trustLine": "Where she always makes the first move 💌"
+    "trustLine": "Where she always makes the first move 💌",
+    "langBadge": "🌍 NEW · Language Learning Dating"
   },
   "howItWorks": {
     "heading": "How Blossom works",
@@ -54,7 +55,8 @@
     "resend": "Didn't receive the code?",
     "resendLink": "Resend",
     "reenterPassword": "Re-enter your password",
-    "spamHint": "Can't find it? Check your spam or junk folder."
+    "spamHint": "Can't find it? Check your spam or junk folder.",
+    "resendSent": "Sent!"
   },
   "forgotPassword": {
     "titleRequest": "Forgot Password",
@@ -69,5 +71,9 @@
     "tryAgain": "Didn't get a code? Try again"
   },
   "signup_next": "NEXT",
-  "loading": "Loading..."
+  "loading": "Loading...",
+  "languageDating": {
+    "heading": "Date While You Learn 🌍",
+    "sub": "Match with people learning the same languages as you."
+  }
 }

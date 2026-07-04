@@ -97,6 +97,23 @@ export default function SignUpScreen() {
     );
   }
 
+  async function createLearningLanguage(token) {
+    const langs = answer?.learning_language_name || [];
+    if (langs.length === 0) return;
+    await Promise.all(
+      langs.map((ln) =>
+        fetch(`${BASE_URL}/profile_learning_language`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ language_name: ln }),
+        }),
+      ),
+    );
+  }
+
   async function createProfile(token) {
     const resp = await fetch(`${BASE_URL}/profile`, {
       method: "POST",
@@ -137,10 +154,11 @@ export default function SignUpScreen() {
       const token = await getToken();
       if (!token || token === "null") return;
       await createProfile(token);
-      await createLanguage(token);
-      await clearSignupDraft();
-      setQuestionEnded(false);
       setPhoto(true);
+      setQuestionEnded(false);
+      clearSignupDraft();
+      createLanguage(token);
+      createLearningLanguage(token);
     }
     submit();
   }, [questionEnded]);

@@ -172,12 +172,32 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
 function VerificationForm({ username, email, password, phoneNumber, dateOfBirth, setError, setRegistered }) {
   const { t } = useTranslation();
   const [code, setCode] = useState("");
-  // Resuming after the app was closed means the password was never
-  // persisted (by design), so it has to be re-entered here to finish
-  // account creation. On a fresh, uninterrupted signup it's already
-  // known from the previous step and this field stays hidden.
   const [passwordInput, setPasswordInput] = useState("");
   const needsPassword = !password;
+  const [resendState, setResendState] = useState("idle");
+  const [cooldown, setCooldown] = useState(0);
+
+  async function handleResend() {
+    if (resendState === "sending" || cooldown > 0) return;
+    setResendState("sending");
+    try {
+      const resp = await fetch(
+        `${BASE_URL}/user/resend_email?email=${encodeURIComponent(email)}&phone_number=${encodeURIComponent(phoneNumber)}`,
+        { method: "POST" }
+      );
+      if (!resp.ok) throw new Error();
+      setResendState("sent");
+      let s = 60;
+      setCooldown(s);
+      const timer = setInterval(() => {
+        s -= 1;
+        setCooldown(s);
+        if (s <= 0) clearInterval(timer);
+      }, 1000);
+    } catch {
+      setResendState("error");
+    }
+  }
 
   async function signUp() {
     setError("");
@@ -254,7 +274,17 @@ function VerificationForm({ username, email, password, phoneNumber, dateOfBirth,
       </Pressable>
 
       <Text style={styles.footerText}>
-        {t("verify.resend")} <Text style={styles.footerLink}>{t("verify.resendLink")}</Text>
+        {t("verify.resend")}{" "}
+        {cooldown > 0 ? (
+          <Text style={styles.resendCooldown}>{cooldown}s</Text>
+        ) : (
+          <Text
+            style={[styles.footerLink, resendState === "sending" && { opacity: 0.4 }]}
+            onPress={handleResend}
+          >
+            {resendState === "sending" ? "..." : resendState === "sent" ? t("verify.resendSent") : t("verify.resendLink")}
+          </Text>
+        )}
       </Text>
       <Text style={styles.spamHint}>📬 {t("verify.spamHint")}</Text>
     </View>
@@ -353,5 +383,6 @@ const styles = StyleSheet.create({
   },
   footerText: { marginTop: spacing.md, ...typography.bodyMuted },
   spamHint: { marginTop: spacing.xs, fontSize: 11, color: "#bbb", textAlign: "center" },
+  resendCooldown: { color: "#aaa", fontSize: 12 },
   footerLink: { color: colors.primary, fontWeight: "700" },
 });

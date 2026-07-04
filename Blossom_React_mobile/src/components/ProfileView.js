@@ -203,7 +203,7 @@ export default function ProfileView({
         <Fact label="Last breakup reason" value={profile.last_breakup_reason} last />
       </Section>
 
-      <Section title="Languages">
+      <Section title="Speaks">
         <View style={styles.tags}>
           {profile.languages?.length ? (
             profile.languages.map((l, i) => (
@@ -214,6 +214,16 @@ export default function ProfileView({
           )}
         </View>
       </Section>
+
+      {profile.learning_languages?.length > 0 && (
+        <Section title="Learning">
+          <View style={styles.tags}>
+            {profile.learning_languages.map((l, i) => (
+              <Text key={i} style={[styles.tag, styles.learningTag]}>{l.language_name || l}</Text>
+            ))}
+          </View>
+        </Section>
+      )}
 
       {editable && (
         <Section title="Danger Zone">
@@ -382,5 +392,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft, color: colors.primaryDark,
     fontSize: 13, fontWeight: "600",
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill,
+  },
+  learningTag: {
+    backgroundColor: "#ede9fe", color: "#6d28d9",
   },
 });

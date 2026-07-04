@@ -14,7 +14,8 @@
     "subtitle": "今天配对，本周相遇",
     "tagline": "免费滑动 → 聊天 → 相遇",
     "cta": "开始约会 ❤️",
-    "trustLine": "她永远先迈出第一步 💌"
+    "trustLine": "她永远先迈出第一步 💌",
+    "langBadge": "🌍 新功能 · 语言学习约会"
   },
   "howItWorks": {
     "heading": "Blossom 如何运作",
@@ -54,7 +55,8 @@
     "resend": "没有收到验证码？",
     "resendLink": "重新发送",
     "reenterPassword": "重新输入密码",
-    "spamHint": "找不到？请检查垃圾邮件文件夹。"
+    "spamHint": "找不到？请检查垃圾邮件文件夹。",
+    "resendSent": "已发送！"
   },
   "forgotPassword": {
     "titleRequest": "忘记密码",
@@ -69,5 +71,9 @@
     "tryAgain": "没有收到验证码？重试"
   },
   "signup_next": "下一步",
-  "loading": "加载中..."
+  "loading": "加载中...",
+  "languageDating": {
+    "heading": "边学语言边约会 🌍",
+    "sub": "与正在学习相同语言的人配对。"
+  }
 }

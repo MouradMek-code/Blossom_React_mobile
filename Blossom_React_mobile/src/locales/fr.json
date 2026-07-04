@@ -14,7 +14,8 @@
     "subtitle": "Matchez aujourd'hui. Rencontrez cette semaine",
     "tagline": "Swipez → chattez → rencontrez peut-être",
     "cta": "Commencer à Draguer ❤️",
-    "trustLine": "Où elle fait toujours le premier pas 💌"
+    "trustLine": "Où elle fait toujours le premier pas 💌",
+    "langBadge": "🌍 NOUVEAU · Rencontres par langue"
   },
   "howItWorks": {
     "heading": "Comment fonctionne Blossom",
@@ -54,7 +55,8 @@
     "resend": "Vous n'avez pas reçu le code ?",
     "resendLink": "Renvoyer",
     "reenterPassword": "Ressaisissez votre mot de passe",
-    "spamHint": "Vous ne le trouvez pas ? Vérifiez vos spams."
+    "spamHint": "Vous ne le trouvez pas ? Vérifiez vos spams.",
+    "resendSent": "Envoyé !"
   },
   "forgotPassword": {
     "titleRequest": "Mot de passe oublié",
@@ -69,5 +71,9 @@
     "tryAgain": "Vous n'avez pas reçu le code ? Réessayez"
   },
   "signup_next": "SUIVANT",
-  "loading": "Chargement..."
+  "loading": "Chargement...",
+  "languageDating": {
+    "heading": "Rencontrez en apprenant 🌍",
+    "sub": "Matchez avec des personnes qui apprennent les mêmes langues que vous."
+  }
 }
