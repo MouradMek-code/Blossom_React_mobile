@@ -8,7 +8,7 @@ import { BASE_URL } from "../api/config";
 import { getToken, setToken, clearSession } from "../api/storage";
 import { changeLanguage } from "../i18n";
 import { useTheme } from "../context/ThemeContext";
-import { radius, shadow } from "../theme";
+import { colors, radius, shadow } from "../theme";
 
 const LANGUAGES = [
   { code: "en", label: "EN" },
