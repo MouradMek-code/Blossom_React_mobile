@@ -9,9 +9,10 @@ import { BASE_URL } from "../api/config";
 import { getToken, setToken } from "../api/storage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const FILTERS_KEY = "blossom_filters";
 import { useTheme } from "../context/ThemeContext";
-import { radius, spacing, shadow, typography } from "../theme";
+import { colors, radius, spacing, shadow, typography } from "../theme";
+
+const FILTERS_KEY = "blossom_filters";
 
 // /likes/profiles_i_liked may return plain ids or objects wrapping one.
 function extractLikedId(entry) {
