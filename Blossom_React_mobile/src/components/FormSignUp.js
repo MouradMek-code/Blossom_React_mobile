@@ -181,21 +181,23 @@ function VerificationForm({ username, email, password, phoneNumber, dateOfBirth,
     if (resendState === "sending" || cooldown > 0) return;
     setResendState("sending");
     try {
-      const resp = await fetch(
-        `${BASE_URL}/user/resend_email?email=${encodeURIComponent(email)}&phone_number=${encodeURIComponent(phoneNumber)}`,
-        { method: "POST" }
-      );
-      if (!resp.ok) throw new Error();
+      const url = BASE_URL + "/user/resend_email?email=" + encodeURIComponent(email) + "&phone_number=" + encodeURIComponent(phoneNumber);
+      const resp = await fetch(url, { method: "POST" });
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body.detail || "Failed to resend");
+      }
       setResendState("sent");
       let s = 60;
       setCooldown(s);
       const timer = setInterval(() => {
         s -= 1;
         setCooldown(s);
-        if (s <= 0) clearInterval(timer);
+        if (s <= 0) { clearInterval(timer); setResendState("idle"); }
       }, 1000);
-    } catch {
+    } catch (err) {
       setResendState("error");
+      setError(err.message || "Could not resend code. Please try again.");
     }
   }
 
