@@ -12,5 +12,6 @@
   "wants_children": { "section": "Relationship", "question": "Do they want children?" },
   "first_date_preference": { "section": "Dating Preferences", "question": "Preferred first date type" },
   "personality_type": { "section": "Personality", "question": "Preferred personality" },
-  "language_name": { "section": "Languages", "question": "What language should they speak?" }
+  "language_name": { "section": "Languages", "question": "What language should they speak?" },
+  "learning_language_name": { "section": "Languages", "question": "What language are they learning?" }
 }

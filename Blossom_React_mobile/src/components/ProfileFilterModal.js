@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { Modal, View, Text, Pressable, StyleSheet } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import questions from "../data/questions.json";
 import filterMeta from "../data/filterMeta.json";
@@ -76,7 +77,7 @@ export default function ProfileFilterModal({
           </Pressable>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scroll}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll}>
           {groupedSections.map(({ group, items }) => (
             <View key={group} style={styles.group}>
               <Text style={styles.groupTitle}>{group}</Text>

@@ -7,7 +7,9 @@ import {
   TextInput,
   ActivityIndicator,
   ScrollView,
+  Modal,
   StyleSheet,
+  Dimensions,
 } from "react-native";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
@@ -28,6 +30,7 @@ export default function ProfileView({
   const [editingBio, setEditingBio] = useState(false);
   const [bioDraft, setBioDraft] = useState(profile.bio || "");
   const [savingBio, setSavingBio] = useState(false);
+  const [lightboxPhoto, setLightboxPhoto] = useState(null);
 
   async function handleSaveBio() {
     setSavingBio(true);
@@ -127,14 +130,14 @@ export default function ProfileView({
         <View style={styles.photosGrid}>
           {profile.photos?.length ? (
             profile.photos.map((p) => (
-              <View key={p.id} style={styles.photoWrap}>
+              <Pressable key={p.id} style={styles.photoWrap} onPress={() => setLightboxPhoto(p.image_url)}>
                 <Image source={{ uri: p.image_url }} style={styles.photo} />
                 {editable && (
                   <Pressable style={styles.deletePhotoButton} onPress={() => onDeletePhoto?.(p.id)}>
                     <Text style={styles.deletePhotoButtonText}>✕</Text>
                   </Pressable>
                 )}
-              </View>
+              </Pressable>
             ))
           ) : (
             <Text style={styles.bodyMuted}>No photos added yet.</Text>
@@ -243,6 +246,16 @@ export default function ProfileView({
           </Pressable>
         </Section>
       )}
+      <Modal visible={!!lightboxPhoto} transparent animationType="fade" onRequestClose={() => setLightboxPhoto(null)}>
+        <Pressable style={styles.lightboxOverlay} onPress={() => setLightboxPhoto(null)}>
+          {lightboxPhoto && (
+            <Image source={{ uri: lightboxPhoto }} style={styles.lightboxImage} resizeMode="contain" />
+          )}
+          <Pressable style={styles.lightboxClose} onPress={() => setLightboxPhoto(null)}>
+            <Text style={styles.lightboxCloseText}>✕</Text>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }
@@ -408,4 +421,28 @@ const styles = StyleSheet.create({
   learningCardTitle: {
     color: "#7c3aed",
   },
+
+  /* Lightbox */
+  lightboxOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.93)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  lightboxImage: {
+    width: Dimensions.get("window").width,
+    height: Dimensions.get("window").height * 0.85,
+  },
+  lightboxClose: {
+    position: "absolute",
+    top: 52,
+    right: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  lightboxCloseText: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });

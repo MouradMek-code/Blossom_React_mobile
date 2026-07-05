@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, Text, Image, Pressable, ActivityIndicator, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PageNav from "../components/PageNav";
 import SwipeCard from "../components/SwipeCard";
 import ProfileFilterModal from "../components/ProfileFilterModal";
@@ -23,6 +24,7 @@ function extractLikedId(entry) {
 export default function ProfilesScreen() {
   const { colors } = useTheme();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const [profiles, setProfiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [matchedProfile, setMatchedProfile] = useState(null);
@@ -212,7 +214,7 @@ export default function ProfilesScreen() {
       </View>
 
       {remaining.length > 0 && (
-        <View style={styles.actions}>
+        <View style={[styles.actions, { paddingBottom: insets.bottom + spacing.md }]}>
           <Pressable
             style={[styles.actionButton, styles.nopeButton, { backgroundColor: colors.surface }]}
             onPress={() => handleSwipeLeft()}

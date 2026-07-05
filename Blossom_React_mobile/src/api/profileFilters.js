@@ -15,6 +15,11 @@ export function matchesFilters(profile, filters) {
       return selected.some((lang) => profileLanguages.includes(lang));
     }
 
+    if (field === "learning_language_name") {
+      const profileLearning = (profile.learning_languages || []).map((l) => l.language_name || l);
+      return selected.some((lang) => profileLearning.includes(lang));
+    }
+
     return selected.includes(profile[field]);
   });
 }
