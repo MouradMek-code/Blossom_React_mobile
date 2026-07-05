@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Modal, View, Text, Pressable, StyleSheet } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
+import { ScrollView, GestureHandlerRootView } from "react-native-gesture-handler";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import questions from "../data/questions.json";
 import filterMeta from "../data/filterMeta.json";
@@ -69,6 +69,7 @@ export default function ProfileFilterModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Filters</Text>
@@ -115,6 +116,7 @@ export default function ProfileFilterModal({
           </Pressable>
         </View>
       </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
