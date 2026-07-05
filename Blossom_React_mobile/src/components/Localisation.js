@@ -78,7 +78,7 @@ export default function Localisation({ setlocated, setAnswer, answer }) {
 
         {locationData && (
           <View style={styles.result}>
-            <Text>
+            <Text style={styles.resultText}>
               📍 {locationData.city}, {locationData.country}
             </Text>
             <Pressable
@@ -100,7 +100,7 @@ export default function Localisation({ setlocated, setAnswer, answer }) {
 const styles = StyleSheet.create({
   wrapper: { alignItems: "center", justifyContent: "center", padding: 24 },
   card: { alignItems: "center", width: "100%" },
-  heading: { fontSize: 22, fontWeight: "700", marginBottom: 8 },
+  heading: { fontSize: 22, fontWeight: "700", marginBottom: 8, color: "#1a1a2a" },
   subtitle: { textAlign: "center", color: "#555", marginBottom: 16 },
   button: {
     backgroundColor: "#d6336c",
@@ -113,4 +113,5 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontWeight: "700" },
   error: { color: "red", marginTop: 12 },
   result: { alignItems: "center", marginTop: 16 },
+  resultText: { color: "#1a1a2a", fontSize: 16, fontWeight: "600" },
 });
