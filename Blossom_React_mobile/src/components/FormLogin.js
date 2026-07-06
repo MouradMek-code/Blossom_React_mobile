@@ -10,6 +10,7 @@ export default function FormLogin() {
   const { t } = useTranslation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const navigation = useNavigation();
 
@@ -64,14 +65,19 @@ export default function FormLogin() {
 
       <View style={styles.group}>
         <Text style={styles.label}>{t("login.passwordLabel")}</Text>
-        <TextInput
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholder="••••••••"
-          placeholderTextColor={colors.textMuted}
-        />
+        <View style={styles.passwordWrap}>
+          <TextInput
+            style={[styles.input, styles.passwordInput]}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            placeholder="••••••••"
+            placeholderTextColor={colors.textMuted}
+          />
+          <Pressable style={styles.eyeBtn} onPress={() => setShowPassword((v) => !v)}>
+            <Text style={styles.eyeText}>{showPassword ? "🙈" : "👁️"}</Text>
+          </Pressable>
+        </View>
       </View>
 
       <Pressable
@@ -124,6 +130,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.surfaceMuted,
   },
+  passwordWrap: { position: "relative", justifyContent: "center" },
+  passwordInput: { paddingRight: 48 },
+  eyeBtn: { position: "absolute", right: 12, padding: 4 },
+  eyeText: { fontSize: 18 },
   button: {
     backgroundColor: colors.primary,
     borderRadius: radius.pill,

@@ -10,6 +10,7 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
   const [username, setUsername] = useState(prefill?.username || "");
   const [email, setEmail] = useState(prefill?.email || "");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState(prefill?.phoneNumber || "");
   const [dateOfBirth, setDateOfBirth] = useState(prefill?.dateOfBirth || "");
 
@@ -100,14 +101,19 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
 
           <View style={styles.group}>
             <Text style={styles.label}>{t("signup.passwordLabel")}</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              placeholder="••••••••"
-              placeholderTextColor={colors.textMuted}
-            />
+            <View style={styles.passwordWrap}>
+              <TextInput
+                style={[styles.input, styles.passwordInput]}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                placeholder="••••••••"
+                placeholderTextColor={colors.textMuted}
+              />
+              <Pressable style={styles.eyeBtn} onPress={() => setShowPassword((v) => !v)}>
+                <Text style={styles.eyeText}>{showPassword ? "🙈" : "👁️"}</Text>
+              </Pressable>
+            </View>
           </View>
 
           <View style={styles.group}>
@@ -326,6 +332,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.surfaceMuted,
   },
+  passwordWrap: { position: "relative", justifyContent: "center" },
+  passwordInput: { paddingRight: 48 },
+  eyeBtn: { position: "absolute", right: 12, padding: 4 },
+  eyeText: { fontSize: 18 },
   button: {
     backgroundColor: colors.primary,
     borderRadius: radius.pill,
