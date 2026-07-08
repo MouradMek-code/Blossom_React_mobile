@@ -27,11 +27,15 @@ export default function FormLogin() {
         body: formData.toString(),
       });
       const data = await resp.json();
-      await setToken(data.access_token);
       if (resp.status !== 200) {
         throw new Error(`error happeneded on login : ${data.detail?.[0]?.msg}`);
       }
-      navigation.navigate("Profile");
+      await setToken(data.access_token);
+      // Route to profile if setup complete, otherwise resume signup
+      const profileResp = await fetch(`${BASE_URL}/profile`, {
+        headers: { Authorization: `Bearer ${data.access_token}` },
+      });
+      navigation.navigate(profileResp.status === 200 ? "Profile" : "SignUp");
     } catch (err) {
       setError(err.toString());
     } finally {
