@@ -1,6 +1,5 @@
-import { useMemo } from "react";
-import { Modal, View, Text, Pressable, StyleSheet } from "react-native";
-import { ScrollView, GestureHandlerRootView } from "react-native-gesture-handler";
+import { useMemo, useEffect, useReducer } from "react";
+import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import questions from "../data/questions.json";
 import filterMeta from "../data/filterMeta.json";
@@ -29,6 +28,17 @@ export default function ProfileFilterModal({
   onClose,
   profiles = [],
 }) {
+  // Android measures a ScrollView inside a Modal as exactly viewport-height on
+  // the first layout pass, so it believes there is nothing to scroll until some
+  // later re-render (e.g. tapping a chip) forces a re-measure. Bumping a tick on
+  // the frame after the modal opens triggers that re-measure up front so the
+  // list is scrollable immediately, without any interaction.
+  const [tick, bump] = useReducer((x) => x + 1, 0);
+  useEffect(() => {
+    if (!visible) return;
+    const id = requestAnimationFrame(() => bump());
+    return () => cancelAnimationFrame(id);
+  }, [visible]);
   const locationSections = useMemo(() => {
     const countries = [...new Set(profiles.map((p) => p.country).filter(Boolean))].sort();
     const cities = [...new Set(profiles.map((p) => p.city).filter(Boolean))].sort();
@@ -68,8 +78,7 @@ export default function ProfileFilterModal({
   const activeCount = Object.keys(filters).length;
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+    <Modal visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Filters</Text>
@@ -78,7 +87,13 @@ export default function ProfileFilterModal({
           </Pressable>
         </View>
 
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll}>
+        <ScrollView
+          key={tick}
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator
+          nestedScrollEnabled
+        >
           {groupedSections.map(({ group, items }) => (
             <View key={group} style={styles.group}>
               <Text style={styles.groupTitle}>{group}</Text>
@@ -116,7 +131,6 @@ export default function ProfileFilterModal({
           </Pressable>
         </View>
       </View>
-      </GestureHandlerRootView>
     </Modal>
   );
 }
