@@ -10,6 +10,7 @@ import {
   Modal,
   StyleSheet,
   Dimensions,
+  Linking,
 } from "react-native";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
@@ -233,6 +234,24 @@ export default function ProfileView({
       )}
 
       {editable && (
+        <Section title="About & Legal">
+          <Pressable style={styles.legalRow} onPress={() => Linking.openURL("https://blossom-date.com/privacy-policy")}>
+            <Text style={styles.legalText}>Privacy Policy</Text>
+            <Text style={styles.legalChevron}>›</Text>
+          </Pressable>
+          <Pressable style={styles.legalRow} onPress={() => Linking.openURL("https://blossom-date.com/terms")}>
+            <Text style={styles.legalText}>Terms &amp; 18+</Text>
+            <Text style={styles.legalChevron}>›</Text>
+          </Pressable>
+          <Pressable style={[styles.legalRow, styles.legalRowLast]} onPress={() => Linking.openURL("mailto:mourad.meknioui@gmail.com")}>
+            <Text style={styles.legalText}>Contact support</Text>
+            <Text style={styles.legalChevron}>›</Text>
+          </Pressable>
+          <Text style={styles.legalFootnote}>© {new Date().getFullYear()} Blossom · 18+ only</Text>
+        </Section>
+      )}
+
+      {editable && (
         <Section title="Danger Zone">
           <Text style={styles.bodyMuted}>
             Permanently delete your account, profile, photos, matches, and messages.
@@ -421,6 +440,20 @@ const styles = StyleSheet.create({
   learningCardTitle: {
     color: "#7c3aed",
   },
+
+  /* Legal */
+  legalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  legalRowLast: { borderBottomWidth: 0 },
+  legalText: { fontSize: 15, color: colors.text, fontWeight: "500" },
+  legalChevron: { fontSize: 22, color: colors.textMuted },
+  legalFootnote: { ...typography.bodyMuted, fontSize: 12, marginTop: spacing.md, textAlign: "center" },
 
   /* Lightbox */
   lightboxOverlay: {
