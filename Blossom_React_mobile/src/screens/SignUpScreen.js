@@ -241,7 +241,7 @@ export default function SignUpScreen() {
 
 const styles = StyleSheet.create({
   head: { flex: 1 },
-  loadingHead: { flex: 1, backgroundColor: "#fff" },
+  loadingHead: { flex: 1, backgroundColor: "#FBF8F6" },
   loadingText: { textAlign: "center", marginTop: 40 },
   overlay: {
     position: "absolute",

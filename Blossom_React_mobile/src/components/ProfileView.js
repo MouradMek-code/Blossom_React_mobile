@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 20, left: 20, right: 20,
   },
-  heroName: { fontSize: 28, fontWeight: "800", color: "#fff", textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
+  heroName: { fontFamily: "serif", fontSize: 32, fontWeight: "700", letterSpacing: -0.5, color: "#fff", textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 10 },
   heroAge: { fontSize: 22, fontWeight: "400", color: "rgba(255,255,255,0.9)" },
   heroBadges: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
   heroBadge: {

@@ -219,7 +219,7 @@ export default function ProfilesScreen() {
             style={[styles.actionButton, styles.nopeButton, { backgroundColor: colors.surface }]}
             onPress={() => handleSwipeLeft()}
           >
-            <Text style={styles.actionButtonText}>✕</Text>
+            <Text style={styles.nopeButtonText}>✕</Text>
           </Pressable>
           <Pressable
             style={[styles.actionButton, styles.likeButton, { backgroundColor: colors.surface }]}
@@ -292,7 +292,8 @@ const styles = StyleSheet.create({
   },
   nopeButton: { borderWidth: 1.5, borderColor: colors.danger },
   likeButton: { borderWidth: 1.5, borderColor: colors.success },
-  actionButtonText: { fontSize: 24 },
+  actionButtonText: { fontSize: 24, color: colors.text },
+  nopeButtonText: { fontSize: 24, color: colors.danger, fontWeight: "700" },
   matchOverlay: {
     position: "absolute",
     top: 0,

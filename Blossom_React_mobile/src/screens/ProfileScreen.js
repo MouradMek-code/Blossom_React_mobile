@@ -175,6 +175,6 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  head: { flex: 1, backgroundColor: "#fff" },
+  head: { flex: 1, backgroundColor: "#FBF8F6" },
   loading: { textAlign: "center", marginTop: 40 },
 });

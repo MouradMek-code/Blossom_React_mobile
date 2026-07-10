@@ -3,6 +3,7 @@ import { Animated, View, Text, Pressable, StyleSheet, Easing } from "react-nativ
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { getToken } from "../api/storage";
+import { colors, shadow } from "../theme";
 
 export default function StartHome() {
   const { t } = useTranslation();
@@ -47,6 +48,7 @@ export default function StartHome() {
       {!hasToken && (
         <Pressable style={styles.cta} onPress={() => navigation.navigate("SignUp")}>
           <Text style={styles.ctaText}>{t("home.cta")}</Text>
+          <Text style={styles.ctaArrow}>→</Text>
         </Pressable>
       )}
       <Text style={styles.trustLine}>{t("home.trustLine")}</Text>
@@ -59,69 +61,90 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
+    padding: 28,
   },
   title: {
-    fontSize: 28,
+    fontFamily: "serif",
+    fontSize: 44,
     fontWeight: "700",
     textAlign: "center",
-    marginBottom: 8,
+    letterSpacing: -0.5,
+    lineHeight: 48,
+    marginBottom: 14,
     color: "#fff",
+    textShadowColor: "rgba(0,0,0,0.35)",
+    textShadowOffset: { width: 0, height: 8 },
+    textShadowRadius: 24,
   },
   subtitle: {
-    fontSize: 22,
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.95)",
-    marginBottom: 8,
+    fontFamily: "serif",
+    fontStyle: "italic",
+    fontSize: 24,
+    fontWeight: "500",
+    textAlign: "center",
+    color: "rgba(255,255,255,0.96)",
+    marginBottom: 10,
   },
   tagline: {
     fontSize: 16,
-    color: "rgba(255,255,255,0.85)",
-    marginBottom: 24,
+    lineHeight: 24,
+    color: "rgba(255,255,255,0.82)",
+    marginBottom: 30,
     textAlign: "center",
   },
   cta: {
-    backgroundColor: "rgba(255,255,255,0.18)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 34,
+    paddingVertical: 16,
+    borderRadius: 999,
+    ...shadow.lg,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.55,
   },
   ctaText: {
     color: "#fff",
-    fontWeight: "700",
-    fontSize: 16,
+    fontWeight: "600",
+    fontSize: 16.5,
+    letterSpacing: 0.2,
+  },
+  ctaArrow: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
   },
   trustLine: {
-    marginTop: 20,
-    fontSize: 14,
-    fontWeight: "500",
-    color: "rgba(255,255,255,0.75)",
+    marginTop: 22,
+    fontSize: 13.5,
+    fontWeight: "400",
+    color: "rgba(255,255,255,0.7)",
     textAlign: "center",
   },
   floatingBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "rgba(255,255,255,0.12)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.35)",
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    borderColor: "rgba(255,255,255,0.28)",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 999,
-    marginBottom: 14,
+    marginBottom: 18,
   },
   badgeDot: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: 4,
     backgroundColor: "#fff",
   },
   badgeText: {
     color: "#fff",
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: "700",
-    letterSpacing: 0.5,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
   },
 });

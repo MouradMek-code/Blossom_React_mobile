@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   passBtnText: { fontSize: 20, color: "#999" },
   likeBtn: {
     width: 66, height: 66, borderRadius: 33,
-    backgroundColor: "#E0245A",
+    backgroundColor: "#C1466B",
     alignItems: "center", justifyContent: "center",
     ...shadow.md,
   },
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   matchToast: {
     position: "absolute",
     top: 100, left: 20, right: 20,
-    backgroundColor: "#E0245A",
+    backgroundColor: "#C1466B",
     borderRadius: 999,
     padding: 14,
     alignItems: "center",
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md, justifyContent: "flex-end" },
   modalCancelButton: { paddingHorizontal: 14, paddingVertical: 10 },
   modalCancelText: { fontWeight: "600" },
-  modalSubmitButton: { backgroundColor: "#E0245A", paddingHorizontal: 18, paddingVertical: 10, borderRadius: radius.pill },
+  modalSubmitButton: { backgroundColor: "#C1466B", paddingHorizontal: 18, paddingVertical: 10, borderRadius: radius.pill },
   modalDestructiveButton: { backgroundColor: "#dc2626", paddingHorizontal: 18, paddingVertical: 10, borderRadius: radius.pill },
   modalSubmitText: { color: "#fff", fontWeight: "700" },
 });

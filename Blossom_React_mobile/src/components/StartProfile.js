@@ -274,6 +274,33 @@ function QuestionOption({ question, handleClicked, clicked, setAnswer, answer, s
 }
 
 function Question({ question, handleClicked, answer, setAnswer, setClicked }) {
+  if (question.field === "personality_type") {
+    const selected = answer.personality_type ? answer.personality_type.split(", ") : [];
+    function toggle(option) {
+      const updated = selected.includes(option)
+        ? selected.filter((x) => x !== option)
+        : [...selected, option];
+      setAnswer((prev) => ({ ...prev, personality_type: updated.join(", ") }));
+      setClicked(updated.length > 0);
+    }
+    return (
+      <View style={styles.optionGrid}>
+        {question.options.map((option) => {
+          const sel = selected.includes(option);
+          return (
+            <Pressable
+              key={option}
+              style={[styles.optionCard, sel && styles.optionCardSelected]}
+              onPress={() => toggle(option)}
+            >
+              <Text style={sel ? styles.optionTextSelected : styles.optionText}>{option}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    );
+  }
+
   if (question.field === "language_name" || question.field === "learning_language_name") {
     return (
       <LanguagePicker
