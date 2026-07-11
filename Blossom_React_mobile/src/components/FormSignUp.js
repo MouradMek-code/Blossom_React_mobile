@@ -84,19 +84,22 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
             </View>
           )}
 
+          <Text style={styles.requiredNote}>All fields are required.</Text>
+
           <View style={styles.group}>
-            <Text style={styles.label}>{t("signup.nameLabel")}</Text>
+            <Text style={styles.label}>{t("signup.nameLabel")} <Text style={styles.req}>*</Text></Text>
             <TextInput
               style={styles.input}
               value={username}
               onChangeText={setUsername}
-              placeholder="Your name"
+              autoCapitalize="none"
+              placeholder="e.g. sofia_martin"
               placeholderTextColor={colors.textMuted}
             />
           </View>
 
           <View style={styles.group}>
-            <Text style={styles.label}>{t("signup.emailLabel")}</Text>
+            <Text style={styles.label}>{t("signup.emailLabel")} <Text style={styles.req}>*</Text></Text>
             <TextInput
               style={styles.input}
               value={email}
@@ -109,14 +112,14 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
           </View>
 
           <View style={styles.group}>
-            <Text style={styles.label}>{t("signup.passwordLabel")}</Text>
+            <Text style={styles.label}>{t("signup.passwordLabel")} <Text style={styles.req}>*</Text></Text>
             <View style={styles.passwordWrap}>
               <TextInput
                 style={[styles.input, styles.passwordInput]}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
-                placeholder="••••••••"
+                placeholder="At least 6 characters"
                 placeholderTextColor={colors.textMuted}
               />
               <Pressable style={styles.eyeBtn} onPress={() => setShowPassword((v) => !v)}>
@@ -126,27 +129,29 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
           </View>
 
           <View style={styles.group}>
-            <Text style={styles.label}>{t("signup.phoneLabel")}</Text>
+            <Text style={styles.label}>{t("signup.phoneLabel")} <Text style={styles.req}>*</Text></Text>
             <TextInput
               style={styles.input}
               value={phoneNumber}
               onChangeText={setPhoneNumber}
-              placeholder="+381690156360"
+              placeholder="+33 6 12 34 56 78"
               placeholderTextColor={colors.textMuted}
               keyboardType="phone-pad"
             />
+            <Text style={styles.hint}>Include your country code (e.g. +33).</Text>
           </View>
 
           <View style={styles.group}>
-            <Text style={styles.label}>{t("signup.dobLabel")}</Text>
+            <Text style={styles.label}>{t("signup.dobLabel")} <Text style={styles.req}>*</Text></Text>
             <TextInput
               style={styles.input}
               value={dateOfBirth}
               onChangeText={setDateOfBirth}
-              placeholder={t("signup.dobPlaceholder")}
+              placeholder="YYYY-MM-DD (e.g. 1998-05-20)"
               placeholderTextColor={colors.textMuted}
               keyboardType="numbers-and-punctuation"
             />
+            <Text style={styles.hint}>Format: YYYY-MM-DD · You must be 18 or older.</Text>
           </View>
 
           <Pressable
@@ -345,6 +350,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   error: { color: colors.danger, fontSize: 13 },
+  requiredNote: { ...typography.bodyMuted, fontSize: 12.5, marginBottom: spacing.sm },
+  req: { color: colors.primary, fontWeight: "700" },
+  hint: { ...typography.bodyMuted, fontSize: 11.5, marginTop: 5 },
   group: { marginBottom: spacing.md },
   label: { ...typography.label, letterSpacing: 0.5, marginBottom: spacing.xs },
   input: {
