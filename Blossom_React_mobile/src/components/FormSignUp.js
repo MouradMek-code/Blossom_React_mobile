@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, Linking } from "react-native";
+import { View, Text, TextInput, Pressable, ActivityIndicator, StyleSheet, Linking } from "react-native";
 import { useTranslation } from "react-i18next";
 import { BASE_URL, PRIVACY_POLICY_URL } from "../api/config";
 import { setToken, saveSignupDraft, clearSignupDraft } from "../api/storage";
+import { postJson } from "../api/errors";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 export default function FormSignUp({ setRegistered, error, setError, verify, setVerified, prefill }) {
@@ -13,14 +14,24 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
   const [showPassword, setShowPassword] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState(prefill?.phoneNumber || "");
   const [dateOfBirth, setDateOfBirth] = useState(prefill?.dateOfBirth || "");
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleSignUp() {
+    if (submitting) return;
     setError("");
+
+    // Instant, clear client-side validation before hitting the server.
+    if (!username.trim()) return setError("Please enter a username.");
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+      return setError("Please enter a valid email address.");
+    if (!password || password.length < 6)
+      return setError("Password must be at least 6 characters.");
+    if (!phoneNumber.trim() || !/^\+?[0-9\s-]{7,}$/.test(phoneNumber.trim()))
+      return setError("Please enter a valid phone number, including country code (e.g. +33…).");
 
     const birth = new Date(dateOfBirth);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth) || isNaN(birth.getTime())) {
-      setError("Please enter your date of birth as YYYY-MM-DD");
-      return;
+      return setError("Please enter your date of birth as YYYY-MM-DD.");
     }
     const today = new Date();
     const age =
@@ -31,35 +42,33 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
         ? 1
         : 0);
     if (age < 18) {
-      setError("You must be at least 18 years old to sign up");
-      return;
+      return setError("You must be at least 18 years old to sign up.");
     }
 
-    try {
-      const resp = await fetch(`${BASE_URL}/user/send_email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username,
-          email,
-          password,
-          phone_number: phoneNumber,
-          date_of_birth: dateOfBirth,
-        }),
-      });
-      const data = await resp.json();
-      if (resp.status !== 200) {
-        throw new Error(`error happeneded on sign up : ${data.detail}`);
-      }
-      // No token until the OTP is verified - save just enough (no
-      // password) to resume straight at the verification screen if the
-      // app is closed now.
-      await saveSignupDraft({ stage: "verify_otp", username, email, phoneNumber, dateOfBirth });
-      setVerified((c) => !c);
-      await setToken(data.access_token);
-    } catch (err) {
-      setError(err.toString());
+    setSubmitting(true);
+    const result = await postJson(`${BASE_URL}/user/send_email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: username.trim(),
+        email: email.trim(),
+        password,
+        phone_number: phoneNumber.trim(),
+        date_of_birth: dateOfBirth,
+      }),
+    });
+    setSubmitting(false);
+
+    if (!result.ok) {
+      setError(result.message);
+      return;
     }
+    // No token until the OTP is verified - save just enough (no
+    // password) to resume straight at the verification screen if the
+    // app is closed now.
+    await saveSignupDraft({ stage: "verify_otp", username, email, phoneNumber, dateOfBirth });
+    setVerified((c) => !c);
+    await setToken(result.data.access_token);
   }
 
   return (
@@ -141,10 +150,15 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
           </View>
 
           <Pressable
-            style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+            style={({ pressed }) => [styles.button, pressed && styles.buttonPressed, submitting && { opacity: 0.7 }]}
             onPress={handleSignUp}
+            disabled={submitting}
           >
-            <Text style={styles.buttonText}>{t("signup.button")}</Text>
+            {submitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>{t("signup.button")}</Text>
+            )}
           </Pressable>
 
           <Text style={styles.policyText}>
@@ -182,67 +196,73 @@ function VerificationForm({ username, email, password, phoneNumber, dateOfBirth,
   const needsPassword = !password;
   const [resendState, setResendState] = useState("idle");
   const [cooldown, setCooldown] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleResend() {
     if (resendState === "sending" || cooldown > 0) return;
     setResendState("sending");
-    try {
-      const url = BASE_URL + "/user/resend_email?email=" + encodeURIComponent(email) + "&phone_number=" + encodeURIComponent(phoneNumber);
-      const resp = await fetch(url, { method: "POST" });
-      if (!resp.ok) {
-        const body = await resp.json().catch(() => ({}));
-        throw new Error(body.detail || "Failed to resend");
-      }
-      setResendState("sent");
-      let s = 60;
-      setCooldown(s);
-      const timer = setInterval(() => {
-        s -= 1;
-        setCooldown(s);
-        if (s <= 0) { clearInterval(timer); setResendState("idle"); }
-      }, 1000);
-    } catch (err) {
+    const url = BASE_URL + "/user/resend_email?email=" + encodeURIComponent(email) + "&phone_number=" + encodeURIComponent(phoneNumber);
+    const result = await postJson(url, { method: "POST" });
+    if (!result.ok) {
       setResendState("error");
-      setError(err.message || "Could not resend code. Please try again.");
+      setError(result.message);
+      return;
     }
+    setResendState("sent");
+    let s = 60;
+    setCooldown(s);
+    const timer = setInterval(() => {
+      s -= 1;
+      setCooldown(s);
+      if (s <= 0) { clearInterval(timer); setResendState("idle"); }
+    }, 1000);
   }
 
   async function signUp() {
+    if (submitting) return;
     setError("");
     const effectivePassword = password || passwordInput;
-    try {
-      const resp1 = await fetch(`${BASE_URL}/user/verify-email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone_number: phoneNumber, otp: code, email }),
-      });
-      const data1 = await resp1.json();
-      if (resp1.status !== 200) {
-        throw new Error(`error happeneded on sign up : ${data1.detail}`);
-      }
 
-      const resp = await fetch(`${BASE_URL}/user`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username,
-          email,
-          password: effectivePassword,
-          phone_number: phoneNumber,
-          date_of_birth: dateOfBirth,
-        }),
-      });
-      const data = await resp.json();
-      if (resp.status !== 200) {
-        throw new Error(`error happeneded on sign up : ${data.detail}`);
-      }
-
-      await clearSignupDraft();
-      setRegistered((c) => !c);
-      await setToken(data.access_token);
-    } catch (err) {
-      setError(err.toString());
+    if (!code.trim() || code.trim().length < 6) {
+      return setError("Please enter the 6-digit code we sent you.");
     }
+    if (needsPassword && (!passwordInput || passwordInput.length < 6)) {
+      return setError("Please re-enter your password (at least 6 characters).");
+    }
+
+    setSubmitting(true);
+
+    // Step 1 — confirm the emailed OTP.
+    const verifyResult = await postJson(`${BASE_URL}/user/verify-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone_number: phoneNumber, otp: code.trim(), email }),
+    });
+    if (!verifyResult.ok) {
+      setSubmitting(false);
+      return setError(verifyResult.message);
+    }
+
+    // Step 2 — create the account now that the email is verified.
+    const createResult = await postJson(`${BASE_URL}/user`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username,
+        email,
+        password: effectivePassword,
+        phone_number: phoneNumber,
+        date_of_birth: dateOfBirth,
+      }),
+    });
+    setSubmitting(false);
+    if (!createResult.ok) {
+      return setError(createResult.message);
+    }
+
+    await clearSignupDraft();
+    setRegistered((c) => !c);
+    await setToken(createResult.data.access_token);
   }
 
   return (
@@ -275,10 +295,15 @@ function VerificationForm({ username, email, password, phoneNumber, dateOfBirth,
       )}
 
       <Pressable
-        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed, submitting && { opacity: 0.7 }]}
         onPress={signUp}
+        disabled={submitting}
       >
-        <Text style={styles.buttonText}>{t("verify.button")}</Text>
+        {submitting ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>{t("verify.button")}</Text>
+        )}
       </Pressable>
 
       <Text style={styles.footerText}>

@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import { View, Text, TextInput, Pressable, ActivityIndicator, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { BASE_URL } from "../api/config";
 import { setToken } from "../api/storage";
+import { postJson, NETWORK_ERROR } from "../api/errors";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 export default function FormLogin() {
@@ -12,36 +13,55 @@ export default function FormLogin() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const navigation = useNavigation();
 
   async function handleLogin() {
+    if (submitting) return;
     setError("");
+
+    // Instant, clear client-side checks before hitting the server.
+    if (!username.trim()) {
+      setError("Please enter your username or email.");
+      return;
+    }
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
+
+    setSubmitting(true);
     const formData = new URLSearchParams();
-    formData.append("username", username);
+    formData.append("username", username.trim());
     formData.append("password", password);
 
-    try {
-      const resp = await fetch(`${BASE_URL}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData.toString(),
-      });
-      const data = await resp.json();
-      if (resp.status !== 200) {
-        throw new Error(`error happeneded on login : ${data.detail?.[0]?.msg}`);
-      }
-      await setToken(data.access_token);
-      // Route to profile if setup complete, otherwise resume signup
-      const profileResp = await fetch(`${BASE_URL}/profile`, {
-        headers: { Authorization: `Bearer ${data.access_token}` },
-      });
-      navigation.navigate(profileResp.status === 200 ? "Profile" : "SignUp");
-    } catch (err) {
-      setError(err.toString());
-    } finally {
-      setUsername("");
+    const result = await postJson(`${BASE_URL}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData.toString(),
+    });
+
+    if (!result.ok) {
+      setError(result.message);
       setPassword("");
+      setSubmitting(false);
+      return;
     }
+
+    await setToken(result.data.access_token);
+    // Route to profile if setup complete, otherwise resume signup.
+    let profileResp;
+    try {
+      profileResp = await fetch(`${BASE_URL}/profile`, {
+        headers: { Authorization: `Bearer ${result.data.access_token}` },
+      });
+    } catch {
+      setError(NETWORK_ERROR);
+      setSubmitting(false);
+      return;
+    }
+    setSubmitting(false);
+    navigation.navigate(profileResp.status === 200 ? "Profile" : "SignUp");
   }
 
   return (
@@ -85,10 +105,15 @@ export default function FormLogin() {
       </View>
 
       <Pressable
-        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed, submitting && styles.buttonDisabled]}
         onPress={handleLogin}
+        disabled={submitting}
       >
-        <Text style={styles.buttonText}>{t("login.button")}</Text>
+        {submitting ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>{t("login.button")}</Text>
+        )}
       </Pressable>
 
       <Pressable
@@ -149,6 +174,9 @@ const styles = StyleSheet.create({
   buttonPressed: {
     backgroundColor: colors.primaryDark,
     transform: [{ scale: 0.98 }],
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16, letterSpacing: 0.3 },
   forgotLink: { marginTop: spacing.md, alignItems: "center" },
