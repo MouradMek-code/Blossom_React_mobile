@@ -34,9 +34,10 @@ export default function SignUpScreen() {
     async function checkResume() {
       const token = await getToken();
       if (!token || token === "null") {
-        // No real token yet, but they may have already sent themselves
-        // an OTP and abandoned the verification screen - resume straight
-        // there instead of having them retype name/email/phone.
+        // No real token yet, but they may have already sent themselves an OTP
+        // and stepped away to fetch the code from their email - resume straight
+        // back on the verification screen so they can just paste it, instead of
+        // making them retype name/email/phone and request a new code.
         const draft = await getSignupDraft();
         if (draft?.stage === "verify_otp") {
           setVerified(true);
