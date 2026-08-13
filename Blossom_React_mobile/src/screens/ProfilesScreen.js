@@ -14,6 +14,11 @@ import { useTheme } from "../context/ThemeContext";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 const FILTERS_KEY = "blossom_filters";
+// Bumped when the default-filter logic changes. A stored filter from an older
+// version is discarded once so the new orientation-aware default can apply,
+// matching the web app (whose sessionStorage naturally resets each session).
+const FILTERS_VERSION_KEY = "blossom_filters_version";
+const FILTERS_VERSION = "2";
 
 // /likes/profiles_i_liked may return plain ids or objects wrapping one.
 function extractLikedId(entry) {
@@ -95,9 +100,20 @@ export default function ProfilesScreen() {
 
         if (ownResp.ok) {
           const ownData = await ownResp.json();
-          const saved = await AsyncStorage.getItem(FILTERS_KEY);
           const defaults = getDefaultFilters(ownData);
-          const initial = saved !== null ? JSON.parse(saved) : defaults;
+          const savedVersion = await AsyncStorage.getItem(FILTERS_VERSION_KEY);
+          const saved = await AsyncStorage.getItem(FILTERS_KEY);
+          // Only honour a saved filter from the current version; otherwise fall
+          // back to the freshly-computed orientation default and drop the stale
+          // one so it can't keep shadowing the new default.
+          let initial;
+          if (savedVersion === FILTERS_VERSION && saved !== null) {
+            initial = JSON.parse(saved);
+          } else {
+            initial = defaults;
+            await AsyncStorage.setItem(FILTERS_VERSION_KEY, FILTERS_VERSION);
+            await AsyncStorage.removeItem(FILTERS_KEY);
+          }
           setDraftFilters(initial);
           setAppliedFilters(initial);
         }
@@ -128,6 +144,7 @@ export default function ProfilesScreen() {
     setAppliedFilters(draftFilters);
     setCurrentIndex(0);
     setFilterModalVisible(false);
+    await AsyncStorage.setItem(FILTERS_VERSION_KEY, FILTERS_VERSION);
     await AsyncStorage.setItem(FILTERS_KEY, JSON.stringify(draftFilters));
   }
 

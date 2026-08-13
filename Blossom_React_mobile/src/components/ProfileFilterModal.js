@@ -1,5 +1,5 @@
-import { useMemo, useEffect, useReducer } from "react";
-import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { useMemo, useEffect } from "react";
+import { View, Text, Pressable, ScrollView, StyleSheet, BackHandler } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import questions from "../data/questions.json";
 import filterMeta from "../data/filterMeta.json";
@@ -28,17 +28,21 @@ export default function ProfileFilterModal({
   onClose,
   profiles = [],
 }) {
-  // Android measures a ScrollView inside a Modal as exactly viewport-height on
-  // the first layout pass, so it believes there is nothing to scroll until some
-  // later re-render (e.g. tapping a chip) forces a re-measure. Bumping a tick on
-  // the frame after the modal opens triggers that re-measure up front so the
-  // list is scrollable immediately, without any interaction.
-  const [tick, bump] = useReducer((x) => x + 1, 0);
+  // Rendered as an in-screen absolute overlay rather than a React Native
+  // <Modal>: on Android a ScrollView inside a Modal is mis-measured on the
+  // first layout pass and won't scroll until some later re-render, which is
+  // what caused "can't scroll until you tap a chip". As a plain overlay under
+  // the app's root it scrolls immediately. We handle the hardware back button
+  // ourselves since we're no longer relying on Modal.onRequestClose.
   useEffect(() => {
     if (!visible) return;
-    const id = requestAnimationFrame(() => bump());
-    return () => cancelAnimationFrame(id);
-  }, [visible]);
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      onClose();
+      return true;
+    });
+    return () => sub.remove();
+  }, [visible, onClose]);
+
   const locationSections = useMemo(() => {
     const countries = [...new Set(profiles.map((p) => p.country).filter(Boolean))].sort();
     const cities = [...new Set(profiles.map((p) => p.city).filter(Boolean))].sort();
@@ -77,8 +81,10 @@ export default function ProfileFilterModal({
 
   const activeCount = Object.keys(filters).length;
 
+  if (!visible) return null;
+
   return (
-    <Modal visible={visible} animationType="fade" onRequestClose={onClose}>
+    <View style={styles.overlay}>
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Filters</Text>
@@ -88,11 +94,9 @@ export default function ProfileFilterModal({
         </View>
 
         <ScrollView
-          key={tick}
           style={{ flex: 1 }}
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator
-          nestedScrollEnabled
         >
           {groupedSections.map(({ group, items }) => (
             <View key={group} style={styles.group}>
@@ -131,11 +135,21 @@ export default function ProfileFilterModal({
           </Pressable>
         </View>
       </View>
-    </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+    elevation: 1000,
+    backgroundColor: colors.background,
+  },
   container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: "row",
