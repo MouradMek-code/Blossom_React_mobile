@@ -73,7 +73,11 @@ export default function ChatScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.chatContainer}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+        // On Android the manifest already sets windowSoftInputMode=adjustResize,
+        // so the window is resized for us. Also setting behavior="height" here
+        // made KeyboardAvoidingView resize a second time, and the two fought each
+        // other - which is what made the view visibly shake on some devices.
       keyboardVerticalOffset={Platform.OS === "android" ? 0 : 0}
     >
       <PageNav />

@@ -3,4 +3,5 @@
 // only work from an emulator running on the same machine as the backend.
 export const BASE_URL = "https://blossom-backend-x2wv.onrender.com";
 
-export const PRIVACY_POLICY_URL = "https://blossom-date.com/privacy-policy";
+export const SITE_URL = "https://blossom-date.com";
+export const PRIVACY_POLICY_URL = `${SITE_URL}/privacy-policy`;

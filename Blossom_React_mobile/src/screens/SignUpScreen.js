@@ -180,13 +180,24 @@ export default function SignUpScreen() {
       resizeMode="cover"
     >
       <View style={styles.overlay} />
-      <PageNav variant="transparent" />
+      {/* Hide the nav links only while the profile is actually being built
+          (location -> questions). Once the profile exists and we're on the
+          photo step, show the full logged-in nav so the user can head to
+          Browse / Matches / Likes / Profile. */}
+      <PageNav variant="transparent" minimal={isregistered === true && photos === false} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        // On Android the manifest already sets windowSoftInputMode=adjustResize,
+        // so the window is resized for us. Also setting behavior="height" here
+        // made KeyboardAvoidingView resize a second time, and the two fought each
+        // other - which is what made the view visibly shake on some devices.
       >
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, questionReady && { paddingBottom: 100 }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          questionReady && { paddingBottom: Math.max(insets.bottom, 16) + 130 },
+        ]}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.card}>
@@ -227,7 +238,7 @@ export default function SignUpScreen() {
         questionEnded === false &&
         photos === false &&
         questionReady && (
-          <View style={[styles.stickyFooter, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
+          <View style={[styles.stickyFooter, { paddingBottom: Math.max(insets.bottom, 16) + 26 }]}>
             <Pressable
               style={({ pressed }) => [styles.nextButton, pressed && styles.nextButtonPressed]}
               onPress={() => startProfileRef.current?.next()}
@@ -256,6 +267,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     padding: 20,
+    paddingBottom: 40,
   },
   card: {
     backgroundColor: "rgba(255,255,255,0.96)",
@@ -282,13 +294,13 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   nextButton: {
-    backgroundColor: "#d6336c",
+    backgroundColor: "#C1466B",
     borderRadius: 999,
-    paddingVertical: 16,
+    paddingVertical: 18,
     alignItems: "center",
   },
   nextButtonPressed: {
-    backgroundColor: "#b5174a",
+    backgroundColor: "#A3395A",
     transform: [{ scale: 0.98 }],
   },
   nextButtonText: { color: "#fff", fontWeight: "700", fontSize: 16, letterSpacing: 0.5 },

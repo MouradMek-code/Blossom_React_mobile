@@ -3,6 +3,7 @@ import { View, Text, Image, Pressable, FlatList, StyleSheet } from "react-native
 import { useNavigation } from "@react-navigation/native";
 import PageNav from "../components/PageNav";
 import { BASE_URL } from "../api/config";
+import { IMG } from "../api/images";
 import { getToken, setToken } from "../api/storage";
 import { colors, radius, spacing, shadow } from "../theme";
 
@@ -86,7 +87,7 @@ export default function MatchedListScreen() {
               style={styles.imageWrapper}
               onPress={() => navigation.navigate("ProfileDetails", { id: profile.id })}
             >
-              <Image source={{ uri: profile.photos?.[0]?.image_url }} style={styles.image} />
+              <Image source={{ uri: IMG.thumb(profile.photos?.[0]?.image_url) }} style={styles.image} />
               <View style={styles.overlay}>
                 <Text style={styles.name}>
                   {profile.first_name}, {profile.age}

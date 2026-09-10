@@ -7,6 +7,7 @@ import ProfilesScreen from "../screens/ProfilesScreen";
 import ProfileDetailsScreen from "../screens/ProfileDetailsScreen";
 import MatchedListScreen from "../screens/MatchedListScreen";
 import LikedYouScreen from "../screens/LikedYouScreen";
+import DateSpotsScreen from "../screens/DateSpotsScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import ChatScreen from "../screens/ChatScreen";
 import NotFoundScreen from "../screens/NotFoundScreen";
@@ -24,6 +25,7 @@ export default function RootNavigator() {
       <Stack.Screen name="ProfileDetails" component={ProfileDetailsScreen} />
       <Stack.Screen name="MatchedList" component={MatchedListScreen} />
       <Stack.Screen name="LikedYou" component={LikedYouScreen} />
+      <Stack.Screen name="DateSpots" component={DateSpotsScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="NotFound" component={NotFoundScreen} />

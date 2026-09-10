@@ -6,6 +6,7 @@ import PageNav from "../components/PageNav";
 import SwipeCard from "../components/SwipeCard";
 import ProfileFilterModal from "../components/ProfileFilterModal";
 import { matchesFilters, getDefaultFilters } from "../api/profileFilters";
+import { seededShuffle } from "../api/shuffle";
 import { BASE_URL } from "../api/config";
 import { getToken, setToken } from "../api/storage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -37,6 +38,9 @@ export default function ProfilesScreen() {
   const [draftFilters, setDraftFilters] = useState({});
   const [appliedFilters, setAppliedFilters] = useState({});
   const [loading, setLoading] = useState(true);
+  // One seed per mount: the deck order is random each visit but stays put
+  // while the user swipes through it.
+  const [deckSeed] = useState(() => Math.random());
 
   async function likeProfile(profile) {
     const token = await getToken();
@@ -95,7 +99,8 @@ export default function ProfilesScreen() {
         }
         const likedData = likedResp.ok ? await likedResp.json() : [];
         const likedIds = likedData.map(extractLikedId).filter((id) => id != null);
-        setProfiles(data.filter((p) => !likedIds.includes(p.id)));
+        // Randomise the deck so the same faces aren't always first.
+        setProfiles(seededShuffle(data.filter((p) => !likedIds.includes(p.id)), deckSeed));
         setCurrentIndex(0);
 
         if (ownResp.ok) {

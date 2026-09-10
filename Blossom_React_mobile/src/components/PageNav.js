@@ -17,7 +17,10 @@ const LANGUAGES = [
   { code: "ar", label: "عربي" },
 ];
 
-export default function PageNav({ variant = "light" }) {
+// `minimal` renders just the logo + language switcher with no navigation
+// links - used during profile creation, where the user should complete the
+// flow rather than be offered Home/Login/Sign-up escape hatches.
+export default function PageNav({ variant = "light", minimal = false }) {
   const { t, i18n } = useTranslation();
   const { colors } = useTheme();
   const [activeLang, setActiveLang] = useState(i18n.language?.slice(0, 2) || "en");
@@ -43,7 +46,10 @@ export default function PageNav({ variant = "light" }) {
       if (!isMounted) return;
       setTokenState(storedToken);
 
-      if (!storedToken || storedToken === "null") return;
+      if (!storedToken || storedToken === "null") {
+        if (isMounted) setProfile(null);
+        return;
+      }
 
       try {
         const controller = new AbortController();
@@ -53,22 +59,45 @@ export default function PageNav({ variant = "light" }) {
           signal: controller.signal,
         });
         clearTimeout(timeout);
-        if (resp.status !== 200) throw new Error("failed to load profile");
-        const data = await resp.json();
-        if (isMounted) setProfile(data);
+
+        if (resp.status === 200) {
+          const data = await resp.json();
+          if (isMounted) setProfile(data);
+          return;
+        }
+        if (resp.status === 401) {
+          // The token itself is genuinely invalid - log out.
+          await setToken(null);
+          if (isMounted) {
+            setTokenState(null);
+            setProfile(null);
+          }
+          return;
+        }
+        // Any other status (typically 404) just means the profile hasn't been
+        // created yet - the user is mid-signup. Keep their token; clearing it
+        // here used to wipe the session during profile creation and break the
+        // rest of the flow.
+        if (isMounted) setProfile(null);
       } catch (err) {
-        // Unreachable/slow backend or an invalid token - fall back to the
-        // logged-out nav instead of leaving profile stuck at null forever,
-        // which would otherwise render neither nav branch.
-        await setToken(null);
-        if (isMounted) setTokenState(null);
+        // Network hiccup or timeout - keep the session and simply show no nav
+        // links rather than falsely logging the user out.
+        if (isMounted) setProfile(null);
       }
     }
+
     fetchProfile();
+    // Re-check on focus so the nav switches to the logged-in links as soon as
+    // profile creation finishes, instead of staying stale from mount time.
+    // `minimal` is a dependency too: leaving minimal mode at the end of signup
+    // happens on the same screen (no focus event), so this is what refreshes
+    // the nav there.
+    const unsubscribe = navigation.addListener("focus", fetchProfile);
     return () => {
       isMounted = false;
+      unsubscribe();
     };
-  }, []);
+  }, [navigation, minimal]);
 
   useEffect(() => {
     let isMounted = true;
@@ -126,18 +155,20 @@ export default function PageNav({ variant = "light" }) {
         <Logo size={40} />
       </View>
       <View style={styles.nav}>
-        {!isTokenMissing && profile !== null && (
+        {!minimal && !isTokenMissing && profile !== null && (
           <>
             <NavItem label={t("nav.profile")} onPress={() => navigation.navigate("Profile")} transparent={isTransparent} colors={colors} />
             <NavItem label={t("nav.browse")} onPress={() => navigation.navigate("Profiles")} transparent={isTransparent} colors={colors} />
+            <NavItem label={t("nav.dateSpots")} onPress={() => navigation.navigate("DateSpots")} transparent={isTransparent} colors={colors} />
             <NavItem label={t("nav.matches")} onPress={() => navigation.navigate("MatchedList")} transparent={isTransparent} badge={matchCount} colors={colors} />
             <NavItem label={t("nav.likesYou")} onPress={() => navigation.navigate("LikedYou")} transparent={isTransparent} badge={likeCount} colors={colors} />
             <NavItem label={t("nav.logout")} onPress={handleLogout} transparent={isTransparent} highlight colors={colors} />
           </>
         )}
-        {isTokenMissing && (
+        {!minimal && isTokenMissing && (
           <>
             <NavItem label={t("nav.home")} onPress={() => navigation.navigate("Home")} transparent={isTransparent} colors={colors} />
+            <NavItem label={t("nav.dateSpots")} onPress={() => navigation.navigate("DateSpots")} transparent={isTransparent} colors={colors} />
             <NavItem label={t("nav.signUp")} onPress={() => navigation.navigate("SignUp")} transparent={isTransparent} colors={colors} />
             <NavItem label={t("nav.login")} onPress={() => navigation.navigate("Login")} transparent={isTransparent} highlight colors={colors} />
           </>

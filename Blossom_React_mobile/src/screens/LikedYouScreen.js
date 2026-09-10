@@ -3,6 +3,7 @@ import { View, Text, Image, Pressable, FlatList, StyleSheet } from "react-native
 import { useNavigation } from "@react-navigation/native";
 import PageNav from "../components/PageNav";
 import { BASE_URL } from "../api/config";
+import { IMG } from "../api/images";
 import { getToken, setToken } from "../api/storage";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
@@ -26,33 +27,44 @@ export default function LikedYouScreen() {
       return;
     }
     try {
-      const resp = await fetch(`${BASE_URL}/likes/profile_likes`, {
+      const toCard = (profile, fallbackId) => ({
+        id: profile.id ?? fallbackId,
+        first_name: profile.first_name,
+        age: profile.age,
+        city: profile.city,
+        country: profile.country,
+        occupation: profile.occupation,
+        photoUrl: IMG.thumb(profile.photos?.[0]?.image_url) || null,
+      });
+
+      // One request for the full profiles. Falls back to the older
+      // ids-then-fetch-each path if the backend hasn't been deployed yet.
+      const resp = await fetch(`${BASE_URL}/likes/profile_likes/profiles`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await resp.json();
-      if (resp.status !== 200) {
-        throw new Error(`error happeneded on likes service : ${data.detail?.[0]?.msg}`);
-      }
 
-      const ids = data.map(extractId).filter((id) => id !== undefined && id !== null);
-      const profiles = await Promise.all(
-        ids.map(async (id) => {
-          const profileResp = await fetch(`${BASE_URL}/profile/${id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const profile = await profileResp.json();
-          return {
-            id: profile.id ?? id,
-            first_name: profile.first_name,
-            age: profile.age,
-            city: profile.city,
-            country: profile.country,
-            occupation: profile.occupation,
-            photoUrl: profile.photos?.[0]?.image_url || null,
-          };
-        }),
-      );
-      setLikedByProfiles(profiles);
+      if (resp.ok) {
+        const full = await resp.json();
+        setLikedByProfiles(full.map((p) => toCard(p, p.id)));
+      } else {
+        const legacyResp = await fetch(`${BASE_URL}/likes/profile_likes`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await legacyResp.json();
+        if (legacyResp.status !== 200) {
+          throw new Error("Could not load the people who liked you.");
+        }
+        const ids = data.map(extractId).filter((id) => id !== undefined && id !== null);
+        const profiles = await Promise.all(
+          ids.map(async (id) => {
+            const profileResp = await fetch(`${BASE_URL}/profile/${id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            return toCard(await profileResp.json(), id);
+          }),
+        );
+        setLikedByProfiles(profiles);
+      }
 
       fetch(`${BASE_URL}/likes/profile_likes/mark_seen`, {
         method: "POST",

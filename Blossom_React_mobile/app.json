@@ -31,7 +31,10 @@
             "compileSdkVersion": 36,
             "targetSdkVersion": 35,
             "buildToolsVersion": "35.0.0",
-            "enableEdgeToEdge": false
+            "enableEdgeToEdge": false,
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "# ---- Keeps for R8 (added when enabling minification) ----\n# React Native + Hermes rely heavily on JNI/reflection, so these must survive.\n-keep class com.facebook.hermes.** { *; }\n-keep class com.facebook.jni.** { *; }\n-keep @com.facebook.proguard.annotations.DoNotStrip class *\n-keepclassmembers class * { @com.facebook.proguard.annotations.DoNotStrip *; }\n-keepclassmembers class * { @com.facebook.react.bridge.ReactMethod <methods>; }\n-keepclassmembers class * { @com.facebook.react.uimanager.annotations.ReactProp <methods>; }\n-keepclassmembers class * implements com.facebook.react.bridge.NativeModule { *; }\n\n# Expo's module registry resolves modules reflectively.\n-keep class expo.modules.** { *; }\n\n# Networking stack used by RN's fetch.\n-dontwarn okhttp3.**\n-dontwarn okio.**"
           }
         }
       ],

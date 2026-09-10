@@ -12,6 +12,7 @@ import {
   Dimensions,
   Linking,
 } from "react-native";
+import { IMG } from "../api/images";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 // Height is stored as a string that already includes the unit (e.g. "170 cm"),
@@ -50,7 +51,7 @@ export default function ProfileView({
     }
   }
 
-  const coverPhoto = profile.photos?.[0]?.image_url;
+  const coverPhoto = IMG.full(profile.photos?.[0]?.image_url);
 
   return (
     <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
@@ -139,7 +140,7 @@ export default function ProfileView({
           {profile.photos?.length ? (
             profile.photos.map((p) => (
               <Pressable key={p.id} style={styles.photoWrap} onPress={() => setLightboxPhoto(p.image_url)}>
-                <Image source={{ uri: p.image_url }} style={styles.photo} />
+                <Image source={{ uri: IMG.card(p.image_url) }} style={styles.photo} />
                 {editable && (
                   <Pressable style={styles.deletePhotoButton} onPress={() => onDeletePhoto?.(p.id)}>
                     <Text style={styles.deletePhotoButtonText}>✕</Text>
@@ -275,7 +276,7 @@ export default function ProfileView({
       <Modal visible={!!lightboxPhoto} transparent animationType="fade" onRequestClose={() => setLightboxPhoto(null)}>
         <Pressable style={styles.lightboxOverlay} onPress={() => setLightboxPhoto(null)}>
           {lightboxPhoto && (
-            <Image source={{ uri: lightboxPhoto }} style={styles.lightboxImage} resizeMode="contain" />
+            <Image source={{ uri: IMG.full(lightboxPhoto) }} style={styles.lightboxImage} resizeMode="contain" />
           )}
           <Pressable style={styles.lightboxClose} onPress={() => setLightboxPhoto(null)}>
             <Text style={styles.lightboxCloseText}>✕</Text>

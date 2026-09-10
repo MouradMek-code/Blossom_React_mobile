@@ -10,6 +10,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { IMG } from "../api/images";
 import { colors, radius, spacing, shadow } from "../theme";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -91,7 +92,7 @@ export default function SwipeCard({ profile, onSwipeLeft, onSwipeRight, onViewDe
         },
       ]}
     >
-      <Image source={{ uri: profile.photos?.[0]?.image_url }} style={styles.image} />
+      <Image source={{ uri: IMG.card(profile.photos?.[0]?.image_url) }} style={styles.image} />
 
       <LinearGradient
         colors={["transparent", "rgba(0,0,0,0.15)", "rgba(0,0,0,0.78)"]}

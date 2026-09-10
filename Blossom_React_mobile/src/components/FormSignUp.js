@@ -183,6 +183,7 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
         <VerificationForm
           username={username}
           email={email}
+          setEmail={setEmail}
           password={password}
           phoneNumber={phoneNumber}
           dateOfBirth={dateOfBirth}
@@ -194,7 +195,7 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
   );
 }
 
-function VerificationForm({ username, email, password, phoneNumber, dateOfBirth, setError, setRegistered }) {
+function VerificationForm({ username, email, setEmail, password, phoneNumber, dateOfBirth, setError, setRegistered }) {
   const { t } = useTranslation();
   const [code, setCode] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
@@ -202,6 +203,45 @@ function VerificationForm({ username, email, password, phoneNumber, dateOfBirth,
   const [resendState, setResendState] = useState("idle");
   const [cooldown, setCooldown] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  // Lets the user correct a mistyped address without restarting signup.
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [emailDraft, setEmailDraft] = useState(email);
+  const [savingEmail, setSavingEmail] = useState(false);
+
+  async function handleChangeEmail() {
+    if (savingEmail) return;
+    setError("");
+    const next = emailDraft.trim();
+    if (!next || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next)) {
+      return setError("Please enter a valid email address.");
+    }
+    if (next.toLowerCase() === email.trim().toLowerCase()) {
+      setEditingEmail(false);
+      return;
+    }
+
+    setSavingEmail(true);
+    const url =
+      BASE_URL +
+      "/user/resend_email?email=" +
+      encodeURIComponent(next) +
+      "&phone_number=" +
+      encodeURIComponent(phoneNumber);
+    const result = await postJson(url, { method: "POST" });
+    setSavingEmail(false);
+
+    if (!result.ok) {
+      return setError(result.message);
+    }
+
+    // Point the rest of the flow (verify + account creation) at the new
+    // address, and keep the resume draft in sync.
+    setEmail(next);
+    await saveSignupDraft({ stage: "verify_otp", username, email: next, phoneNumber, dateOfBirth });
+    setEditingEmail(false);
+    setCode("");
+    setResendState("sent");
+  }
 
   async function handleResend() {
     if (resendState === "sending" || cooldown > 0) return;
@@ -278,6 +318,48 @@ function VerificationForm({ username, email, password, phoneNumber, dateOfBirth,
       <Text style={styles.verifyTitle}>{t("verify.title")}</Text>
       <Text style={styles.verifySubtitle}>{t("verify.subtitle")}</Text>
 
+      {editingEmail ? (
+        <View style={styles.emailEditBox}>
+          <Text style={styles.emailEditLabel}>Send the code to</Text>
+          <TextInput
+            style={styles.emailInput}
+            value={emailDraft}
+            onChangeText={setEmailDraft}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholder="you@example.com"
+            placeholderTextColor={colors.textMuted}
+            autoFocus
+          />
+          <View style={styles.emailEditActions}>
+            <Pressable
+              style={styles.emailCancelBtn}
+              onPress={() => { setEmailDraft(email); setEditingEmail(false); }}
+            >
+              <Text style={styles.emailCancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.emailSaveBtn, savingEmail && { opacity: 0.7 }]}
+              onPress={handleChangeEmail}
+              disabled={savingEmail}
+            >
+              {savingEmail ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.emailSaveText}>Send new code</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.emailRow}>
+          <Text style={styles.emailValue} numberOfLines={1}>{email}</Text>
+          <Text style={styles.emailChangeLink} onPress={() => { setEmailDraft(email); setEditingEmail(true); }}>
+            Change
+          </Text>
+        </View>
+      )}
+
       <TextInput
         style={styles.codeInput}
         placeholder="••••••"
@@ -350,6 +432,56 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   error: { color: colors.danger, fontSize: 13 },
+  /* Verification: email display + inline editor */
+  emailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: spacing.md,
+  },
+  emailValue: { fontSize: 14, fontWeight: "600", color: colors.text, flexShrink: 1 },
+  emailChangeLink: { fontSize: 13, fontWeight: "700", color: colors.primary },
+  emailEditBox: {
+    width: "100%",
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  emailEditLabel: { ...typography.label, marginBottom: spacing.xs },
+  emailInput: {
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 11,
+    fontSize: 15,
+    color: colors.text,
+    backgroundColor: colors.surface,
+  },
+  emailEditActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
+  emailCancelBtn: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    paddingVertical: 11,
+    alignItems: "center",
+  },
+  emailCancelText: { color: colors.textMuted, fontWeight: "600", fontSize: 14 },
+  emailSaveBtn: {
+    flex: 2,
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingVertical: 11,
+    alignItems: "center",
+  },
+  emailSaveText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+
   requiredNote: { ...typography.bodyMuted, fontSize: 12.5, marginBottom: spacing.sm },
   req: { color: colors.primary, fontWeight: "700" },
   hint: { ...typography.bodyMuted, fontSize: 11.5, marginTop: 5 },
