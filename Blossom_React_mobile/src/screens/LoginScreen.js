@@ -1,5 +1,6 @@
 import { ImageBackground, View, ScrollView, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import PageNav from "../components/PageNav";
+import KeyboardAwareScroll from "../components/KeyboardAwareScroll";
 import FormLogin from "../components/FormLogin";
 
 export default function LoginScreen() {
@@ -19,11 +20,11 @@ export default function LoginScreen() {
         // made KeyboardAvoidingView resize a second time, and the two fought each
         // other - which is what made the view visibly shake on some devices.
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScroll contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.card}>
             <FormLogin />
           </View>
-        </ScrollView>
+        </KeyboardAwareScroll>
       </KeyboardAvoidingView>
     </ImageBackground>
   );

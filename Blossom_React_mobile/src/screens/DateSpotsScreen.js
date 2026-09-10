@@ -25,6 +25,12 @@ import { CATEGORIES, categoryEmoji } from "../api/categories";
 import { useTheme } from "../context/ThemeContext";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
+// Fire-and-forget engagement tracking. Never block or surface errors: a missed
+// count must never get in the way of the user opening a place.
+function track(spotId, action) {
+  fetch(`${BASE_URL}/date_spots/${spotId}/${action}`, { method: "POST" }).catch(() => {});
+}
+
 export default function DateSpotsScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -88,6 +94,11 @@ ${SITE_URL}/date-spots/${spot.id}`,
     } catch {
       /* user dismissed the share sheet */
     }
+  }
+
+  function openSpot(spot) {
+    setSelected(spot);
+    track(spot.id, "view");
   }
 
   function choose(value) {
@@ -197,7 +208,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
             <Pressable
               key={spot.id}
               style={[styles.card, i === 0 && styles.featured]}
-              onPress={() => setSelected(spot)}
+              onPress={() => openSpot(spot)}
             >
               {spot.image_url ? (
                 <Image
@@ -279,7 +290,10 @@ ${SITE_URL}/date-spots/${spot.id}`,
                 {selected?.map_url ? (
                   <Pressable
                     style={styles.mapBtn}
-                    onPress={() => Linking.openURL(selected.map_url)}
+                    onPress={() => {
+                      track(selected.id, "map_click");
+                      Linking.openURL(selected.map_url);
+                    }}
                   >
                     <Text style={styles.mapBtnText}>🗺️ {t("dateSpots.openMap")}</Text>
                   </Pressable>

@@ -14,6 +14,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import PageNav from "../components/PageNav";
+import KeyboardAwareScroll from "../components/KeyboardAwareScroll";
 import { BASE_URL } from "../api/config";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
@@ -89,7 +90,7 @@ export default function ForgotPasswordScreen() {
         // made KeyboardAvoidingView resize a second time, and the two fought each
         // other - which is what made the view visibly shake on some devices.
       >
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScroll contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
           <Text style={styles.title}>
             {step === "request" ? t("forgotPassword.titleRequest") : t("forgotPassword.titleReset")}
@@ -174,7 +175,7 @@ export default function ForgotPasswordScreen() {
             </View>
           )}
         </View>
-      </ScrollView>
+      </KeyboardAwareScroll>
       </KeyboardAvoidingView>
     </ImageBackground>
   );

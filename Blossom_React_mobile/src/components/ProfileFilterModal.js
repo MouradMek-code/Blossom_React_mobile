@@ -1,5 +1,6 @@
 import { useMemo, useEffect } from "react";
 import { View, Text, Pressable, ScrollView, StyleSheet, BackHandler } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import questions from "../data/questions.json";
 import filterMeta from "../data/filterMeta.json";
@@ -28,6 +29,7 @@ export default function ProfileFilterModal({
   onClose,
   profiles = [],
 }) {
+  const insets = useSafeAreaInsets();
   // Rendered as an in-screen absolute overlay rather than a React Native
   // <Modal>: on Android a ScrollView inside a Modal is mis-measured on the
   // first layout pass and won't scroll until some later re-render, which is
@@ -86,7 +88,7 @@ export default function ProfileFilterModal({
   return (
     <View style={styles.overlay}>
       <View style={styles.container}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
           <Text style={styles.title}>Filters</Text>
           <Pressable onPress={onClose}>
             <Text style={styles.closeText}>✕</Text>
@@ -126,7 +128,7 @@ export default function ProfileFilterModal({
           ))}
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) + 20 }]}>
           <Pressable style={styles.resetButton} onPress={resetFilters}>
             <Text style={styles.resetButtonText}>Reset {activeCount > 0 ? `(${activeCount})` : ""}</Text>
           </Pressable>

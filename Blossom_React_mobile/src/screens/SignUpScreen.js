@@ -3,6 +3,7 @@ import { ImageBackground, View, ScrollView, KeyboardAvoidingView, Platform, Text
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PageNav from "../components/PageNav";
+import KeyboardAwareScroll from "../components/KeyboardAwareScroll";
 import FormSignUp from "../components/FormSignUp";
 import StartProfile from "../components/StartProfile";
 import MultiImageUpload from "../components/MultiImageUpload";
@@ -193,7 +194,7 @@ export default function SignUpScreen() {
         // made KeyboardAvoidingView resize a second time, and the two fought each
         // other - which is what made the view visibly shake on some devices.
       >
-      <ScrollView
+      <KeyboardAwareScroll
         contentContainerStyle={[
           styles.scrollContent,
           questionReady && { paddingBottom: Math.max(insets.bottom, 16) + 130 },
@@ -230,7 +231,7 @@ export default function SignUpScreen() {
             )}
           {photos === true && <MultiImageUpload />}
         </View>
-      </ScrollView>
+      </KeyboardAwareScroll>
       </KeyboardAvoidingView>
 
       {located === true &&
