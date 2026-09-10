@@ -121,6 +121,22 @@
     "category": "氛围",
     "allCategories": "所有氛围",
     "featured": "最新发现",
-    "viewSpot": "查看地点"
+    "viewSpot": "查看地点",
+    "categories": {
+      "coffee": "咖啡",
+      "restaurant": "餐厅",
+      "drinks": "酒吧 / 小酌",
+      "outdoors": "散步 / 户外",
+      "hiking": "徒步 / 自然",
+      "bowling": "保龄球",
+      "minigolf": "迷你高尔夫",
+      "arcade": "电玩 / 游戏",
+      "movie": "电影",
+      "museum": "博物馆 / 美术馆",
+      "beach": "海滩",
+      "concert": "演唱会 / 现场音乐"
+    },
+    "viewsCount": "{{count}} 次浏览",
+    "wentCount": "{{count}} 人去过"
   }
 }

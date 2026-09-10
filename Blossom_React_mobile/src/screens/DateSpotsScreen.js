@@ -21,7 +21,7 @@ import { BASE_URL, SITE_URL } from "../api/config";
 import { getToken } from "../api/storage";
 import { IMG } from "../api/images";
 import { friendlyError, NETWORK_ERROR } from "../api/errors";
-import { CATEGORIES, categoryEmoji } from "../api/categories";
+import { CATEGORIES, categoryLabel } from "../api/categories";
 import { useTheme } from "../context/ThemeContext";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
@@ -29,6 +29,18 @@ import { colors, radius, spacing, shadow, typography } from "../theme";
 // count must never get in the way of the user opening a place.
 function track(spotId, action) {
   fetch(`${BASE_URL}/date_spots/${spotId}/${action}`, { method: "POST" }).catch(() => {});
+}
+
+// Social proof line. Deliberately renders nothing for a zero count: an empty
+// spot shouldn't advertise "0 views".
+function SpotStats({ spot, t, style }) {
+  const views = spot?.view_count || 0;
+  const went = spot?.map_click_count || 0;
+  if (views < 1 && went < 1) return null;
+  const parts = [];
+  if (views >= 1) parts.push(`👁 ${t("dateSpots.viewsCount", { count: views })}`);
+  if (went >= 1) parts.push(`🧭 ${t("dateSpots.wentCount", { count: went })}`);
+  return <Text style={style}>{parts.join("  ·  ")}</Text>;
 }
 
 export default function DateSpotsScreen() {
@@ -182,7 +194,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
             {CATEGORIES.map((c) => (
               <Chip
                 key={c}
-                label={`${categoryEmoji(c)} ${c}`}
+                label={categoryLabel(c, t)}
                 active={category === c}
                 onPress={() => setCategory(category === c ? "" : c)}
                 small
@@ -231,7 +243,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
                 {spot.category ? (
                   <View style={styles.tag}>
                     <Text style={styles.tagText}>
-                      {categoryEmoji(spot.category)} {spot.category}
+                      {categoryLabel(spot.category, t)}
                     </Text>
                   </View>
                 ) : null}
@@ -241,6 +253,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
                 <Text style={styles.overlayPlace}>
                   📍 {spot.city}, {spot.country}
                 </Text>
+                <SpotStats spot={spot} t={t} style={styles.overlayStats} />
                 {i === 0 ? (
                   <Text style={styles.featuredText} numberOfLines={2}>
                     {spot.description}
@@ -270,7 +283,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
               {selected?.category ? (
                 <View style={styles.detailTag}>
                   <Text style={styles.detailTagText}>
-                    {categoryEmoji(selected.category)} {selected.category}
+                    {categoryLabel(selected.category, t)}
                   </Text>
                 </View>
               ) : null}
@@ -278,6 +291,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
               <Text style={styles.detailPlace}>
                 📍 {selected?.city}, {selected?.country}
               </Text>
+              <SpotStats spot={selected} t={t} style={styles.detailStats} />
               <Text style={[styles.detailText, { color: colors.textSoft }]}>
                 {selected?.description}
               </Text>
@@ -481,7 +495,7 @@ function AddSpotForm({ onCancel, onCreated }) {
         {CATEGORIES.map((c) => (
           <Chip
             key={c}
-            label={`${categoryEmoji(c)} ${c}`}
+            label={categoryLabel(c, t)}
             active={category === c}
             onPress={() => setCategory(category === c ? "" : c)}
             small
@@ -643,6 +657,18 @@ const styles = StyleSheet.create({
   featuredTitle: { fontSize: 27 },
   overlayPlace: { color: "rgba(255,255,255,0.86)", fontSize: 13, fontWeight: "600", marginTop: 2 },
   featuredText: { color: "rgba(255,255,255,0.9)", fontSize: 14, lineHeight: 20, marginTop: 8 },
+  overlayStats: {
+    color: "rgba(255,255,255,0.82)",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 6,
+  },
+  detailStats: {
+    color: colors.textMuted,
+    fontSize: 13.5,
+    fontWeight: "600",
+    marginTop: spacing.sm,
+  },
   detailTag: {
     alignSelf: "flex-start",
     backgroundColor: colors.primarySoft,

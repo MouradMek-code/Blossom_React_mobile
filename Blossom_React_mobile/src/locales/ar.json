@@ -121,6 +121,22 @@
     "category": "الأجواء",
     "allCategories": "كل الأجواء",
     "featured": "أحدث اكتشاف",
-    "viewSpot": "عرض المكان"
+    "viewSpot": "عرض المكان",
+    "categories": {
+      "coffee": "قهوة",
+      "restaurant": "مطعم",
+      "drinks": "مشروبات / بار",
+      "outdoors": "نزهة في الهواء الطلق",
+      "hiking": "مشي في الطبيعة",
+      "bowling": "بولينغ",
+      "minigolf": "ميني غولف",
+      "arcade": "صالة ألعاب",
+      "movie": "سينما",
+      "museum": "متحف / معرض فني",
+      "beach": "شاطئ",
+      "concert": "حفلة / موسيقى حية"
+    },
+    "viewsCount": "{{count}} مشاهدة",
+    "wentCount": "{{count}} ذهبوا إلى هناك"
   }
 }

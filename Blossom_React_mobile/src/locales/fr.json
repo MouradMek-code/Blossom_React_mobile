@@ -121,6 +121,22 @@
     "category": "Ambiance",
     "allCategories": "Toutes les ambiances",
     "featured": "Dernière trouvaille",
-    "viewSpot": "Voir le lieu"
+    "viewSpot": "Voir le lieu",
+    "categories": {
+      "coffee": "Café",
+      "restaurant": "Restaurant",
+      "drinks": "Bar / Verre",
+      "outdoors": "Balade / Plein air",
+      "hiking": "Randonnée / Nature",
+      "bowling": "Bowling",
+      "minigolf": "Mini-golf",
+      "arcade": "Arcade / Jeux",
+      "movie": "Cinéma",
+      "museum": "Musée / Galerie d'art",
+      "beach": "Plage",
+      "concert": "Concert / Musique live"
+    },
+    "viewsCount": "{{count}} vues",
+    "wentCount": "{{count}} y sont allés"
   }
 }

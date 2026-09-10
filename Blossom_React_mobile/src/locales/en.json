@@ -121,6 +121,22 @@
     "category": "Vibe",
     "allCategories": "All vibes",
     "featured": "Latest find",
-    "viewSpot": "View place"
+    "viewSpot": "View place",
+    "categories": {
+      "coffee": "Coffee",
+      "restaurant": "Restaurant",
+      "drinks": "Drinks / Bar",
+      "outdoors": "Walk / Outdoors",
+      "hiking": "Hiking / Nature",
+      "bowling": "Bowling",
+      "minigolf": "Mini Golf",
+      "arcade": "Arcade / Gaming",
+      "movie": "Movie",
+      "museum": "Museum / Art Gallery",
+      "beach": "Beach",
+      "concert": "Concert / Live Music"
+    },
+    "viewsCount": "{{count}} views",
+    "wentCount": "{{count}} went there"
   }
 }
