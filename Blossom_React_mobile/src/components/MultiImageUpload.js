@@ -115,7 +115,8 @@ export default function MultiImageUpload() {
       ) : (
         <Pressable
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-          onPress={() => navigation.navigate("Profiles")}
+          // Sign-up is over: start the app fresh on the tabs.
+          onPress={() => navigation.reset({ index: 0, routes: [{ name: "Main" }] })}
         >
           <Text style={styles.buttonText}>Go Check Profiles →</Text>
         </Pressable>

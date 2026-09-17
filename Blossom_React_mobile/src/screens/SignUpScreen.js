@@ -70,7 +70,7 @@ export default function SignUpScreen() {
           if (profile?.photos?.length) {
             // A finished account - e.g. the app opened here because the phone
             // didn't have the profile saved yet. It belongs on Browse.
-            navigation.reset({ index: 0, routes: [{ name: "Profiles" }] });
+            navigation.reset({ index: 0, routes: [{ name: "Main" }] });
             return;
           }
           // Profile already exists, so localisation + every question were

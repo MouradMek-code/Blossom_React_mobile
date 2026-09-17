@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
+import { StackActions } from "@react-navigation/native";
 import { BASE_URL, EAS_PROJECT_ID } from "./config";
 import i18n from "../i18n";
 
@@ -70,14 +71,36 @@ export async function unregisterPushNotifications(authToken) {
   await AsyncStorage.removeItem(PUSH_TOKEN_KEY).catch(() => {});
 }
 
-// Where tapping a notification should take you.
+// The server writes notifications in the language saved with this phone, so
+// changing the language in Settings has to update it. Never throws - the
+// language is cosmetic, and the next login registers it again anyway.
+export async function updatePushLanguage(authToken, language) {
+  try {
+    const pushToken = await AsyncStorage.getItem(PUSH_TOKEN_KEY);
+    if (!pushToken || !authToken || authToken === "null") return;
+    await fetch(`${BASE_URL}/push/register`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token: pushToken, language: (language || "en").slice(0, 2) }),
+    });
+  } catch {
+    // Offline: notifications stay in the previous language until next login.
+  }
+}
+
+// Where tapping a notification should take you. Chats and likes live in the
+// tab bar, which sits inside the root stack's "Main" screen - popTo goes back
+// down to it rather than stacking a second tab bar on whatever is open.
 export function openNotificationTarget(navigationRef, data = {}) {
   if (!navigationRef.isReady()) return;
   if (data.type === "message" && data.conversationId) {
     navigationRef.navigate("Chat", { conversationId: Number(data.conversationId) });
   } else if (data.type === "match") {
-    navigationRef.navigate("Messages");
+    navigationRef.dispatch(StackActions.popTo("Main", { screen: "Messages" }));
   } else if (data.type === "like") {
-    navigationRef.navigate("LikedYou");
+    navigationRef.dispatch(StackActions.popTo("Main", { screen: "LikedYou" }));
   }
 }

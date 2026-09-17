@@ -6,6 +6,7 @@ import {
   Pressable,
   FlatList,
   Image,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -21,6 +22,7 @@ import { IMG } from "../api/images";
 import { categoryEmoji, categoryGradient, shortPlace } from "../api/categories";
 import { getToken, getProfileId } from "../api/storage";
 import { peekCache, readCache, writeCache } from "../api/cache";
+import { goToTab } from "../navigation/goToTab";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 // A date spot sent with "Invite a match": the message text plus a tappable
@@ -171,7 +173,50 @@ export default function ChatScreen() {
 
   function goBack() {
     if (navigation.canGoBack()) navigation.goBack();
-    else navigation.navigate("Messages");
+    else goToTab(navigation, "Messages");
+  }
+
+  // Everything you can do about the person you're talking to, on one menu -
+  // the chat is where unmatching belongs now that there's no matches list.
+  function openOptions() {
+    if (!partner) return;
+    Alert.alert(partner.first_name, undefined, [
+      {
+        text: t("messages.viewProfile"),
+        onPress: () => navigation.navigate("ProfileDetails", { id: partner.id }),
+      },
+      { text: t("messages.unmatch"), style: "destructive", onPress: confirmUnmatch },
+      { text: t("settings.cancel"), style: "cancel" },
+    ]);
+  }
+
+  function confirmUnmatch() {
+    Alert.alert(
+      t("messages.unmatchTitle", { name: partner.first_name }),
+      t("messages.unmatchMessage"),
+      [
+        { text: t("settings.cancel"), style: "cancel" },
+        { text: t("messages.unmatch"), style: "destructive", onPress: unmatch },
+      ],
+    );
+  }
+
+  async function unmatch() {
+    const token = await getToken();
+    try {
+      const resp = await fetch(`${BASE_URL}/matches/unmatch/${partner.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!resp.ok) throw new Error(`unmatch failed with ${resp.status}`);
+      // The conversation is deleted server-side; drop the saved copies too.
+      const inbox = peekCache("inbox");
+      if (inbox) writeCache("inbox", inbox.filter((i) => i.profile.id !== partner.id));
+      writeCache(chatKey, []);
+      goToTab(navigation, "Messages");
+    } catch {
+      setError(t("messages.unmatchFailed"));
+    }
   }
 
   useEffect(() => {
@@ -268,6 +313,17 @@ export default function ChatScreen() {
         ) : (
           <Text style={styles.partnerName}>💬</Text>
         )}
+        {partner ? (
+          <Pressable
+            onPress={openOptions}
+            hitSlop={12}
+            style={styles.options}
+            accessibilityRole="button"
+            accessibilityLabel={t("messages.options")}
+          >
+            <Text style={styles.optionsText}>⋮</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       <FlatList
@@ -352,6 +408,8 @@ const styles = StyleSheet.create({
   },
   back: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   backText: { fontSize: 22, color: colors.text },
+  options: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  optionsText: { fontSize: 22, color: colors.textMuted, fontWeight: "700" },
   partner: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
   partnerPhoto: { width: 44, height: 44, borderRadius: 22 },
   partnerPhotoEmpty: { alignItems: "center", justifyContent: "center", backgroundColor: colors.primarySoft },

@@ -6,6 +6,7 @@ import PageNav from "../components/PageNav";
 import ProfileView from "../components/ProfileView";
 import { BASE_URL } from "../api/config";
 import { getToken } from "../api/storage";
+import { goToTab } from "../navigation/goToTab";
 import { useTheme } from "../context/ThemeContext";
 import { radius, spacing, shadow } from "../theme";
 
@@ -72,7 +73,7 @@ export default function ProfileDetailsScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!resp.ok) throw new Error("Failed to block");
-      navigation.navigate("Profiles");
+      goToTab(navigation, "Profiles");
     } catch (err) {
       console.log("Block failed:", err);
       setBlocking(false);

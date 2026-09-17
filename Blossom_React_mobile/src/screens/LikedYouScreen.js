@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { View, Text, Image, Pressable, FlatList, StyleSheet } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
+import { useBottomInset } from "../navigation/useBottomInset";
 import PageNav from "../components/PageNav";
 import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
@@ -20,14 +21,15 @@ function extractId(entry) {
 }
 
 export default function LikedYouScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
+  const bottomInset = useBottomInset();
   // Last list from this session, shown immediately while it refreshes.
   const [likedByProfiles, setLikedByProfiles] = useState(() => peekCache("likedYou") || []);
   const [matchedProfile, setMatchedProfile] = useState(null);
   const [loadError, setLoadError] = useState(false);
 
-  async function fetchLikedBy() {
+  const fetchLikedBy = useCallback(async () => {
     const token = await getToken();
     if (!token || token === "null") {
       navigation.navigate("Login");
@@ -94,11 +96,15 @@ export default function LikedYouScreen() {
       console.log(err);
       if (!cached) setLoadError(true);
     }
-  }
+  }, [navigation]);
 
-  useEffect(() => {
-    fetchLikedBy();
-  }, []);
+  // The tab stays mounted, so refresh every time it's opened - otherwise new
+  // likes would only appear after restarting the app.
+  useFocusEffect(
+    useCallback(() => {
+      fetchLikedBy();
+    }, [fetchLikedBy]),
+  );
 
   async function handleLikeBack(profile) {
     const token = await getToken();
@@ -131,17 +137,17 @@ export default function LikedYouScreen() {
   return (
     <View style={styles.head}>
       <PageNav />
-      <Text style={styles.title}>People who like you</Text>
+      <Text style={styles.title}>{t("likesYou.title")}</Text>
       {loadError ? <LoadError onRetry={fetchLikedBy} /> : null}
 
       {matchedProfile && (
         <View style={styles.matchOverlay}>
           <View style={styles.matchCard}>
             <Text style={styles.matchHeart}>❤️</Text>
-            <Text style={styles.matchTitle}>It's a Match!</Text>
+            <Text style={styles.matchTitle}>{t("likesYou.matchTitle")}</Text>
             <Image source={{ uri: matchedProfile.photoUrl }} style={styles.matchImage} />
             <Text style={styles.matchName}>{matchedProfile.first_name}</Text>
-            <Text>You both liked each other</Text>
+            <Text>{t("likesYou.matchText")}</Text>
           </View>
         </View>
       )}
@@ -150,15 +156,15 @@ export default function LikedYouScreen() {
         data={likedByProfiles}
         keyExtractor={(item) => String(item.id)}
         numColumns={2}
-        // Room below the last row, so its Like Back buttons can scroll clear
-        // of the phone's navigation bar instead of sitting under it.
+        // Room below the last row, so its Like back buttons can scroll clear
+        // of the tab bar instead of sitting under it.
         contentContainerStyle={[
           styles.container,
-          { paddingBottom: Math.max(insets.bottom, 16) + spacing.lg },
+          { paddingBottom: bottomInset + spacing.lg },
         ]}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>No likes yet - check back soon!</Text>
+            <Text style={styles.emptyText}>{t("likesYou.empty")}</Text>
           </View>
         }
         renderItem={({ item: profile }) => (
@@ -182,7 +188,7 @@ export default function LikedYouScreen() {
             </Pressable>
 
             <Pressable style={styles.likeButton} onPress={() => handleLikeBack(profile)}>
-              <Text style={styles.likeButtonText}>❤️ Like Back</Text>
+              <Text style={styles.likeButtonText}>❤️ {t("likesYou.likeBack")}</Text>
             </Pressable>
           </View>
         )}

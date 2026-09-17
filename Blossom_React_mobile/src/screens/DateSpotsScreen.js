@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import PageNav from "../components/PageNav";
+import { useBottomInset } from "../navigation/useBottomInset";
 import { BASE_URL, SITE_URL } from "../api/config";
 import { getToken, setProfileId } from "../api/storage";
 import { IMG } from "../api/images";
@@ -220,6 +221,8 @@ export default function DateSpotsScreen() {
   }, []);
 
   const insets = useSafeAreaInsets();
+  // Zero inside the tab bar - the bar already covers the phone's buttons.
+  const bottomInset = useBottomInset();
   const detailOpen = !!selected;
   const detailAnim = useRef(new Animated.Value(0)).current;
 
@@ -590,7 +593,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
               {
                 backgroundColor: colors.background,
                 borderTopColor: colors.border,
-                paddingBottom: Math.max(insets.bottom, 16) + 12,
+                paddingBottom: bottomInset + 16,
               },
             ]}
           >
@@ -642,7 +645,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
         <InvitePicker
           spot={inviteSpot}
           token={token}
-          insets={insets}
+          bottomInset={bottomInset}
           onClose={() => setInviteSpot(null)}
           onSent={(conversationId) => {
             setInviteSpot(null);
@@ -681,7 +684,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
 // a card ("Want to go to ... together?") - for a woman opening the chat, it's
 // a ready-made first message. An in-screen overlay rather than a <Modal>, for
 // the same Android scrolling reason as the detail view.
-function InvitePicker({ spot, token, insets, onClose, onSent }) {
+function InvitePicker({ spot, token, bottomInset, onClose, onSent }) {
   const { t } = useTranslation();
   const [matches, setMatches] = useState(null); // null while loading
   const [error, setError] = useState("");
@@ -733,7 +736,7 @@ function InvitePicker({ spot, token, insets, onClose, onSent }) {
   return (
     <View style={styles.inviteOverlay}>
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      <View style={[styles.inviteSheet, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
+      <View style={[styles.inviteSheet, { paddingBottom: bottomInset + 16 }]}>
         <View style={styles.inviteHeader}>
           <Text style={styles.inviteTitle}>
             💌 {t("dateSpots.inviteTitle", { name: spot.name })}

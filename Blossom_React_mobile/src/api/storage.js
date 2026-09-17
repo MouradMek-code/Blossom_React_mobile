@@ -1,14 +1,26 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { clearCache } from "./cache";
 
+// Mirrors the stored token in memory, so a screen can tell straight away
+// whether someone is logged in instead of drawing a logged-out header for a
+// frame while AsyncStorage answers.
+let tokenInMemory = null;
+
+export function peekToken() {
+  return tokenInMemory;
+}
+
 export async function getToken() {
-  return AsyncStorage.getItem("token");
+  tokenInMemory = await AsyncStorage.getItem("token");
+  return tokenInMemory;
 }
 
 export async function setToken(token) {
   if (token === null || token === undefined) {
+    tokenInMemory = null;
     return AsyncStorage.removeItem("token");
   }
+  tokenInMemory = String(token);
   return AsyncStorage.setItem("token", String(token));
 }
 
@@ -21,6 +33,7 @@ export async function setProfileId(id) {
 }
 
 export async function clearSession() {
+  tokenInMemory = null;
   await AsyncStorage.removeItem("token");
   await AsyncStorage.removeItem("profile_id");
   // Cached screens belong to this account - never show them to the next one.

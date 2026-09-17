@@ -181,7 +181,7 @@
     "visit": "访问网站"
   },
   "messages": {
-    "title": "消息",
+    "title": "聊天",
     "subtitle": "你的配对和聊天。",
     "you": "你",
     "newMatch": "新配对 — 打个招呼吧 👋",
@@ -190,10 +190,18 @@
     "browse": "浏览资料",
     "loading": "加载中…",
     "viewProfile": "查看资料",
-    "back": "返回消息",
+    "back": "返回聊天",
     "send": "发送",
     "placeholder": "输入消息…",
-    "sending": "发送中…"
+    "sending": "发送中…",
+    "newMatches": "新配对",
+    "waitingShort": "等待中",
+    "startChatting": "点击上方的新配对，打个招呼吧。",
+    "unmatch": "取消配对",
+    "unmatchTitle": "取消与{{name}}的配对？",
+    "unmatchMessage": "你们的对话将被删除，并且不会再在聊天里看到对方。",
+    "unmatchFailed": "取消配对失败。请检查网络后重试。",
+    "options": "更多选项"
   },
   "location": {
     "title": "你住在哪里？",
@@ -222,5 +230,40 @@
   "common": {
     "loadError": "无法连接。请检查网络连接后重试。",
     "retry": "重试"
+  },
+  "tabs": {
+    "browse": "浏览",
+    "likes": "喜欢",
+    "spots": "地点",
+    "chats": "聊天",
+    "profile": "我的"
+  },
+  "settings": {
+    "title": "设置",
+    "back": "返回",
+    "language": "语言",
+    "location": "位置",
+    "about": "关于",
+    "privacy": "隐私政策",
+    "terms": "条款与 18+",
+    "support": "联系客服",
+    "account": "账户",
+    "logout": "退出登录",
+    "logoutTitle": "退出登录？",
+    "logoutMessage": "你随时可以用用户名或邮箱和密码重新登录。",
+    "cancel": "取消",
+    "deleteAccount": "删除账户",
+    "deleteTitle": "删除你的账户？",
+    "deleteMessage": "这将永久删除你的资料、照片、配对和消息，且无法恢复。",
+    "delete": "删除",
+    "deleteFailed": "删除账户失败。请检查网络后重试。",
+    "footnote": "© {{year}} Blossom · 仅限 18 岁以上"
+  },
+  "likesYou": {
+    "title": "喜欢你的人",
+    "empty": "还没有人喜欢你 — 稍后再来看看！",
+    "likeBack": "回喜欢",
+    "matchTitle": "配对成功！",
+    "matchText": "你们互相喜欢"
   }
 }

@@ -1,22 +1,23 @@
-import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Alert } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useCallback, useEffect, useState } from "react";
+import { View, Text, Image, Pressable, StyleSheet } from "react-native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import * as ImagePicker from "expo-image-picker";
 import PageNav from "../components/PageNav";
 import ProfileView from "../components/ProfileView";
 import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
-import { postJson } from "../api/errors";
 import { endSessionAndGoToLogin } from "../api/session";
-import { getToken, setProfileId, clearSession } from "../api/storage";
+import { getToken, setProfileId } from "../api/storage";
 import { peekCache, readCache, writeCache } from "../api/cache";
+import { colors } from "../theme";
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   // Last copy from this session, shown immediately while it refreshes.
   const [profile, setProfile] = useState(() => peekCache("ownProfile"));
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -68,6 +69,14 @@ export default function ProfileScreen() {
     if (profile) writeCache("ownProfile", profile);
   }, [profile]);
 
+  // Back from Settings, where the city can be changed: pick up the new copy.
+  useFocusEffect(
+    useCallback(() => {
+      const cached = peekCache("ownProfile");
+      if (cached) setProfile(cached);
+    }, []),
+  );
+
   async function handleSaveBio(bio) {
     const token = await getToken();
     const resp = await fetch(`${BASE_URL}/profile/bio`, {
@@ -81,18 +90,6 @@ export default function ProfileScreen() {
     const data = await resp.json();
     if (resp.status !== 200) throw new Error("Failed to update bio");
     setProfile(data);
-  }
-
-  // Throws with a readable message on failure; ProfileView shows it.
-  async function handleSaveLocation({ country, city }) {
-    const token = await getToken();
-    const query = `country=${encodeURIComponent(country)}&city=${encodeURIComponent(city)}`;
-    const result = await postJson(`${BASE_URL}/profile/update_city_country?${query}`, {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!result.ok) throw new Error(result.message);
-    setProfile(result.data);
   }
 
   async function handleAddPhotoPress() {
@@ -148,44 +145,27 @@ export default function ProfileScreen() {
     }
   }
 
-  function handleDeleteAccount() {
-    Alert.alert(
-      "Delete account?",
-      "This will permanently remove your profile, photos, matches, and messages. This cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            setDeletingAccount(true);
-            try {
-              const token = await getToken();
-              const resp = await fetch(`${BASE_URL}/user/me`, {
-                method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              if (resp.status !== 200) throw new Error("Failed to delete account");
-              await clearSession();
-              navigation.reset({ index: 0, routes: [{ name: "Home" }] });
-            } catch (err) {
-              console.log("Account delete failed:", err);
-              setDeletingAccount(false);
-            }
-          },
-        },
-      ]
-    );
-  }
+  // Language, location, logging out and deleting the account all live one tap
+  // away, in Settings.
+  const settingsButton = (
+    <Pressable
+      onPress={() => navigation.navigate("Settings")}
+      hitSlop={12}
+      accessibilityRole="button"
+      accessibilityLabel={t("settings.title")}
+    >
+      <Image source={require("../../assets/images/tabs/settings.png")} style={styles.settingsIcon} />
+    </Pressable>
+  );
 
   if (!profile) {
     return (
       <View style={styles.head}>
-        <PageNav />
+        <PageNav right={settingsButton} />
         {loadError ? (
           <LoadError onRetry={() => setReloadKey((k) => k + 1)} />
         ) : (
-          <Text style={styles.loading}>Loading...</Text>
+          <Text style={styles.loading}>{t("loading")}</Text>
         )}
       </View>
     );
@@ -193,17 +173,14 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.head}>
-      <PageNav />
+      <PageNav right={settingsButton} />
       <ProfileView
         profile={profile}
         editable
         onSaveBio={handleSaveBio}
-        onSaveLocation={handleSaveLocation}
         onAddPhotoPress={handleAddPhotoPress}
         onDeletePhoto={handleDeletePhoto}
         uploadingPhoto={uploadingPhoto}
-        onDeleteAccount={handleDeleteAccount}
-        deletingAccount={deletingAccount}
       />
     </View>
   );
@@ -212,4 +189,5 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   head: { flex: 1, backgroundColor: "#FBF8F6" },
   loading: { textAlign: "center", marginTop: 40 },
+  settingsIcon: { width: 24, height: 24, tintColor: colors.textSoft },
 });

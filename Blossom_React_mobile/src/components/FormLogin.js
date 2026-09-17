@@ -69,8 +69,8 @@ export default function FormLogin() {
       // Saved so the next app launch knows to open on Browse (see App.js).
       const profile = await profileResp.json().catch(() => null);
       if (profile?.id) await setProfileId(profile.id);
-      // Fresh history: Back from Browse shouldn't return to the login form.
-      navigation.reset({ index: 0, routes: [{ name: "Profiles" }] });
+      // Fresh history: Back from the tabs shouldn't return to the login form.
+      navigation.reset({ index: 0, routes: [{ name: "Main" }] });
     } else {
       navigation.navigate("SignUp");
     }

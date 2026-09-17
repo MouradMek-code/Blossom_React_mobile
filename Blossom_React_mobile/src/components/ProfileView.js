@@ -10,12 +10,8 @@ import {
   Modal,
   StyleSheet,
   Dimensions,
-  Linking,
 } from "react-native";
-import { useTranslation } from "react-i18next";
-import LocationFields from "./LocationFields";
 import { IMG } from "../api/images";
-import { tidyCity } from "../api/geo";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 // Height is stored as a string that already includes the unit (e.g. "170 cm"),
@@ -30,25 +26,17 @@ export default function ProfileView({
   showLocationLine = true,
   editable = false,
   onSaveBio,
-  onSaveLocation,
   onAddPhotoPress,
   onDeletePhoto,
   uploadingPhoto = false,
-  onDeleteAccount,
-  deletingAccount = false,
   onBlock,
   onReport,
   blocking = false,
 }) {
-  const { t } = useTranslation();
   const [editingBio, setEditingBio] = useState(false);
   const [bioDraft, setBioDraft] = useState(profile.bio || "");
   const [savingBio, setSavingBio] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
-  const [editingLocation, setEditingLocation] = useState(false);
-  const [locationDraft, setLocationDraft] = useState({ country: "", city: "" });
-  const [savingLocation, setSavingLocation] = useState(false);
-  const [locationError, setLocationError] = useState("");
 
   async function handleSaveBio() {
     setSavingBio(true);
@@ -59,27 +47,6 @@ export default function ProfileView({
       setSavingBio(false);
     }
   }
-
-  function startEditingLocation() {
-    setLocationDraft({ country: profile.country || "", city: profile.city || "" });
-    setLocationError("");
-    setEditingLocation(true);
-  }
-
-  async function handleSaveLocation() {
-    setSavingLocation(true);
-    setLocationError("");
-    try {
-      await onSaveLocation({ country: locationDraft.country, city: tidyCity(locationDraft.city) });
-      setEditingLocation(false);
-    } catch (err) {
-      setLocationError(err?.message || t("location.loadError"));
-    } finally {
-      setSavingLocation(false);
-    }
-  }
-
-  const locationReady = Boolean(locationDraft.country && locationDraft.city.trim());
 
   const coverPhoto = IMG.full(profile.photos?.[0]?.image_url);
 
@@ -217,51 +184,6 @@ export default function ProfileView({
         )}
       </Section>
 
-      {/* Location - chosen from lists, never GPS */}
-      {editable && onSaveLocation ? (
-        <Section
-          title={t("location.yourLocation")}
-          action={
-            !editingLocation && (
-              <Pressable style={styles.actionButtonOutline} onPress={startEditingLocation}>
-                <Text style={styles.actionButtonOutlineText}>{t("location.change")}</Text>
-              </Pressable>
-            )
-          }
-        >
-          {editingLocation ? (
-            <View>
-              <LocationFields
-                country={locationDraft.country}
-                city={locationDraft.city}
-                onChange={setLocationDraft}
-              />
-              {locationError !== "" ? <Text style={styles.locationError}>{locationError}</Text> : null}
-              <View style={styles.bioActions}>
-                <Pressable
-                  style={[styles.actionButton, !locationReady && { opacity: 0.5 }]}
-                  onPress={handleSaveLocation}
-                  disabled={savingLocation || !locationReady}
-                >
-                  {savingLocation ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text style={styles.actionButtonText}>{t("location.save")}</Text>
-                  )}
-                </Pressable>
-                <Pressable style={styles.actionButtonOutline} onPress={() => setEditingLocation(false)}>
-                  <Text style={styles.actionButtonOutlineText}>{t("location.cancel")}</Text>
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <Text style={styles.bio}>
-              📍 {[profile.city, profile.country].filter(Boolean).join(", ") || t("location.notSet")}
-            </Text>
-          )}
-        </Section>
-      ) : null}
-
       <Section title="Basic Information">
         <Fact label="Gender" value={profile.gender} />
         <Fact label="Orientation" value={profile.sexual_orientation} />
@@ -316,38 +238,6 @@ export default function ProfileView({
         </Section>
       )}
 
-      {editable && (
-        <Section title="About & Legal">
-          <Pressable style={styles.legalRow} onPress={() => Linking.openURL("https://blossom-date.com/privacy-policy")}>
-            <Text style={styles.legalText}>Privacy Policy</Text>
-            <Text style={styles.legalChevron}>›</Text>
-          </Pressable>
-          <Pressable style={styles.legalRow} onPress={() => Linking.openURL("https://blossom-date.com/terms")}>
-            <Text style={styles.legalText}>Terms &amp; 18+</Text>
-            <Text style={styles.legalChevron}>›</Text>
-          </Pressable>
-          <Pressable style={[styles.legalRow, styles.legalRowLast]} onPress={() => Linking.openURL("mailto:mourad.meknioui@gmail.com")}>
-            <Text style={styles.legalText}>Contact support</Text>
-            <Text style={styles.legalChevron}>›</Text>
-          </Pressable>
-          <Text style={styles.legalFootnote}>© {new Date().getFullYear()} Blossom · 18+ only</Text>
-        </Section>
-      )}
-
-      {editable && (
-        <Section title="Danger Zone">
-          <Text style={styles.bodyMuted}>
-            Permanently delete your account, profile, photos, matches, and messages.
-          </Text>
-          <Pressable style={styles.deleteAccountButton} onPress={onDeleteAccount} disabled={deletingAccount}>
-            {deletingAccount ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.actionButtonText}>Delete Account</Text>
-            )}
-          </Pressable>
-        </Section>
-      )}
       <Modal visible={!!lightboxPhoto} transparent animationType="fade" onRequestClose={() => setLightboxPhoto(null)}>
         <Pressable style={styles.lightboxOverlay} onPress={() => setLightboxPhoto(null)}>
           {lightboxPhoto && (
@@ -486,7 +376,6 @@ const styles = StyleSheet.create({
     color: colors.text, ...typography.body,
   },
   bioActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
-  locationError: { color: colors.danger, marginTop: spacing.sm, fontSize: 13 },
   bio: { ...typography.body, lineHeight: 22 },
   bodyMuted: { ...typography.bodyMuted },
 
@@ -495,10 +384,6 @@ const styles = StyleSheet.create({
   actionButtonText: { color: "#fff", fontWeight: "700", fontSize: 13 },
   actionButtonOutline: { borderWidth: 1.5, borderColor: colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill },
   actionButtonOutlineText: { color: colors.primary, fontWeight: "700", fontSize: 13 },
-  deleteAccountButton: {
-    backgroundColor: colors.danger, paddingHorizontal: 14, paddingVertical: 10,
-    borderRadius: radius.pill, alignItems: "center", marginTop: spacing.sm,
-  },
 
   /* Facts */
   fact: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10 },
@@ -524,20 +409,6 @@ const styles = StyleSheet.create({
   learningCardTitle: {
     color: "#7c3aed",
   },
-
-  /* Legal */
-  legalRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  legalRowLast: { borderBottomWidth: 0 },
-  legalText: { fontSize: 15, color: colors.text, fontWeight: "500" },
-  legalChevron: { fontSize: 22, color: colors.textMuted },
-  legalFootnote: { ...typography.bodyMuted, fontSize: 12, marginTop: spacing.md, textAlign: "center" },
 
   /* Lightbox */
   lightboxOverlay: {

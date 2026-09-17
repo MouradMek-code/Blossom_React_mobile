@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, Image, Pressable, ActivityIndicator, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBottomInset } from "../navigation/useBottomInset";
 import PageNav from "../components/PageNav";
 import SwipeCard from "../components/SwipeCard";
 import ProfileFilterModal from "../components/ProfileFilterModal";
@@ -28,7 +28,7 @@ const FILTERS_VERSION = "2";
 export default function ProfilesScreen() {
   const { colors } = useTheme();
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
+  const bottomInset = useBottomInset();
   const [profiles, setProfiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentIndexRef = useRef(0);
@@ -280,7 +280,7 @@ export default function ProfilesScreen() {
       </View>
 
       {remaining.length > 0 && (
-        <View style={[styles.actions, { paddingBottom: insets.bottom + spacing.md }]}>
+        <View style={[styles.actions, { paddingBottom: bottomInset + spacing.md }]}>
           <Pressable
             style={[styles.actionButton, styles.nopeButton, { backgroundColor: colors.surface }]}
             onPress={() => handleSwipeLeft()}

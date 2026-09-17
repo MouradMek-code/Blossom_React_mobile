@@ -181,7 +181,7 @@
     "visit": "Visit site"
   },
   "messages": {
-    "title": "Messages",
+    "title": "Chats",
     "subtitle": "Your matches and conversations.",
     "you": "You",
     "newMatch": "New match — say hi 👋",
@@ -190,10 +190,18 @@
     "browse": "Browse profiles",
     "loading": "Loading…",
     "viewProfile": "View profile",
-    "back": "Back to messages",
+    "back": "Back to chats",
     "send": "Send",
     "placeholder": "Type a message…",
-    "sending": "Sending…"
+    "sending": "Sending…",
+    "newMatches": "New matches",
+    "waitingShort": "Waiting",
+    "startChatting": "Tap a new match above to say hi.",
+    "unmatch": "Unmatch",
+    "unmatchTitle": "Unmatch {{name}}?",
+    "unmatchMessage": "Your conversation will be deleted and you won't see each other in your chats any more.",
+    "unmatchFailed": "Couldn't unmatch. Check your connection and try again.",
+    "options": "More options"
   },
   "location": {
     "title": "Where do you live?",
@@ -222,5 +230,40 @@
   "common": {
     "loadError": "Couldn't connect. Check your internet connection and try again.",
     "retry": "Try again"
+  },
+  "tabs": {
+    "browse": "Browse",
+    "likes": "Likes",
+    "spots": "Spots",
+    "chats": "Chats",
+    "profile": "Profile"
+  },
+  "settings": {
+    "title": "Settings",
+    "back": "Back",
+    "language": "Language",
+    "location": "Location",
+    "about": "About",
+    "privacy": "Privacy policy",
+    "terms": "Terms and 18+",
+    "support": "Contact support",
+    "account": "Account",
+    "logout": "Log out",
+    "logoutTitle": "Log out?",
+    "logoutMessage": "You can log back in anytime with your username or email and your password.",
+    "cancel": "Cancel",
+    "deleteAccount": "Delete account",
+    "deleteTitle": "Delete your account?",
+    "deleteMessage": "This permanently removes your profile, photos, matches and messages. It can't be undone.",
+    "delete": "Delete",
+    "deleteFailed": "Couldn't delete your account. Check your connection and try again.",
+    "footnote": "© {{year}} Blossom · 18+ only"
+  },
+  "likesYou": {
+    "title": "People who like you",
+    "empty": "No likes yet — check back soon!",
+    "likeBack": "Like back",
+    "matchTitle": "It's a match!",
+    "matchText": "You both liked each other"
   }
 }

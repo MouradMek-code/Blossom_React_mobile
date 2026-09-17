@@ -1,13 +1,15 @@
 import { Image, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
-export default function Logo({ size = 52 }) {
+// Tapping it goes to the home page, unless the screen says where else
+// (logged in, PageNav sends it to Browse - there's no home page to go back to).
+export default function Logo({ size = 52, onPress }) {
   const navigation = useNavigation();
   const height = size;
   const width = size * 1.5;
   return (
     <Pressable
-      onPress={() => navigation.navigate("Home")}
+      onPress={onPress || (() => navigation.navigate("Home"))}
       style={({ pressed }) => [
         {
           width,

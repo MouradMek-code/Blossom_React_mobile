@@ -25,7 +25,8 @@ async function pickInitialRoute() {
   try {
     const [token, profileId] = await Promise.all([getToken(), getProfileId()]);
     if (!token || token === "null") return "Home";
-    return profileId ? "Profiles" : "SignUp";
+    // "Main" is the tab bar, which opens on Browse.
+    return profileId ? "Main" : "SignUp";
   } catch {
     return "Home";
   }

@@ -193,7 +193,15 @@
     "back": "Retour aux messages",
     "send": "Envoyer",
     "placeholder": "Écrivez un message…",
-    "sending": "Envoi…"
+    "sending": "Envoi…",
+    "newMatches": "Nouveaux matchs",
+    "waitingShort": "En attente",
+    "startChatting": "Touchez un nouveau match ci-dessus pour dire bonjour.",
+    "unmatch": "Annuler le match",
+    "unmatchTitle": "Annuler le match avec {{name}} ?",
+    "unmatchMessage": "Votre conversation sera supprimée et vous ne vous verrez plus dans vos messages.",
+    "unmatchFailed": "Impossible d'annuler le match. Vérifiez votre connexion et réessayez.",
+    "options": "Plus d'options"
   },
   "location": {
     "title": "Où habitez-vous ?",
@@ -222,5 +230,40 @@
   "common": {
     "loadError": "Connexion impossible. Vérifiez votre connexion internet et réessayez.",
     "retry": "Réessayer"
+  },
+  "tabs": {
+    "browse": "Explorer",
+    "likes": "Likes",
+    "spots": "Lieux",
+    "chats": "Messages",
+    "profile": "Profil"
+  },
+  "settings": {
+    "title": "Réglages",
+    "back": "Retour",
+    "language": "Langue",
+    "location": "Localisation",
+    "about": "À propos",
+    "privacy": "Politique de confidentialité",
+    "terms": "Conditions et 18+",
+    "support": "Contacter le support",
+    "account": "Compte",
+    "logout": "Déconnexion",
+    "logoutTitle": "Se déconnecter ?",
+    "logoutMessage": "Vous pourrez vous reconnecter à tout moment avec votre identifiant ou e-mail et votre mot de passe.",
+    "cancel": "Annuler",
+    "deleteAccount": "Supprimer le compte",
+    "deleteTitle": "Supprimer votre compte ?",
+    "deleteMessage": "Cela supprime définitivement votre profil, vos photos, vos matchs et vos messages. C'est irréversible.",
+    "delete": "Supprimer",
+    "deleteFailed": "Impossible de supprimer votre compte. Vérifiez votre connexion et réessayez.",
+    "footnote": "© {{year}} Blossom · 18+ uniquement"
+  },
+  "likesYou": {
+    "title": "Ces personnes vous aiment",
+    "empty": "Pas encore de like — revenez bientôt !",
+    "likeBack": "Liker aussi",
+    "matchTitle": "C'est un match !",
+    "matchText": "Vous vous êtes likés tous les deux"
   }
 }
