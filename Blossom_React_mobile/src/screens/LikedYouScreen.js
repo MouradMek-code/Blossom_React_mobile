@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { View, Text, Image, Pressable, FlatList, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PageNav from "../components/PageNav";
 import { BASE_URL } from "../api/config";
 import { IMG } from "../api/images";
@@ -17,6 +18,7 @@ function extractId(entry) {
 
 export default function LikedYouScreen() {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const [likedByProfiles, setLikedByProfiles] = useState([]);
   const [matchedProfile, setMatchedProfile] = useState(null);
 
@@ -126,7 +128,12 @@ export default function LikedYouScreen() {
         data={likedByProfiles}
         keyExtractor={(item) => String(item.id)}
         numColumns={2}
-        contentContainerStyle={styles.container}
+        // Room below the last row, so its Like Back buttons can scroll clear
+        // of the phone's navigation bar instead of sitting under it.
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: Math.max(insets.bottom, 16) + spacing.lg },
+        ]}
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyText}>No likes yet - check back soon!</Text>

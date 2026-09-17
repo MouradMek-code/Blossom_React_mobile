@@ -12,7 +12,10 @@ import {
   Dimensions,
   Linking,
 } from "react-native";
+import { useTranslation } from "react-i18next";
+import LocationFields from "./LocationFields";
 import { IMG } from "../api/images";
+import { tidyCity } from "../api/geo";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 // Height is stored as a string that already includes the unit (e.g. "170 cm"),
@@ -27,6 +30,7 @@ export default function ProfileView({
   showLocationLine = true,
   editable = false,
   onSaveBio,
+  onSaveLocation,
   onAddPhotoPress,
   onDeletePhoto,
   uploadingPhoto = false,
@@ -36,10 +40,15 @@ export default function ProfileView({
   onReport,
   blocking = false,
 }) {
+  const { t } = useTranslation();
   const [editingBio, setEditingBio] = useState(false);
   const [bioDraft, setBioDraft] = useState(profile.bio || "");
   const [savingBio, setSavingBio] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
+  const [editingLocation, setEditingLocation] = useState(false);
+  const [locationDraft, setLocationDraft] = useState({ country: "", city: "" });
+  const [savingLocation, setSavingLocation] = useState(false);
+  const [locationError, setLocationError] = useState("");
 
   async function handleSaveBio() {
     setSavingBio(true);
@@ -50,6 +59,27 @@ export default function ProfileView({
       setSavingBio(false);
     }
   }
+
+  function startEditingLocation() {
+    setLocationDraft({ country: profile.country || "", city: profile.city || "" });
+    setLocationError("");
+    setEditingLocation(true);
+  }
+
+  async function handleSaveLocation() {
+    setSavingLocation(true);
+    setLocationError("");
+    try {
+      await onSaveLocation({ country: locationDraft.country, city: tidyCity(locationDraft.city) });
+      setEditingLocation(false);
+    } catch (err) {
+      setLocationError(err?.message || t("location.loadError"));
+    } finally {
+      setSavingLocation(false);
+    }
+  }
+
+  const locationReady = Boolean(locationDraft.country && locationDraft.city.trim());
 
   const coverPhoto = IMG.full(profile.photos?.[0]?.image_url);
 
@@ -186,6 +216,51 @@ export default function ProfileView({
           <Text style={styles.bio}>{profile.bio || "No bio added yet."}</Text>
         )}
       </Section>
+
+      {/* Location - chosen from lists, never GPS */}
+      {editable && onSaveLocation ? (
+        <Section
+          title={t("location.yourLocation")}
+          action={
+            !editingLocation && (
+              <Pressable style={styles.actionButtonOutline} onPress={startEditingLocation}>
+                <Text style={styles.actionButtonOutlineText}>{t("location.change")}</Text>
+              </Pressable>
+            )
+          }
+        >
+          {editingLocation ? (
+            <View>
+              <LocationFields
+                country={locationDraft.country}
+                city={locationDraft.city}
+                onChange={setLocationDraft}
+              />
+              {locationError !== "" ? <Text style={styles.locationError}>{locationError}</Text> : null}
+              <View style={styles.bioActions}>
+                <Pressable
+                  style={[styles.actionButton, !locationReady && { opacity: 0.5 }]}
+                  onPress={handleSaveLocation}
+                  disabled={savingLocation || !locationReady}
+                >
+                  {savingLocation ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.actionButtonText}>{t("location.save")}</Text>
+                  )}
+                </Pressable>
+                <Pressable style={styles.actionButtonOutline} onPress={() => setEditingLocation(false)}>
+                  <Text style={styles.actionButtonOutlineText}>{t("location.cancel")}</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <Text style={styles.bio}>
+              📍 {[profile.city, profile.country].filter(Boolean).join(", ") || t("location.notSet")}
+            </Text>
+          )}
+        </Section>
+      ) : null}
 
       <Section title="Basic Information">
         <Fact label="Gender" value={profile.gender} />
@@ -411,6 +486,7 @@ const styles = StyleSheet.create({
     color: colors.text, ...typography.body,
   },
   bioActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
+  locationError: { color: colors.danger, marginTop: spacing.sm, fontSize: 13 },
   bio: { ...typography.body, lineHeight: 22 },
   bodyMuted: { ...typography.bodyMuted },
 

@@ -10,6 +10,8 @@ import LikedYouScreen from "../screens/LikedYouScreen";
 import DateSpotsScreen from "../screens/DateSpotsScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import ChatScreen from "../screens/ChatScreen";
+import MessagesScreen from "../screens/MessagesScreen";
+import LocationPickerScreen from "../screens/LocationPickerScreen";
 import NotFoundScreen from "../screens/NotFoundScreen";
 
 const Stack = createNativeStackNavigator();
@@ -28,6 +30,8 @@ export default function RootNavigator() {
       <Stack.Screen name="DateSpots" component={DateSpotsScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
+      <Stack.Screen name="Messages" component={MessagesScreen} />
+      <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
       <Stack.Screen name="NotFound" component={NotFoundScreen} />
     </Stack.Navigator>
   );

@@ -5,6 +5,7 @@ import * as ImagePicker from "expo-image-picker";
 import PageNav from "../components/PageNav";
 import ProfileView from "../components/ProfileView";
 import { BASE_URL } from "../api/config";
+import { postJson } from "../api/errors";
 import { getToken, setProfileId, setToken, clearSession } from "../api/storage";
 
 export default function ProfileScreen() {
@@ -63,6 +64,18 @@ export default function ProfileScreen() {
     const data = await resp.json();
     if (resp.status !== 200) throw new Error("Failed to update bio");
     setProfile(data);
+  }
+
+  // Throws with a readable message on failure; ProfileView shows it.
+  async function handleSaveLocation({ country, city }) {
+    const token = await getToken();
+    const query = `country=${encodeURIComponent(country)}&city=${encodeURIComponent(city)}`;
+    const result = await postJson(`${BASE_URL}/profile/update_city_country?${query}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!result.ok) throw new Error(result.message);
+    setProfile(result.data);
   }
 
   async function handleAddPhotoPress() {
@@ -164,6 +177,7 @@ export default function ProfileScreen() {
         profile={profile}
         editable
         onSaveBio={handleSaveBio}
+        onSaveLocation={handleSaveLocation}
         onAddPhotoPress={handleAddPhotoPress}
         onDeletePhoto={handleDeletePhoto}
         uploadingPhoto={uploadingPhoto}

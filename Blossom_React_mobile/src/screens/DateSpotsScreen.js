@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -12,16 +12,29 @@ import {
   Share,
   Linking,
   StyleSheet,
+  BackHandler,
+  Animated,
 } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import PageNav from "../components/PageNav";
 import { BASE_URL, SITE_URL } from "../api/config";
-import { getToken } from "../api/storage";
+import { getToken, setProfileId } from "../api/storage";
 import { IMG } from "../api/images";
-import { friendlyError, NETWORK_ERROR } from "../api/errors";
-import { CATEGORIES, categoryLabel } from "../api/categories";
+import { friendlyError, NETWORK_ERROR, postJson } from "../api/errors";
+import {
+  BEST_FOR,
+  CATEGORIES,
+  bestForLabel,
+  categoryEmoji,
+  categoryGradient,
+  categoryLabel,
+  fullPlace,
+  shortPlace,
+} from "../api/categories";
 import { useTheme } from "../context/ThemeContext";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
@@ -43,9 +56,123 @@ function SpotStats({ spot, t, style }) {
   return <Text style={style}>{parts.join("  ·  ")}</Text>;
 }
 
+// The spot's photo, or - for places without one, like the starter spots - a
+// backdrop tinted by vibe with the vibe's emoji, so the card still looks
+// intentional.
+function SpotBackdrop({ spot, uri, style, emojiStyle }) {
+  if (spot?.image_url) {
+    return <Image source={{ uri }} style={style} />;
+  }
+  return (
+    <LinearGradient
+      colors={categoryGradient(spot?.category)}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[style, styles.noImage]}
+    >
+      <Text style={emojiStyle}>{categoryEmoji(spot?.category)}</Text>
+    </LinearGradient>
+  );
+}
+
+// "📍 Châtelet, Paris"
+function placeLine(spot) {
+  return `📍 ${shortPlace(spot)}`;
+}
+
+// Admin-only editor for a spot's counters, shown right under its photo.
+// Used to seed a venue's numbers or correct them; everyone else never sees it.
+function AdminStatsEditor({ spot, token, t, onSaved }) {
+  const [views, setViews] = useState(String(spot?.view_count || 0));
+  const [went, setWent] = useState(String(spot?.map_click_count || 0));
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState("");
+
+  // Switching to another spot must reload that spot's numbers, not keep the
+  // previous one's.
+  useEffect(() => {
+    setViews(String(spot?.view_count || 0));
+    setWent(String(spot?.map_click_count || 0));
+    setStatus("");
+  }, [spot?.id, spot?.view_count, spot?.map_click_count]);
+
+  async function save() {
+    setSaving(true);
+    setStatus("");
+    try {
+      const resp = await fetch(`${BASE_URL}/date_spots/${spot.id}/stats`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          view_count: Math.max(0, parseInt(views, 10) || 0),
+          map_click_count: Math.max(0, parseInt(went, 10) || 0),
+        }),
+      });
+      let data = null;
+      try {
+        data = await resp.json();
+      } catch {
+        data = null;
+      }
+      if (!resp.ok) {
+        setStatus(friendlyError(data, resp));
+      } else {
+        setStatus(t("dateSpots.adminSaved"));
+        onSaved(data);
+        setTimeout(() => setStatus(""), 2000);
+      }
+    } catch {
+      setStatus(NETWORK_ERROR);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <View style={styles.adminBox}>
+      <Text style={styles.adminTitle}>🛠️ {t("dateSpots.adminTitle")}</Text>
+      <View style={styles.adminRow}>
+        <View style={styles.adminField}>
+          <Text style={styles.adminLabel}>👁 {t("dateSpots.adminViews")}</Text>
+          <TextInput
+            style={styles.adminInput}
+            value={views}
+            onChangeText={setViews}
+            keyboardType="number-pad"
+          />
+        </View>
+        <View style={styles.adminField}>
+          <Text style={styles.adminLabel}>🧭 {t("dateSpots.adminWent")}</Text>
+          <TextInput
+            style={styles.adminInput}
+            value={went}
+            onChangeText={setWent}
+            keyboardType="number-pad"
+          />
+        </View>
+        <Pressable
+          style={[styles.adminSave, saving && styles.adminSaveDisabled]}
+          onPress={save}
+          disabled={saving}
+        >
+          <Text style={styles.adminSaveText}>
+            {saving ? t("dateSpots.adminSaving") : t("dateSpots.adminSave")}
+          </Text>
+        </Pressable>
+      </View>
+      {status !== "" ? <Text style={styles.adminStatus}>{status}</Text> : null}
+    </View>
+  );
+}
+
 export default function DateSpotsScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const navigation = useNavigation();
+  const route = useRoute();
 
   const [spots, setSpots] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -55,13 +182,87 @@ export default function DateSpotsScreen() {
   const [error, setError] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [hasToken, setHasToken] = useState(false);
+  const [token, setToken] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [picker, setPicker] = useState(null); // "country" | "city" | null
   const [selected, setSelected] = useState(null);
   const [category, setCategory] = useState("");
+  const [bestFor, setBestFor] = useState("");
+  const [inviteSpot, setInviteSpot] = useState(null);
 
+  // The token only carries the username, so ask the backend whether this
+  // account is an admin - that gates the counter editor below each photo.
   useEffect(() => {
-    getToken().then((tk) => setHasToken(!!tk && tk !== "null"));
+    let alive = true;
+    getToken().then(async (tk) => {
+      const valid = !!tk && tk !== "null";
+      if (!alive) return;
+      setHasToken(valid);
+      setToken(valid ? tk : null);
+      if (!valid) return;
+      try {
+        const resp = await fetch(`${BASE_URL}/user/me`, {
+          headers: { Authorization: `Bearer ${tk}` },
+        });
+        const data = resp.ok ? await resp.json() : null;
+        if (alive) setIsAdmin(Boolean(data?.is_admin));
+        // Chat works out which bubbles are "mine" from the stored profile id.
+        // An invite sends the user straight into a conversation, so make sure
+        // it's there.
+        if (data?.profile_id) await setProfileId(data.profile_id);
+      } catch {
+        /* not admin, or offline - leave the editor hidden */
+      }
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
+
+  const insets = useSafeAreaInsets();
+  const detailOpen = !!selected;
+  const detailAnim = useRef(new Animated.Value(0)).current;
+
+  // The detail view is an in-screen overlay rather than a <Modal> (see the
+  // render below), so the hardware back button has to be wired up by hand.
+  useEffect(() => {
+    if (!detailOpen) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      setSelected(null);
+      return true;
+    });
+    return () => sub.remove();
+  }, [detailOpen]);
+
+  // The invite picker sits on top of the detail view; back closes it first.
+  // (Android calls the most recently added listener first.)
+  useEffect(() => {
+    if (!inviteSpot) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      setInviteSpot(null);
+      return true;
+    });
+    return () => sub.remove();
+  }, [inviteSpot]);
+
+  // Keep the slide-up feel the Modal used to give.
+  useEffect(() => {
+    if (!detailOpen) return;
+    detailAnim.setValue(0);
+    Animated.timing(detailAnim, {
+      toValue: 1,
+      duration: 240,
+      useNativeDriver: true,
+    }).start();
+  }, [detailOpen, detailAnim]);
+
+  // Reflect an admin edit straight away, in the open detail view and in the
+  // list behind it, so the new numbers show without a refetch.
+  function applyStats(updated) {
+    if (!updated?.id) return;
+    setSpots((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
+    setSelected((cur) => (cur && cur.id === updated.id ? { ...cur, ...updated } : cur));
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,6 +271,7 @@ export default function DateSpotsScreen() {
     if (country) params.push(`country=${encodeURIComponent(country)}`);
     if (city) params.push(`city=${encodeURIComponent(city)}`);
     if (category) params.push(`category=${encodeURIComponent(category)}`);
+    if (bestFor) params.push(`best_for=${encodeURIComponent(bestFor)}`);
     const qs = params.length ? `?${params.join("&")}` : "";
     try {
       const [spotsResp, locResp] = await Promise.all([
@@ -83,11 +285,34 @@ export default function DateSpotsScreen() {
     } finally {
       setLoading(false);
     }
-  }, [country, city, category]);
+  }, [country, city, category, bestFor]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // Opened from a chat invite card: navigate("DateSpots", { spotId }).
+  // If active filters hide that spot, clear them once and look again.
+  const linkedSpotId = route.params?.spotId;
+  const clearedFiltersForLink = useRef(false);
+  useEffect(() => {
+    if (!linkedSpotId || loading) return;
+    const match = spots.find((s) => String(s.id) === String(linkedSpotId));
+    const filtered = Boolean(country || city || category || bestFor);
+    if (!match && filtered && !clearedFiltersForLink.current) {
+      clearedFiltersForLink.current = true;
+      setCountry("");
+      setCity("");
+      setCategory("");
+      setBestFor("");
+      return;
+    }
+    if (match) openSpot(match);
+    // Found, or the spot no longer exists: either way, this link is handled.
+    clearedFiltersForLink.current = false;
+    navigation.setParams({ spotId: undefined });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedSpotId, spots, loading]);
 
   const citiesForCountry = useMemo(() => {
     const entry = locations.find((l) => l.country === country);
@@ -162,8 +387,9 @@ ${SITE_URL}/date-spots/${spot.id}`,
           />
         )}
 
-        {/* Filter chips */}
+        {/* Filter chips - each row is named so it's clear what it filters. */}
         <View style={styles.filterBar}>
+          <Text style={styles.filterLabel}>{t("dateSpots.country")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
             <Chip
               label={`🌍 ${t("dateSpots.allCountries")}`}
@@ -181,14 +407,18 @@ ${SITE_URL}/date-spots/${spot.id}`,
           </ScrollView>
 
           {country && citiesForCountry.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-              <Chip label={t("dateSpots.allCities")} active={!city} onPress={() => setCity("")} small />
-              {citiesForCountry.map((c) => (
-                <Chip key={c} label={`📍 ${c}`} active={city === c} onPress={() => setCity(c)} small />
-              ))}
-            </ScrollView>
+            <>
+              <Text style={styles.filterLabel}>{t("dateSpots.city")}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+                <Chip label={t("dateSpots.allCities")} active={!city} onPress={() => setCity("")} small />
+                {citiesForCountry.map((c) => (
+                  <Chip key={c} label={`📍 ${c}`} active={city === c} onPress={() => setCity(c)} small />
+                ))}
+              </ScrollView>
+            </>
           ) : null}
 
+          <Text style={styles.filterLabel}>{t("dateSpots.category")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
             <Chip label={t("dateSpots.allCategories")} active={!category} onPress={() => setCategory("")} small />
             {CATEGORIES.map((c) => (
@@ -197,6 +427,20 @@ ${SITE_URL}/date-spots/${spot.id}`,
                 label={categoryLabel(c, t)}
                 active={category === c}
                 onPress={() => setCategory(category === c ? "" : c)}
+                small
+              />
+            ))}
+          </ScrollView>
+
+          {/* Tap a chip again to clear it. */}
+          <Text style={styles.filterLabel}>{t("dateSpots.bestFor")}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+            {BEST_FOR.map((b) => (
+              <Chip
+                key={b}
+                label={bestForLabel(b, t)}
+                active={bestFor === b}
+                onPress={() => setBestFor(bestFor === b ? "" : b)}
                 small
               />
             ))}
@@ -212,7 +456,9 @@ ${SITE_URL}/date-spots/${spot.id}`,
               {t("dateSpots.emptyTitle")}
             </Text>
             <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-              {country || city || category ? t("dateSpots.emptyFiltered") : t("dateSpots.emptyAll")}
+              {country || city || category || bestFor
+                ? t("dateSpots.emptyFiltered")
+                : t("dateSpots.emptyAll")}
             </Text>
           </View>
         ) : (
@@ -222,14 +468,12 @@ ${SITE_URL}/date-spots/${spot.id}`,
               style={[styles.card, i === 0 && styles.featured]}
               onPress={() => openSpot(spot)}
             >
-              {spot.image_url ? (
-                <Image
-                  source={{ uri: i === 0 ? IMG.full(spot.image_url) : IMG.card(spot.image_url) }}
-                  style={styles.cardImage}
-                />
-              ) : (
-                <View style={[styles.cardImage, styles.noImage]} />
-              )}
+              <SpotBackdrop
+                spot={spot}
+                uri={i === 0 ? IMG.full(spot.image_url) : IMG.card(spot.image_url)}
+                style={styles.cardImage}
+                emojiStyle={[styles.noImageEmoji, i === 0 && styles.noImageEmojiFeatured]}
+              />
               <LinearGradient
                 colors={["transparent", "rgba(20,14,12,0.35)", "rgba(20,14,12,0.9)"]}
                 style={styles.scrim}
@@ -250,8 +494,8 @@ ${SITE_URL}/date-spots/${spot.id}`,
                 <Text style={[styles.cardTitle, i === 0 && styles.featuredTitle]} numberOfLines={2}>
                   {spot.name}
                 </Text>
-                <Text style={styles.overlayPlace}>
-                  📍 {spot.city}, {spot.country}
+                <Text style={styles.overlayPlace} numberOfLines={1}>
+                  {placeLine(spot)}
                 </Text>
                 <SpotStats spot={spot} t={t} style={styles.overlayStats} />
                 {i === 0 ? (
@@ -265,32 +509,69 @@ ${SITE_URL}/date-spots/${spot.id}`,
         )}
       </ScrollView>
 
-      {/* Detail view */}
-      <Modal
-        visible={!!selected}
-        animationType="slide"
-        onRequestClose={() => setSelected(null)}
-      >
-        <View style={[styles.detail, { backgroundColor: colors.background }]}>
-          <ScrollView contentContainerStyle={styles.detailScroll}>
-            {selected?.image_url ? (
-              <Image
-                source={{ uri: IMG.full(selected.image_url) }}
-                style={styles.detailImage}
+      {/* Detail view.
+          An in-screen overlay, not a <Modal>: on Android a ScrollView inside a
+          Modal is mis-measured and won't scroll (the same bug the filter
+          screen had), so a long description pushed the Maps/Share buttons off
+          screen with no way to reach them. The buttons now also live in a bar
+          pinned below the scroll area, so they're visible whatever the
+          description's length. */}
+      {detailOpen ? (
+        <Animated.View
+          style={[
+            styles.detail,
+            {
+              backgroundColor: colors.background,
+              opacity: detailAnim,
+              transform: [
+                {
+                  translateY: detailAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [40, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <ScrollView
+            style={styles.detailScrollView}
+            contentContainerStyle={styles.detailScroll}
+            keyboardShouldPersistTaps="handled"
+          >
+            <SpotBackdrop
+              spot={selected}
+              uri={IMG.full(selected?.image_url)}
+              style={styles.detailImage}
+              emojiStyle={styles.noImageEmojiFeatured}
+            />
+            {isAdmin && selected ? (
+              <AdminStatsEditor
+                spot={selected}
+                token={token}
+                t={t}
+                onSaved={applyStats}
               />
             ) : null}
             <View style={styles.detailBody}>
-              {selected?.category ? (
-                <View style={styles.detailTag}>
-                  <Text style={styles.detailTagText}>
-                    {categoryLabel(selected.category, t)}
-                  </Text>
+              {selected?.category || selected?.best_for?.length > 0 ? (
+                <View style={styles.detailTags}>
+                  {selected?.category ? (
+                    <View style={styles.detailTag}>
+                      <Text style={styles.detailTagText}>
+                        {categoryLabel(selected.category, t)}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {(selected?.best_for || []).map((b) => (
+                    <View key={b} style={styles.bestForPill}>
+                      <Text style={styles.bestForPillText}>{bestForLabel(b, t)}</Text>
+                    </View>
+                  ))}
                 </View>
               ) : null}
               <Text style={styles.detailTitle}>{selected?.name}</Text>
-              <Text style={styles.detailPlace}>
-                📍 {selected?.city}, {selected?.country}
-              </Text>
+              <Text style={styles.detailPlace}>📍 {fullPlace(selected)}</Text>
               <SpotStats spot={selected} t={t} style={styles.detailStats} />
               <Text style={[styles.detailText, { color: colors.textSoft }]}>
                 {selected?.description}
@@ -300,29 +581,76 @@ ${SITE_URL}/date-spots/${spot.id}`,
                   {t("dateSpots.sharedBy", { name: selected.profile.first_name })}
                 </Text>
               ) : null}
-              <View style={styles.detailActions}>
-                {selected?.map_url ? (
-                  <Pressable
-                    style={styles.mapBtn}
-                    onPress={() => {
-                      track(selected.id, "map_click");
-                      Linking.openURL(selected.map_url);
-                    }}
-                  >
-                    <Text style={styles.mapBtnText}>🗺️ {t("dateSpots.openMap")}</Text>
-                  </Pressable>
-                ) : null}
-                <Pressable style={styles.shareBtn} onPress={() => shareSpot(selected)}>
-                  <Text style={styles.shareBtnText}>🔗 {t("dateSpots.shareLink")}</Text>
-                </Pressable>
-              </View>
             </View>
           </ScrollView>
-          <Pressable style={styles.detailClose} onPress={() => setSelected(null)}>
+
+          <View
+            style={[
+              styles.detailFooter,
+              {
+                backgroundColor: colors.background,
+                borderTopColor: colors.border,
+                paddingBottom: Math.max(insets.bottom, 16) + 12,
+              },
+            ]}
+          >
+            {hasToken ? (
+              <Pressable style={styles.inviteBtn} onPress={() => setInviteSpot(selected)}>
+                <Text style={styles.inviteBtnText} numberOfLines={1}>
+                  💌 {t("dateSpots.invite")}
+                </Text>
+              </Pressable>
+            ) : null}
+            <View style={styles.footerRow}>
+              {selected?.map_url ? (
+                <Pressable
+                  // Invite is the main action when logged in; otherwise
+                  // directions stay the primary button.
+                  style={[hasToken ? styles.shareBtn : styles.mapBtn, styles.footerBtn]}
+                  onPress={() => {
+                    track(selected.id, "map_click");
+                    Linking.openURL(selected.map_url);
+                  }}
+                >
+                  <Text style={hasToken ? styles.shareBtnText : styles.mapBtnText} numberOfLines={1}>
+                    🗺️ {t("dateSpots.openMap")}
+                  </Text>
+                </Pressable>
+              ) : null}
+              <Pressable
+                style={[styles.shareBtn, styles.footerBtn]}
+                onPress={() => shareSpot(selected)}
+              >
+                <Text style={styles.shareBtnText} numberOfLines={1}>
+                  🔗 {t("dateSpots.shareLink")}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+
+          <Pressable
+            style={[styles.detailClose, { top: insets.top + 12 }]}
+            onPress={() => setSelected(null)}
+            hitSlop={8}
+          >
             <Text style={styles.detailCloseText}>✕</Text>
           </Pressable>
-        </View>
-      </Modal>
+        </Animated.View>
+      ) : null}
+
+      {inviteSpot ? (
+        <InvitePicker
+          spot={inviteSpot}
+          token={token}
+          insets={insets}
+          onClose={() => setInviteSpot(null)}
+          onSent={(conversationId) => {
+            setInviteSpot(null);
+            setSelected(null);
+            navigation.navigate("Chat", { conversationId });
+          }}
+        />
+      ) : null}
 
       {/* Filter picker sheet */}
       <Modal visible={!!picker} transparent animationType="fade" onRequestClose={() => setPicker(null)}>
@@ -349,6 +677,117 @@ ${SITE_URL}/date-spots/${spot.id}`,
   );
 }
 
+// Pick a match to send this spot to. The invite lands in your conversation as
+// a card ("Want to go to ... together?") - for a woman opening the chat, it's
+// a ready-made first message. An in-screen overlay rather than a <Modal>, for
+// the same Android scrolling reason as the detail view.
+function InvitePicker({ spot, token, insets, onClose, onSent }) {
+  const { t } = useTranslation();
+  const [matches, setMatches] = useState(null); // null while loading
+  const [error, setError] = useState("");
+  const [sendingId, setSendingId] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetch(`${BASE_URL}/profile/profiles/matched`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        if (alive) setMatches(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setMatches([]);
+        setError(NETWORK_ERROR);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [token]);
+
+  async function invite(match) {
+    if (sendingId !== null) return;
+    setSendingId(match.id);
+    setError("");
+    const result = await postJson(`${BASE_URL}/date_spots/${spot.id}/invite`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        profile_id: match.id,
+        content: t("dateSpots.inviteMessage", { name: spot.name }),
+      }),
+    });
+    setSendingId(null);
+    if (!result.ok) {
+      // e.g. "the woman has to send the first message" - shown as-is.
+      setError(result.message);
+      return;
+    }
+    onSent(result.data.conversation_id);
+  }
+
+  return (
+    <View style={styles.inviteOverlay}>
+      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      <View style={[styles.inviteSheet, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
+        <View style={styles.inviteHeader}>
+          <Text style={styles.inviteTitle}>
+            💌 {t("dateSpots.inviteTitle", { name: spot.name })}
+          </Text>
+          <Pressable onPress={onClose} hitSlop={10} style={styles.inviteClose}>
+            <Text style={styles.detailCloseText}>✕</Text>
+          </Pressable>
+        </View>
+        <Text style={styles.inviteHint}>{t("dateSpots.inviteHint")}</Text>
+
+        {error !== "" ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
+        {matches === null ? (
+          <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} />
+        ) : matches.length === 0 ? (
+          <Text style={styles.inviteEmpty}>{t("dateSpots.inviteEmpty")}</Text>
+        ) : (
+          <ScrollView style={styles.matchList} keyboardShouldPersistTaps="handled">
+            {matches.map((m) => (
+              <Pressable
+                key={m.id}
+                style={({ pressed }) => [styles.matchRow, pressed && styles.matchRowPressed]}
+                onPress={() => invite(m)}
+                disabled={sendingId !== null}
+              >
+                {m.photos?.[0]?.image_url ? (
+                  <Image source={{ uri: IMG.thumb(m.photos[0].image_url) }} style={styles.matchPhoto} />
+                ) : (
+                  <View style={[styles.matchPhoto, styles.matchPhotoEmpty]}>
+                    <Text>🌸</Text>
+                  </View>
+                )}
+                <Text style={styles.matchName} numberOfLines={1}>
+                  {m.first_name}
+                  {m.age ? `, ${m.age}` : ""}
+                </Text>
+                {sendingId === m.id ? (
+                  <ActivityIndicator color={colors.primary} size="small" />
+                ) : (
+                  <Text style={styles.matchAction}>→</Text>
+                )}
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
+      </View>
+    </View>
+  );
+}
+
 function Chip({ label, active, onPress, small }) {
   return (
     <Pressable
@@ -370,9 +809,17 @@ function AddSpotForm({ onCancel, onCreated }) {
   const [description, setDescription] = useState("");
   const [mapUrl, setMapUrl] = useState("");
   const [category, setCategory] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
+  const [bestFor, setBestFor] = useState([]);
   const [photo, setPhoto] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  function toggleBestFor(value) {
+    setBestFor((cur) =>
+      cur.includes(value) ? cur.filter((v) => v !== value) : [...cur, value],
+    );
+  }
 
   async function pickPhoto() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -401,7 +848,9 @@ function AddSpotForm({ onCancel, onCreated }) {
     body.append("city", city.trim());
     body.append("country", country.trim());
     body.append("description", description.trim());
+    if (neighborhood.trim()) body.append("neighborhood", neighborhood.trim());
     if (category) body.append("category", category);
+    if (bestFor.length > 0) body.append("best_for", bestFor.join(","));
     if (mapUrl.trim()) body.append("map_url", mapUrl.trim());
     if (photo) {
       body.append("image", {
@@ -478,6 +927,15 @@ function AddSpotForm({ onCancel, onCreated }) {
         placeholderTextColor={colors.textMuted}
       />
 
+      <Text style={styles.label}>{t("dateSpots.neighborhood")}</Text>
+      <TextInput
+        style={styles.input}
+        value={neighborhood}
+        onChangeText={setNeighborhood}
+        placeholder={t("dateSpots.neighborhoodPlaceholder")}
+        placeholderTextColor={colors.textMuted}
+      />
+
       <Text style={styles.label}>
         {t("dateSpots.why")} <Text style={styles.req}>*</Text>
       </Text>
@@ -498,6 +956,19 @@ function AddSpotForm({ onCancel, onCreated }) {
             label={categoryLabel(c, t)}
             active={category === c}
             onPress={() => setCategory(category === c ? "" : c)}
+            small
+          />
+        ))}
+      </View>
+
+      <Text style={styles.label}>{t("dateSpots.bestFor")}</Text>
+      <View style={styles.pickRow}>
+        {BEST_FOR.map((b) => (
+          <Chip
+            key={b}
+            label={bestForLabel(b, t)}
+            active={bestFor.includes(b)}
+            onPress={() => toggleBestFor(b)}
             small
           />
         ))}
@@ -610,6 +1081,15 @@ const styles = StyleSheet.create({
   chipTextSmall: { fontSize: 12.5 },
   chipTextActive: { color: "#fff" },
   pickRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: spacing.sm },
+  // Name above each filter row ("Country", "Vibe", ...).
+  filterLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: colors.textMuted,
+    marginBottom: -2,
+  },
 
   /* Overlay cards */
   card: {
@@ -621,7 +1101,16 @@ const styles = StyleSheet.create({
   },
   featured: { height: 320 },
   cardImage: { width: "100%", height: "100%" },
-  noImage: { backgroundColor: colors.primarySoft },
+  // Spots without a photo: the vibe gradient comes from SpotBackdrop; the emoji
+  // sits in the upper part so it clears the text overlay at the bottom.
+  noImage: { alignItems: "center", justifyContent: "center", paddingBottom: "22%" },
+  noImageEmoji: {
+    fontSize: 54,
+    textShadowColor: "rgba(0,0,0,0.25)",
+    textShadowOffset: { width: 0, height: 6 },
+    textShadowRadius: 16,
+  },
+  noImageEmojiFeatured: { fontSize: 72 },
   scrim: { position: "absolute", left: 0, right: 0, bottom: 0, height: "70%" },
   featuredFlag: {
     position: "absolute",
@@ -678,6 +1167,72 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   detailTagText: { color: colors.primaryDeep, fontWeight: "700", fontSize: 12.5 },
+  detailTags: { flexDirection: "row", flexWrap: "wrap", columnGap: 8 },
+  bestForPill: {
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.surface,
+  },
+  bestForPillText: { color: colors.textSoft, fontWeight: "600", fontSize: 12.5 },
+  /* Invite picker (bottom sheet over the detail view) */
+  inviteOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1100,
+    elevation: 1100,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(28,20,17,0.55)",
+  },
+  inviteSheet: {
+    maxHeight: "75%",
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  inviteHeader: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
+  inviteTitle: { ...typography.h3, flex: 1, fontSize: 19, lineHeight: 25 },
+  inviteClose: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surfaceMuted,
+  },
+  inviteHint: { color: colors.textMuted, fontSize: 14, marginTop: 6, marginBottom: spacing.md },
+  inviteEmpty: {
+    color: colors.textMuted,
+    textAlign: "center",
+    lineHeight: 21,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.md,
+    padding: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  matchList: { flexGrow: 0 },
+  matchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    padding: 10,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceMuted,
+    marginBottom: 6,
+  },
+  matchRowPressed: { backgroundColor: colors.primaryTint },
+  matchPhoto: { width: 46, height: 46, borderRadius: 23 },
+  matchPhotoEmpty: { alignItems: "center", justifyContent: "center", backgroundColor: colors.primarySoft },
+  matchName: { flex: 1, fontSize: 16, fontWeight: "600", color: colors.text },
+  matchAction: { color: colors.primary, fontSize: 18, fontWeight: "700" },
 
   empty: { alignItems: "center", paddingVertical: spacing.xl * 2 },
   emptyIcon: { fontSize: 44, marginBottom: spacing.sm },
@@ -757,20 +1312,99 @@ const styles = StyleSheet.create({
   readMore: { color: colors.primary, fontWeight: "700", fontSize: 13, marginTop: 6 },
 
   /* Detail */
-  detail: { flex: 1 },
-  detailScroll: { paddingBottom: spacing.xl * 2 },
+  detail: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+    elevation: 1000,
+  },
+  detailScrollView: { flex: 1 },
+  detailScroll: { paddingBottom: spacing.md },
+  detailFooter: {
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
+  footerRow: { flexDirection: "row", gap: spacing.sm },
+  inviteBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingVertical: 14,
+    alignItems: "center",
+    ...shadow.sm,
+  },
+  inviteBtnText: { color: "#fff", fontWeight: "700", fontSize: 15.5 },
+  footerBtn: {
+    flex: 1,
+    alignSelf: "stretch",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.sm,
+  },
   detailImage: { width: "100%", height: 300 },
+
+  /* Admin-only counter editor, sitting directly under the spot's photo.
+     Tinted strip so it never reads as part of the public listing. */
+  adminBox: {
+    backgroundColor: "#FFF6F9",
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "#F2D9E2",
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  adminTitle: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: spacing.sm,
+  },
+  adminRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "flex-end",
+    gap: spacing.sm,
+  },
+  adminField: { gap: 4 },
+  adminLabel: { color: colors.textMuted, fontSize: 12, fontWeight: "600" },
+  adminInput: {
+    width: 92,
+    borderWidth: 1.5,
+    borderColor: "#E8CCD7",
+    borderRadius: radius.sm,
+    backgroundColor: "#fff",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.text,
+  },
+  adminSave: {
+    backgroundColor: colors.primary,
+    borderRadius: 999,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+  },
+  adminSaveDisabled: { opacity: 0.6 },
+  adminSaveText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  adminStatus: {
+    color: colors.primary,
+    fontSize: 12.5,
+    fontWeight: "600",
+    marginTop: spacing.sm,
+  },
+
   detailBody: { padding: spacing.lg },
   detailTitle: { ...typography.h1, fontSize: 26 },
   detailPlace: { color: colors.primary, fontWeight: "600", fontSize: 14, marginTop: 4 },
   detailText: { fontSize: 16.5, lineHeight: 27, marginTop: spacing.md },
   detailAuthor: { fontSize: 13, marginTop: spacing.md },
-  detailActions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-  },
   mapBtn: {
     backgroundColor: colors.primary,
     borderRadius: radius.pill,

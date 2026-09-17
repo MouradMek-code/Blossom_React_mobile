@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { View, Text, Image, Pressable, FlatList, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PageNav from "../components/PageNav";
 import { BASE_URL } from "../api/config";
 import { IMG } from "../api/images";
@@ -9,6 +10,7 @@ import { colors, radius, spacing, shadow } from "../theme";
 
 export default function MatchedListScreen() {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const [listMatchedProfiles, setListMatchedProfiles] = useState([]);
 
   async function openConversation(profile) {
@@ -80,7 +82,12 @@ export default function MatchedListScreen() {
         data={listMatchedProfiles}
         keyExtractor={(item) => String(item.id)}
         numColumns={1}
-        contentContainerStyle={styles.container}
+        // Room below the last card, so its Message/Unmatch buttons can scroll
+        // clear of the phone's navigation bar instead of sitting under it.
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: Math.max(insets.bottom, 16) + spacing.lg },
+        ]}
         renderItem={({ item: profile }) => (
           <View style={styles.card}>
             <Pressable

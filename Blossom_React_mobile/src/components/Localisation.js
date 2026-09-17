@@ -1,117 +1,63 @@
 import { useState } from "react";
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from "react-native";
-import * as Location from "expo-location";
+import { View, Text, Pressable, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
+import LocationFields from "./LocationFields";
+import { tidyCity } from "../api/geo";
 import { saveSignupDraft } from "../api/storage";
+import { colors, radius, spacing, typography } from "../theme";
 
+// Sign-up step: where do you live? Chosen from lists rather than detected by
+// GPS - some people don't want to share their position, and with GPS there
+// was no way past this step for anyone who said no.
 export default function Localisation({ setlocated, setAnswer, answer }) {
-  const [status, setStatus] = useState("idle"); // idle | loading | success | error
-  const [locationData, setLocationData] = useState(null);
-  const [error, setError] = useState("");
+  const { t } = useTranslation();
+  const [location, setLocation] = useState({
+    country: answer?.country || "",
+    city: answer?.city || "",
+  });
 
-  async function handleGetPosition() {
-    setError("");
-    setStatus("loading");
+  const ready = Boolean(location.country && location.city.trim());
 
-    try {
-      const { status: permStatus } = await Location.requestForegroundPermissionsAsync();
-      if (permStatus !== "granted") {
-        setError("Location permission denied.");
-        setStatus("error");
-        return;
-      }
-
-      const position = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = position.coords;
-
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`,
-        {
-          headers: {
-            "User-Agent": "my-blossom-app/1.0",
-            Accept: "application/json",
-          },
-        },
-      );
-      const raw = await res.text();
-      let data;
-      try {
-        data = JSON.parse(raw);
-      } catch {
-        console.log("Nominatim non-JSON response:", raw.slice(0, 200));
-        throw new Error(`Unexpected response from location service (status ${res.status})`);
-      }
-
-      const city = data.address?.city || data.address?.town || data.address?.village;
-      const country = data.address?.country;
-
-      setLocationData({ city, country });
-      setAnswer({ ...answer, city, country });
-      setStatus("success");
-    } catch (err) {
-      console.log("Localisation error:", err);
-      setError(`Failed to fetch location: ${err?.message || err}`);
-      setStatus("error");
-    }
+  function next() {
+    const updated = { ...answer, country: location.country, city: tidyCity(location.city) };
+    setAnswer(updated);
+    saveSignupDraft({ located: true, answer: updated });
+    setlocated(true);
   }
 
   return (
     <View style={styles.wrapper}>
-      <View style={styles.card}>
-        <Text style={styles.heading}>Enable Location</Text>
-        <Text style={styles.subtitle}>We use your location to improve your experience.</Text>
+      <Text style={styles.icon}>📍</Text>
+      <Text style={styles.heading}>{t("location.title")}</Text>
+      <Text style={styles.subtitle}>{t("location.subtitle")}</Text>
 
-        {status !== "success" && (
-          <Pressable
-            style={styles.button}
-            onPress={handleGetPosition}
-            disabled={status === "loading"}
-          >
-            {status === "loading" ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Allow Location</Text>
-            )}
-          </Pressable>
-        )}
+      <LocationFields country={location.country} city={location.city} onChange={setLocation} />
 
-        {error !== "" && <Text style={styles.error}>{error}</Text>}
-
-        {locationData && (
-          <View style={styles.result}>
-            <Text style={styles.resultText}>
-              📍 {locationData.city}, {locationData.country}
-            </Text>
-            <Pressable
-              style={styles.button}
-              onPress={() => {
-                saveSignupDraft({ located: true, answer });
-                setlocated(true);
-              }}
-            >
-              <Text style={styles.buttonText}>Continue</Text>
-            </Pressable>
-          </View>
-        )}
-      </View>
+      <Pressable
+        style={({ pressed }) => [styles.button, !ready && styles.buttonDisabled, pressed && styles.buttonPressed]}
+        onPress={next}
+        disabled={!ready}
+      >
+        <Text style={styles.buttonText}>{t("location.continue")}</Text>
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: { alignItems: "center", justifyContent: "center", padding: 24 },
-  card: { alignItems: "center", width: "100%" },
-  heading: { fontSize: 22, fontWeight: "700", marginBottom: 8, color: "#1a1a2a" },
-  subtitle: { textAlign: "center", color: "#555", marginBottom: 16 },
+  wrapper: { alignItems: "center", padding: spacing.lg },
+  icon: { fontSize: 36, marginBottom: 4 },
+  heading: { ...typography.h2, fontSize: 23, textAlign: "center", marginBottom: 6 },
+  subtitle: { textAlign: "center", color: colors.textMuted, lineHeight: 21, marginBottom: spacing.sm },
   button: {
-    backgroundColor: "#d6336c",
-    borderRadius: 8,
-    padding: 14,
+    alignSelf: "stretch",
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingVertical: 15,
     alignItems: "center",
-    marginTop: 12,
-    minWidth: 160,
+    marginTop: spacing.lg,
   },
-  buttonText: { color: "#fff", fontWeight: "700" },
-  error: { color: "red", marginTop: 12 },
-  result: { alignItems: "center", marginTop: 16 },
-  resultText: { color: "#1a1a2a", fontSize: 16, fontWeight: "600" },
+  buttonDisabled: { opacity: 0.45 },
+  buttonPressed: { backgroundColor: colors.primaryDark, transform: [{ scale: 0.98 }] },
+  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });

@@ -35,6 +35,7 @@ export default function PageNav({ variant = "light", minimal = false }) {
   const [token, setTokenState] = useState(null);
   const [matchCount, setMatchCount] = useState(0);
   const [likeCount, setLikeCount] = useState(0);
+  const [messageCount, setMessageCount] = useState(0);
 
   const isTokenMissing = !token || token === "null" || token === "undefined";
   const isTransparent = variant === "transparent";
@@ -107,19 +108,24 @@ export default function PageNav({ variant = "light", minimal = false }) {
       if (!storedToken || storedToken === "null") return;
 
       try {
-        const [matchedResp, likedResp] = await Promise.all([
+        const [matchedResp, likedResp, messagesResp] = await Promise.all([
           fetch(`${BASE_URL}/matches/unseen_count`, {
             headers: { Authorization: `Bearer ${storedToken}` },
           }),
           fetch(`${BASE_URL}/likes/profile_likes/unseen_count`, {
             headers: { Authorization: `Bearer ${storedToken}` },
           }),
+          fetch(`${BASE_URL}/messages/unread_count`, {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          }),
         ]);
         const matched = matchedResp.ok ? await matchedResp.json() : { count: 0 };
         const liked = likedResp.ok ? await likedResp.json() : { count: 0 };
+        const unread = messagesResp.ok ? await messagesResp.json() : { count: 0 };
         if (!isMounted) return;
         setMatchCount(matched.count || 0);
         setLikeCount(liked.count || 0);
+        setMessageCount(unread.count || 0);
       } catch (err) {
         // Leave counts as-is if the backend is unreachable - a missing
         // badge isn't worth disrupting the rest of the nav for.
@@ -128,11 +134,16 @@ export default function PageNav({ variant = "light", minimal = false }) {
 
     fetchCounts();
     const interval = setInterval(fetchCounts, 30000);
+    // Screens stay mounted underneath the stack, so also refresh when one comes
+    // back into view - otherwise the Messages badge would stay lit after
+    // reading a chat until the next 30s tick.
+    const unsubscribe = navigation.addListener("focus", fetchCounts);
     return () => {
       isMounted = false;
       clearInterval(interval);
+      unsubscribe();
     };
-  }, []);
+  }, [navigation]);
 
   async function handleLogout() {
     await clearSession();
@@ -161,6 +172,7 @@ export default function PageNav({ variant = "light", minimal = false }) {
             <NavItem label={t("nav.browse")} onPress={() => navigation.navigate("Profiles")} transparent={isTransparent} colors={colors} />
             <NavItem label={t("nav.dateSpots")} onPress={() => navigation.navigate("DateSpots")} transparent={isTransparent} colors={colors} />
             <NavItem label={t("nav.matches")} onPress={() => navigation.navigate("MatchedList")} transparent={isTransparent} badge={matchCount} colors={colors} />
+            <NavItem label={t("nav.messages")} onPress={() => navigation.navigate("Messages")} transparent={isTransparent} badge={messageCount} colors={colors} />
             <NavItem label={t("nav.likesYou")} onPress={() => navigation.navigate("LikedYou")} transparent={isTransparent} badge={likeCount} colors={colors} />
             <NavItem label={t("nav.logout")} onPress={handleLogout} transparent={isTransparent} highlight colors={colors} />
           </>

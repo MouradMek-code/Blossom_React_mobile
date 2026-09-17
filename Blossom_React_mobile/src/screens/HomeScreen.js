@@ -3,6 +3,7 @@ import { Animated, Dimensions, ScrollView, View, StyleSheet } from "react-native
 import PageNav from "../components/PageNav";
 import StartHome from "../components/StartHome";
 import HowItWorks from "../components/HowItWorks";
+import FounderProjects from "../components/FounderProjects";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -43,6 +44,7 @@ export default function HomeScreen() {
         <StartHome />
       </View>
       <HowItWorks />
+      <FounderProjects />
     </ScrollView>
   );
 }
