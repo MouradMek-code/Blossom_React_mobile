@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ActivityIndicator, StyleSheet } from 
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { BASE_URL } from "../api/config";
-import { setToken } from "../api/storage";
+import { setProfileId, setToken } from "../api/storage";
 import { postJson, NETWORK_ERROR } from "../api/errors";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
@@ -49,7 +49,7 @@ export default function FormLogin() {
     }
 
     await setToken(result.data.access_token);
-    // Route to profile if setup complete, otherwise resume signup.
+    // Finished profile -> straight to Browse; otherwise resume sign-up.
     let profileResp;
     try {
       profileResp = await fetch(`${BASE_URL}/profile`, {
@@ -61,7 +61,15 @@ export default function FormLogin() {
       return;
     }
     setSubmitting(false);
-    navigation.navigate(profileResp.status === 200 ? "Profile" : "SignUp");
+    if (profileResp.status === 200) {
+      // Saved so the next app launch knows to open on Browse (see App.js).
+      const profile = await profileResp.json().catch(() => null);
+      if (profile?.id) await setProfileId(profile.id);
+      // Fresh history: Back from Browse shouldn't return to the login form.
+      navigation.reset({ index: 0, routes: [{ name: "Profiles" }] });
+    } else {
+      navigation.navigate("SignUp");
+    }
   }
 
   return (

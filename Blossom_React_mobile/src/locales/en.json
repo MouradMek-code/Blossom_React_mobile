@@ -218,5 +218,9 @@
     "saving": "Saving…",
     "cancel": "Cancel",
     "notSet": "Location not set"
+  },
+  "common": {
+    "loadError": "Couldn't connect. Check your internet connection and try again.",
+    "retry": "Try again"
   }
 }

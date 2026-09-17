@@ -19,6 +19,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "softwareKeyboardLayoutMode": "pan",
+      "googleServicesFile": "./google-services.json",
       "blockedPermissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
@@ -43,7 +44,14 @@
           }
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#C1466B"
+        }
+      ]
     ],
     "extra": {
       "eas": {

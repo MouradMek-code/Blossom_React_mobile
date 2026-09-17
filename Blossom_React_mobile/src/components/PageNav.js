@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import Logo from "./Logo";
 import { BASE_URL } from "../api/config";
 import { getToken, setToken, clearSession } from "../api/storage";
+import { unregisterPushNotifications } from "../api/push";
 import { changeLanguage } from "../i18n";
 import { useTheme } from "../context/ThemeContext";
 import { colors, radius, shadow } from "../theme";
@@ -146,10 +147,14 @@ export default function PageNav({ variant = "light", minimal = false }) {
   }, [navigation]);
 
   async function handleLogout() {
+    // Before the session goes: a shared phone shouldn't keep getting this
+    // account's notifications.
+    await unregisterPushNotifications(await getToken());
     await clearSession();
     setTokenState(null);
     setProfile(null);
-    navigation.navigate("Home");
+    // Fresh history, so Back can't return to screens of the logged-out account.
+    navigation.reset({ index: 0, routes: [{ name: "Home" }] });
   }
 
   return (

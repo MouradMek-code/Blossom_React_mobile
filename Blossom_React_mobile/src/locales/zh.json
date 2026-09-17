@@ -218,5 +218,9 @@
     "saving": "保存中…",
     "cancel": "取消",
     "notSet": "未设置位置"
+  },
+  "common": {
+    "loadError": "无法连接。请检查网络连接后重试。",
+    "retry": "重试"
   }
 }

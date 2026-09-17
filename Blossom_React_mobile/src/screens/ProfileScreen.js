@@ -4,15 +4,19 @@ import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import PageNav from "../components/PageNav";
 import ProfileView from "../components/ProfileView";
+import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
 import { postJson } from "../api/errors";
-import { getToken, setProfileId, setToken, clearSession } from "../api/storage";
+import { endSessionAndGoToLogin } from "../api/session";
+import { getToken, setProfileId, clearSession } from "../api/storage";
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const [profile, setProfile] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -24,32 +28,33 @@ export default function ProfileScreen() {
       }
 
       try {
+        setLoadError(false);
         const resp = await fetch(`${BASE_URL}/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (resp.status === 401) {
-          await setToken(null);
-          navigation.navigate("Login");
+          await endSessionAndGoToLogin(navigation);
           return;
         }
-        if (resp.status !== 200) {
+        if (resp.status === 404) {
           // Token valid but no profile yet — resume signup flow
           navigation.navigate("SignUp");
           return;
         }
+        if (resp.status !== 200) throw new Error(`profile failed with ${resp.status}`);
         const data = await resp.json();
         if (isMounted) setProfile(data);
         await setProfileId(data.id);
       } catch (err) {
-        await setToken(null);
-        navigation.navigate("Login");
+        // No internet / server trouble: stay logged in and offer a retry.
+        if (isMounted) setLoadError(true);
       }
     }
     fetchProfile();
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   async function handleSaveBio(bio) {
     const token = await getToken();
@@ -150,7 +155,7 @@ export default function ProfileScreen() {
               });
               if (resp.status !== 200) throw new Error("Failed to delete account");
               await clearSession();
-              navigation.navigate("Home");
+              navigation.reset({ index: 0, routes: [{ name: "Home" }] });
             } catch (err) {
               console.log("Account delete failed:", err);
               setDeletingAccount(false);
@@ -165,7 +170,11 @@ export default function ProfileScreen() {
     return (
       <View style={styles.head}>
         <PageNav />
-        <Text style={styles.loading}>Loading...</Text>
+        {loadError ? (
+          <LoadError onRetry={() => setReloadKey((k) => k + 1)} />
+        ) : (
+          <Text style={styles.loading}>Loading...</Text>
+        )}
       </View>
     );
   }

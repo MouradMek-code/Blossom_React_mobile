@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { ImageBackground, View, ScrollView, KeyboardAvoidingView, Platform, Text, Pressable, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PageNav from "../components/PageNav";
+import LoadError from "../components/LoadError";
+import { endSessionAndGoToLogin } from "../api/session";
 import KeyboardAwareScroll from "../components/KeyboardAwareScroll";
 import FormSignUp from "../components/FormSignUp";
 import StartProfile from "../components/StartProfile";
@@ -25,8 +28,11 @@ export default function SignUpScreen() {
   const [resumeAutoStart, setResumeAutoStart] = useState(false);
   const [prefill, setPrefill] = useState(null);
   const [questionReady, setQuestionReady] = useState(false);
+  const [resumeError, setResumeError] = useState(false);
+  const [resumeKey, setResumeKey] = useState(0);
   const startProfileRef = useRef(null);
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
 
   // A token alone means signup + email/OTP verification already
   // succeeded in a previous session - figure out how much further the
@@ -53,18 +59,30 @@ export default function SignUpScreen() {
         return;
       }
       try {
+        setResumeError(false);
         const resp = await fetch(`${BASE_URL}/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (resp.status === 200) {
+          const profile = await resp.json();
+          if (profile?.id) await setProfileId(profile.id);
+          await clearSignupDraft();
+          if (profile?.photos?.length) {
+            // A finished account - e.g. the app opened here because the phone
+            // didn't have the profile saved yet. It belongs on Browse.
+            navigation.reset({ index: 0, routes: [{ name: "Profiles" }] });
+            return;
+          }
           // Profile already exists, so localisation + every question were
           // already answered (createProfile only runs after the last
           // question) - only the photo step could still be unfinished.
-          await clearSignupDraft();
           setRegistered(true);
           setlocated(true);
           setPhoto(true);
-        } else {
+        } else if (resp.status === 401) {
+          await endSessionAndGoToLogin(navigation);
+          return;
+        } else if (resp.status === 404) {
           const draft = await getSignupDraft();
           setRegistered(true);
           if (draft) {
@@ -73,16 +91,19 @@ export default function SignUpScreen() {
             setResumeIndex(draft.questionIndex || 0);
             setResumeAutoStart(!!draft.started);
           }
+        } else {
+          throw new Error(`profile check failed with ${resp.status}`);
         }
       } catch (err) {
-        // Network hiccup while checking resume state - fall back to a
-        // fresh start rather than getting stuck on a loading screen.
+        // No internet / server trouble. They're logged in, so don't show the
+        // sign-up form as if they weren't - offer a retry.
+        setResumeError(true);
       } finally {
         setCheckingResume(false);
       }
     }
     checkResume();
-  }, []);
+  }, [resumeKey]);
 
   async function createLanguage(token) {
     await Promise.all(
@@ -170,6 +191,20 @@ export default function SignUpScreen() {
       <View style={styles.loadingHead}>
         <PageNav variant="transparent" />
         <Text style={styles.loadingText}>{t("loading")}</Text>
+      </View>
+    );
+  }
+
+  if (resumeError) {
+    return (
+      <View style={styles.loadingHead}>
+        <PageNav variant="transparent" />
+        <LoadError
+          onRetry={() => {
+            setCheckingResume(true);
+            setResumeKey((k) => k + 1);
+          }}
+        />
       </View>
     );
   }

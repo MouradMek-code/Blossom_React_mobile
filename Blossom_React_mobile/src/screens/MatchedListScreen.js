@@ -3,15 +3,19 @@ import { View, Text, Image, Pressable, FlatList, StyleSheet } from "react-native
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PageNav from "../components/PageNav";
+import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
 import { IMG } from "../api/images";
-import { getToken, setToken } from "../api/storage";
+import { endSessionAndGoToLogin } from "../api/session";
+import { getToken } from "../api/storage";
 import { colors, radius, spacing, shadow } from "../theme";
 
 export default function MatchedListScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [listMatchedProfiles, setListMatchedProfiles] = useState([]);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   async function openConversation(profile) {
     const token = await getToken();
@@ -50,13 +54,18 @@ export default function MatchedListScreen() {
         return;
       }
       try {
+        setLoadError(false);
         const resp = await fetch(`${BASE_URL}/profile/profiles/matched`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await resp.json();
-        if (resp.status !== 200) {
-          throw new Error(`error happeneded on matching service : ${data.detail?.[0]?.msg}`);
+        if (resp.status === 401) {
+          await endSessionAndGoToLogin(navigation);
+          return;
         }
+        if (resp.status !== 200) {
+          throw new Error(`matched profiles failed with ${resp.status}`);
+        }
+        const data = await resp.json();
         setListMatchedProfiles(data);
 
         fetch(`${BASE_URL}/matches/mark_seen`, {
@@ -68,16 +77,17 @@ export default function MatchedListScreen() {
           )
           .catch((err) => console.log("mark_seen network error:", err));
       } catch (err) {
-        await setToken(null);
-        navigation.navigate("Login");
+        // No internet / server trouble: stay logged in and offer a retry.
+        setLoadError(true);
       }
     }
     fetchMatchedProfile();
-  }, []);
+  }, [reloadKey]);
 
   return (
     <View style={styles.head}>
       <PageNav />
+      {loadError ? <LoadError onRetry={() => setReloadKey((k) => k + 1)} /> : null}
       <FlatList
         data={listMatchedProfiles}
         keyExtractor={(item) => String(item.id)}

@@ -4,6 +4,11 @@
 export const BASE_URL = "https://blossom-backend-x2wv.onrender.com";
 
 export const SITE_URL = "https://blossom-date.com";
+
+// Expo project (app.json extra.eas.projectId) - identifies the app to Expo's
+// push service. Not a secret. Hard-coded rather than read from expo-constants
+// so it works the same in locally built release bundles.
+export const EAS_PROJECT_ID = "47d54433-caae-4942-9ef3-9f804bfaa761";
 export const PRIVACY_POLICY_URL = `${SITE_URL}/privacy-policy`;
 
 // Other projects by Blossom's founder, featured on the home screen.

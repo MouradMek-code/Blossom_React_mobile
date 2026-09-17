@@ -7,6 +7,7 @@ import PageNav from "../components/PageNav";
 import { BASE_URL } from "../api/config";
 import { IMG } from "../api/images";
 import { NETWORK_ERROR, postJson } from "../api/errors";
+import { endSessionAndGoToLogin } from "../api/session";
 import { getToken } from "../api/storage";
 import { shortTime } from "../api/chatTime";
 import { colors, radius, spacing, shadow, typography } from "../theme";
@@ -34,7 +35,7 @@ export default function MessagesScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (resp.status === 401) {
-        navigation.navigate("Login");
+        await endSessionAndGoToLogin(navigation);
         return;
       }
       setItems(resp.ok ? await resp.json() : []);

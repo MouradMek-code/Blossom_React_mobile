@@ -3,9 +3,11 @@ import { View, Text, Image, Pressable, FlatList, StyleSheet } from "react-native
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PageNav from "../components/PageNav";
+import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
 import { IMG } from "../api/images";
-import { getToken, setToken } from "../api/storage";
+import { endSessionAndGoToLogin } from "../api/session";
+import { getToken } from "../api/storage";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 // /likes/profile_likes only returns the ids of profiles that liked the
@@ -21,6 +23,7 @@ export default function LikedYouScreen() {
   const insets = useSafeAreaInsets();
   const [likedByProfiles, setLikedByProfiles] = useState([]);
   const [matchedProfile, setMatchedProfile] = useState(null);
+  const [loadError, setLoadError] = useState(false);
 
   async function fetchLikedBy() {
     const token = await getToken();
@@ -39,11 +42,16 @@ export default function LikedYouScreen() {
         photoUrl: IMG.thumb(profile.photos?.[0]?.image_url) || null,
       });
 
+      setLoadError(false);
       // One request for the full profiles. Falls back to the older
       // ids-then-fetch-each path if the backend hasn't been deployed yet.
       const resp = await fetch(`${BASE_URL}/likes/profile_likes/profiles`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (resp.status === 401) {
+        await endSessionAndGoToLogin(navigation);
+        return;
+      }
 
       if (resp.ok) {
         const full = await resp.json();
@@ -73,9 +81,9 @@ export default function LikedYouScreen() {
         headers: { Authorization: `Bearer ${token}` },
       }).catch(() => {});
     } catch (err) {
+      // No internet / server trouble: stay logged in and offer a retry.
       console.log(err);
-      await setToken(null);
-      navigation.navigate("Login");
+      setLoadError(true);
     }
   }
 
@@ -111,6 +119,7 @@ export default function LikedYouScreen() {
     <View style={styles.head}>
       <PageNav />
       <Text style={styles.title}>People who like you</Text>
+      {loadError ? <LoadError onRetry={fetchLikedBy} /> : null}
 
       {matchedProfile && (
         <View style={styles.matchOverlay}>

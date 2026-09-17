@@ -7,8 +7,10 @@ import SwipeCard from "../components/SwipeCard";
 import ProfileFilterModal from "../components/ProfileFilterModal";
 import { matchesFilters, getDefaultFilters } from "../api/profileFilters";
 import { seededShuffle } from "../api/shuffle";
+import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
-import { getToken, setToken } from "../api/storage";
+import { endSessionAndGoToLogin } from "../api/session";
+import { getToken } from "../api/storage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { useTheme } from "../context/ThemeContext";
@@ -38,6 +40,8 @@ export default function ProfilesScreen() {
   const [draftFilters, setDraftFilters] = useState({});
   const [appliedFilters, setAppliedFilters] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   // One seed per mount: the deck order is random each visit but stays put
   // while the user swipes through it.
   const [deckSeed] = useState(() => Math.random());
@@ -82,6 +86,7 @@ export default function ProfilesScreen() {
         return;
       }
       try {
+        setLoadError(false);
         const [profilesResp, likedResp, ownResp] = await Promise.all([
           fetch(`${BASE_URL}/profile/all_profile`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -93,10 +98,14 @@ export default function ProfilesScreen() {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
-        const data = await profilesResp.json();
-        if (profilesResp.status !== 200) {
-          throw new Error(`error happened on login : ${data.detail?.[0]?.msg}`);
+        if (profilesResp.status === 401) {
+          await endSessionAndGoToLogin(navigation);
+          return;
         }
+        if (profilesResp.status !== 200) {
+          throw new Error(`profiles failed with ${profilesResp.status}`);
+        }
+        const data = await profilesResp.json();
         const likedData = likedResp.ok ? await likedResp.json() : [];
         const likedIds = likedData.map(extractLikedId).filter((id) => id != null);
         // Randomise the deck so the same faces aren't always first.
@@ -123,14 +132,14 @@ export default function ProfilesScreen() {
           setAppliedFilters(initial);
         }
       } catch (err) {
-        await setToken(null);
-        navigation.navigate("Login");
+        // No internet / server trouble: stay logged in and offer a retry.
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
     }
     fetchAll();
-  }, []);
+  }, [reloadKey]);
 
   const filteredProfiles = useMemo(
     () => profiles.filter((p) => matchesFilters(p, appliedFilters)),
@@ -175,6 +184,15 @@ export default function ProfilesScreen() {
           </Text>
         </Pressable>
       </View>
+
+      {loadError ? (
+        <LoadError
+          onRetry={() => {
+            setLoading(true);
+            setReloadKey((k) => k + 1);
+          }}
+        />
+      ) : null}
 
       <ProfileFilterModal
         visible={filterModalVisible}

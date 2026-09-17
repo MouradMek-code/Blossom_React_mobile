@@ -16,9 +16,11 @@ import NotFoundScreen from "../screens/NotFoundScreen";
 
 const Stack = createNativeStackNavigator();
 
-export default function RootNavigator() {
+// initialRouteName is decided in App.js from the saved session: Browse for
+// someone logged in, sign-up for someone mid-way through it, Home otherwise.
+export default function RootNavigator({ initialRouteName = "Home" }) {
   return (
-    <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
+    <Stack.Navigator initialRouteName={initialRouteName} screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
