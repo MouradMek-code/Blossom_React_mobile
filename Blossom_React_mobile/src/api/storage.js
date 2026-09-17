@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { clearCache } from "./cache";
 
 export async function getToken() {
   return AsyncStorage.getItem("token");
@@ -22,6 +23,8 @@ export async function setProfileId(id) {
 export async function clearSession() {
   await AsyncStorage.removeItem("token");
   await AsyncStorage.removeItem("profile_id");
+  // Cached screens belong to this account - never show them to the next one.
+  await clearCache();
 }
 
 // Persists in-progress signup state (location + question answers + which

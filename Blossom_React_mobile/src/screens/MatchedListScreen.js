@@ -8,12 +8,14 @@ import { BASE_URL } from "../api/config";
 import { IMG } from "../api/images";
 import { endSessionAndGoToLogin } from "../api/session";
 import { getToken } from "../api/storage";
+import { peekCache, readCache, writeCache } from "../api/cache";
 import { colors, radius, spacing, shadow } from "../theme";
 
 export default function MatchedListScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const [listMatchedProfiles, setListMatchedProfiles] = useState([]);
+  // Last list from this session, shown immediately while it refreshes.
+  const [listMatchedProfiles, setListMatchedProfiles] = useState(() => peekCache("matches") || []);
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -39,7 +41,11 @@ export default function MatchedListScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!resp.ok) throw new Error("Failed to unmatch");
-      setListMatchedProfiles((prev) => prev.filter((p) => p.id !== profile.id));
+      setListMatchedProfiles((prev) => {
+        const next = prev.filter((p) => p.id !== profile.id);
+        writeCache("matches", next);
+        return next;
+      });
     } catch (err) {
       console.log(err);
     }
@@ -53,6 +59,9 @@ export default function MatchedListScreen() {
         navigation.navigate("Login");
         return;
       }
+      // Instant start from the saved list (disk, after an app restart).
+      const cached = await readCache("matches");
+      if (cached) setListMatchedProfiles(cached);
       try {
         setLoadError(false);
         const resp = await fetch(`${BASE_URL}/profile/profiles/matched`, {
@@ -67,6 +76,7 @@ export default function MatchedListScreen() {
         }
         const data = await resp.json();
         setListMatchedProfiles(data);
+        writeCache("matches", data);
 
         fetch(`${BASE_URL}/matches/mark_seen`, {
           method: "POST",
@@ -77,8 +87,9 @@ export default function MatchedListScreen() {
           )
           .catch((err) => console.log("mark_seen network error:", err));
       } catch (err) {
-        // No internet / server trouble: stay logged in and offer a retry.
-        setLoadError(true);
+        // No internet / server trouble: stay logged in. With the saved list
+        // on screen just keep it; otherwise offer a retry.
+        if (!cached) setLoadError(true);
       }
     }
     fetchMatchedProfile();

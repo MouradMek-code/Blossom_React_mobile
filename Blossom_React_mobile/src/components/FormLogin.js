@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { BASE_URL } from "../api/config";
 import { setProfileId, setToken } from "../api/storage";
+import { clearCache } from "../api/cache";
 import { postJson, NETWORK_ERROR } from "../api/errors";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
@@ -48,6 +49,9 @@ export default function FormLogin() {
       return;
     }
 
+    // Start this account from an empty cache - never show screens saved for
+    // whoever used the phone before.
+    await clearCache();
     await setToken(result.data.access_token);
     // Finished profile -> straight to Browse; otherwise resume sign-up.
     let profileResp;

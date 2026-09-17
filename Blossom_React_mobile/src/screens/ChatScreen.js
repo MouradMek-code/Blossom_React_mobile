@@ -20,6 +20,7 @@ import { postJson } from "../api/errors";
 import { IMG } from "../api/images";
 import { categoryEmoji, categoryGradient, shortPlace } from "../api/categories";
 import { getToken, getProfileId } from "../api/storage";
+import { peekCache, readCache, writeCache } from "../api/cache";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 // A date spot sent with "Invite a match": the message text plus a tappable
@@ -67,12 +68,16 @@ export default function ChatScreen() {
   const { conversationId } = route.params;
 
   const { t } = useTranslation();
-  const [messages, setMessages] = useState([]);
+  const chatKey = `chat:${conversationId}`;
+  const detailsKey = `chatDetails:${conversationId}`;
+  // Last messages + header from this session: the chat opens instantly.
+  const [messages, setMessages] = useState(() => peekCache(chatKey) || []);
+  const savedSignature = useRef("");
   // Messages already shown in the chat but still on their way to the server.
   const [pending, setPending] = useState([]);
   const [text, setText] = useState("");
   const [profileId, setProfileIdState] = useState(null);
-  const [details, setDetails] = useState(null);
+  const [details, setDetails] = useState(() => peekCache(detailsKey));
   const [error, setError] = useState("");
   const listRef = useRef(null);
   const insets = useSafeAreaInsets();
@@ -86,24 +91,54 @@ export default function ChatScreen() {
     setText(value);
   }
 
+  // One poll at a time. On a slow connection a request can outlast the 3s
+  // interval; without this they'd stack up, load the server even more and
+  // could land out of order.
+  const loadingRef = useRef(false);
+
   async function loadMessages() {
-    const token = await getToken();
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     try {
+      const token = await getToken();
       const resp = await fetch(`${BASE_URL}/messages/conversation/${conversationId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!resp.ok) return;
-      setMessages(await resp.json());
+      const data = await resp.json();
+      setMessages(data);
+      // The chat polls every 3s; only rewrite the saved copy when it changed.
+      const signature = `${data.length}:${data[data.length - 1]?.id}`;
+      if (signature !== savedSignature.current) {
+        savedSignature.current = signature;
+        writeCache(chatKey, data.slice(-100));
+      }
     } catch {
       // Keep showing what we have; the next poll will retry.
+    } finally {
+      loadingRef.current = false;
     }
   }
 
   useEffect(() => {
     getProfileId().then(setProfileIdState);
+    // Instant open from the saved copy (disk, after an app restart).
+    if (!peekCache(chatKey)) {
+      readCache(chatKey).then((saved) => {
+        if (saved) setMessages((cur) => (cur.length ? cur : saved));
+      });
+    }
     loadMessages();
-    const interval = setInterval(loadMessages, 3000);
-    return () => clearInterval(interval);
+    // Poll only while the chat is on screen - not while e.g. their profile is
+    // open on top of it.
+    const interval = setInterval(() => {
+      if (navigation.isFocused()) loadMessages();
+    }, 3000);
+    const unsubscribe = navigation.addListener("focus", loadMessages);
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+    };
   }, [conversationId]);
 
   // Who's on the other side (name + photo for the header), and our own
@@ -117,7 +152,11 @@ export default function ChatScreen() {
         const resp = await fetch(`${BASE_URL}/messages/conversation/${conversationId}/details`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (resp.ok && alive) setDetails(await resp.json());
+        if (resp.ok && alive) {
+          const data = await resp.json();
+          setDetails(data);
+          writeCache(detailsKey, data);
+        }
       } catch {
         /* header just stays generic */
       }

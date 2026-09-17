@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { View, Text, Image, Pressable, FlatList, ActivityIndicator, StyleSheet } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,6 +9,7 @@ import { IMG } from "../api/images";
 import { NETWORK_ERROR, postJson } from "../api/errors";
 import { endSessionAndGoToLogin } from "../api/session";
 import { getToken } from "../api/storage";
+import { peekCache, readCache, writeCache } from "../api/cache";
 import { shortTime } from "../api/chatTime";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
@@ -20,17 +21,29 @@ export default function MessagesScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const [items, setItems] = useState(null); // null while loading
+  // Last inbox from this session, shown immediately; null = nothing yet.
+  const [items, setItems] = useState(() => peekCache("inbox"));
   const [error, setError] = useState("");
   const [openingId, setOpeningId] = useState(null);
 
+  // One refresh at a time: on a slow connection a request can outlast the
+  // polling interval, and stacked requests only slow the server down more.
+  const loadingRef = useRef(false);
+
   const load = useCallback(async () => {
-    const token = await getToken();
-    if (!token || token === "null") {
-      navigation.navigate("Login");
-      return;
-    }
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     try {
+      const token = await getToken();
+      if (!token || token === "null") {
+        navigation.navigate("Login");
+        return;
+      }
+      // Instant start from the saved inbox (disk, after an app restart).
+      if (!peekCache("inbox")) {
+        const saved = await readCache("inbox");
+        if (saved) setItems((cur) => cur || saved);
+      }
       const resp = await fetch(`${BASE_URL}/messages/inbox`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -38,11 +51,17 @@ export default function MessagesScreen() {
         await endSessionAndGoToLogin(navigation);
         return;
       }
-      setItems(resp.ok ? await resp.json() : []);
+      if (!resp.ok) throw new Error(`inbox failed with ${resp.status}`);
+      const data = await resp.json();
+      setItems(data);
+      writeCache("inbox", data);
       setError("");
     } catch {
-      setError(NETWORK_ERROR);
+      // Keep what's on screen; only flag it when there's nothing to show.
+      if (!peekCache("inbox")) setError(NETWORK_ERROR);
       setItems((cur) => cur || []);
+    } finally {
+      loadingRef.current = false;
     }
   }, [navigation]);
 

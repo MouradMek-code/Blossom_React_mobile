@@ -5,8 +5,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import Logo from "./Logo";
 import { BASE_URL } from "../api/config";
-import { getToken, setToken, clearSession } from "../api/storage";
+import { getToken, clearSession } from "../api/storage";
 import { unregisterPushNotifications } from "../api/push";
+import { peekCache, writeCache } from "../api/cache";
 import { changeLanguage } from "../i18n";
 import { useTheme } from "../context/ThemeContext";
 import { colors, radius, shadow } from "../theme";
@@ -32,119 +33,93 @@ export default function PageNav({ variant = "light", minimal = false }) {
     await changeLanguage(code);
     setActiveLang(code);
   }
-  const [profile, setProfile] = useState(null);
-  const [token, setTokenState] = useState(null);
-  const [matchCount, setMatchCount] = useState(0);
-  const [likeCount, setLikeCount] = useState(0);
-  const [messageCount, setMessageCount] = useState(0);
+  // The menu as the previous screen last saw it, so it draws instantly
+  // (logged-in links + badges) instead of empty until the server answers.
+  const cachedNav = peekCache("nav");
+  const [profile, setProfile] = useState(cachedNav?.has_profile ? {} : null);
+  const [token, setTokenState] = useState(cachedNav ? "cached" : null);
+  const [matchCount, setMatchCount] = useState(cachedNav?.matches || 0);
+  const [likeCount, setLikeCount] = useState(cachedNav?.likes || 0);
+  const [messageCount, setMessageCount] = useState(cachedNav?.messages || 0);
 
   const isTokenMissing = !token || token === "null" || token === "undefined";
   const isTransparent = variant === "transparent";
 
   useEffect(() => {
     let isMounted = true;
-    async function fetchProfile() {
+
+    function apply(nav) {
+      if (!isMounted) return;
+      // No profile yet = mid-signup: keep the session, just no menu links.
+      setProfile(nav.has_profile ? {} : null);
+      setMatchCount(nav.matches || 0);
+      setLikeCount(nav.likes || 0);
+      setMessageCount(nav.messages || 0);
+    }
+
+    // Backends from before /user/badges: the old four requests.
+    async function legacyNav(headers) {
+      const [profileResp, matched, liked, unread] = await Promise.all([
+        fetch(`${BASE_URL}/profile`, { headers }),
+        fetch(`${BASE_URL}/matches/unseen_count`, { headers }).then((r) => (r.ok ? r.json() : {})),
+        fetch(`${BASE_URL}/likes/profile_likes/unseen_count`, { headers }).then((r) => (r.ok ? r.json() : {})),
+        fetch(`${BASE_URL}/messages/unread_count`, { headers }).then((r) => (r.ok ? r.json() : {})),
+      ]);
+      return {
+        has_profile: profileResp.status === 200,
+        matches: matched.count,
+        likes: liked.count,
+        messages: unread.count,
+      };
+    }
+
+    // Whole menu in one request: does the profile exist + the three badges.
+    async function refresh() {
       const storedToken = await getToken();
       if (!isMounted) return;
       setTokenState(storedToken);
-
       if (!storedToken || storedToken === "null") {
-        if (isMounted) setProfile(null);
+        setProfile(null);
         return;
       }
-
+      const headers = { Authorization: `Bearer ${storedToken}` };
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 6000);
-        const resp = await fetch(`${BASE_URL}/profile`, {
-          headers: { Authorization: `Bearer ${storedToken}` },
-          signal: controller.signal,
-        });
-        clearTimeout(timeout);
-
-        if (resp.status === 200) {
-          const data = await resp.json();
-          if (isMounted) setProfile(data);
-          return;
-        }
+        const resp = await fetch(`${BASE_URL}/user/badges`, { headers });
         if (resp.status === 401) {
-          // The token itself is genuinely invalid - log out.
-          await setToken(null);
+          // The session itself is invalid - log out, saved screens included.
+          await clearSession();
           if (isMounted) {
             setTokenState(null);
             setProfile(null);
           }
           return;
         }
-        // Any other status (typically 404) just means the profile hasn't been
-        // created yet - the user is mid-signup. Keep their token; clearing it
-        // here used to wipe the session during profile creation and break the
-        // rest of the flow.
-        if (isMounted) setProfile(null);
+        // An old backend reads "badges" as a user id (422) or doesn't know it.
+        const nav = resp.ok ? await resp.json() : await legacyNav(headers);
+        writeCache("nav", nav);
+        apply(nav);
       } catch (err) {
-        // Network hiccup or timeout - keep the session and simply show no nav
-        // links rather than falsely logging the user out.
-        if (isMounted) setProfile(null);
+        // Network trouble: keep showing the last known menu - never hide the
+        // links or log anyone out over it.
       }
     }
 
-    fetchProfile();
-    // Re-check on focus so the nav switches to the logged-in links as soon as
-    // profile creation finishes, instead of staying stale from mount time.
-    // `minimal` is a dependency too: leaving minimal mode at the end of signup
-    // happens on the same screen (no focus event), so this is what refreshes
-    // the nav there.
-    const unsubscribe = navigation.addListener("focus", fetchProfile);
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
-  }, [navigation, minimal]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchCounts() {
-      const storedToken = await getToken();
-      if (!storedToken || storedToken === "null") return;
-
-      try {
-        const [matchedResp, likedResp, messagesResp] = await Promise.all([
-          fetch(`${BASE_URL}/matches/unseen_count`, {
-            headers: { Authorization: `Bearer ${storedToken}` },
-          }),
-          fetch(`${BASE_URL}/likes/profile_likes/unseen_count`, {
-            headers: { Authorization: `Bearer ${storedToken}` },
-          }),
-          fetch(`${BASE_URL}/messages/unread_count`, {
-            headers: { Authorization: `Bearer ${storedToken}` },
-          }),
-        ]);
-        const matched = matchedResp.ok ? await matchedResp.json() : { count: 0 };
-        const liked = likedResp.ok ? await likedResp.json() : { count: 0 };
-        const unread = messagesResp.ok ? await messagesResp.json() : { count: 0 };
-        if (!isMounted) return;
-        setMatchCount(matched.count || 0);
-        setLikeCount(liked.count || 0);
-        setMessageCount(unread.count || 0);
-      } catch (err) {
-        // Leave counts as-is if the backend is unreachable - a missing
-        // badge isn't worth disrupting the rest of the nav for.
-      }
-    }
-
-    fetchCounts();
-    const interval = setInterval(fetchCounts, 30000);
-    // Screens stay mounted underneath the stack, so also refresh when one comes
-    // back into view - otherwise the Messages badge would stay lit after
-    // reading a chat until the next 30s tick.
-    const unsubscribe = navigation.addListener("focus", fetchCounts);
+    refresh();
+    // Poll only while this screen is the one on display: screens underneath
+    // in the stack stay mounted, and each used to keep polling.
+    const interval = setInterval(() => {
+      if (navigation.isFocused()) refresh();
+    }, 30000);
+    // Refresh when a screen comes back into view (e.g. Messages badge after
+    // reading a chat). `minimal` is a dependency too: leaving minimal mode at
+    // the end of sign-up happens on the same screen, with no focus event.
+    const unsubscribe = navigation.addListener("focus", refresh);
     return () => {
       isMounted = false;
       clearInterval(interval);
       unsubscribe();
     };
-  }, [navigation]);
+  }, [navigation, minimal]);
 
   async function handleLogout() {
     // Before the session goes: a shared phone shouldn't keep getting this

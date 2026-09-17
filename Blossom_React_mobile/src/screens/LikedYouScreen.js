@@ -8,6 +8,7 @@ import { BASE_URL } from "../api/config";
 import { IMG } from "../api/images";
 import { endSessionAndGoToLogin } from "../api/session";
 import { getToken } from "../api/storage";
+import { peekCache, readCache, writeCache } from "../api/cache";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 // /likes/profile_likes only returns the ids of profiles that liked the
@@ -21,7 +22,8 @@ function extractId(entry) {
 export default function LikedYouScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const [likedByProfiles, setLikedByProfiles] = useState([]);
+  // Last list from this session, shown immediately while it refreshes.
+  const [likedByProfiles, setLikedByProfiles] = useState(() => peekCache("likedYou") || []);
   const [matchedProfile, setMatchedProfile] = useState(null);
   const [loadError, setLoadError] = useState(false);
 
@@ -31,6 +33,9 @@ export default function LikedYouScreen() {
       navigation.navigate("Login");
       return;
     }
+    // Instant start from the saved list (disk, after an app restart).
+    const cached = await readCache("likedYou");
+    if (cached) setLikedByProfiles(cached);
     try {
       const toCard = (profile, fallbackId) => ({
         id: profile.id ?? fallbackId,
@@ -55,7 +60,9 @@ export default function LikedYouScreen() {
 
       if (resp.ok) {
         const full = await resp.json();
-        setLikedByProfiles(full.map((p) => toCard(p, p.id)));
+        const cards = full.map((p) => toCard(p, p.id));
+        setLikedByProfiles(cards);
+        writeCache("likedYou", cards);
       } else {
         const legacyResp = await fetch(`${BASE_URL}/likes/profile_likes`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -74,6 +81,7 @@ export default function LikedYouScreen() {
           }),
         );
         setLikedByProfiles(profiles);
+        writeCache("likedYou", profiles);
       }
 
       fetch(`${BASE_URL}/likes/profile_likes/mark_seen`, {
@@ -81,9 +89,10 @@ export default function LikedYouScreen() {
         headers: { Authorization: `Bearer ${token}` },
       }).catch(() => {});
     } catch (err) {
-      // No internet / server trouble: stay logged in and offer a retry.
+      // No internet / server trouble: stay logged in. With the saved list on
+      // screen just keep it; otherwise offer a retry.
       console.log(err);
-      setLoadError(true);
+      if (!cached) setLoadError(true);
     }
   }
 
@@ -109,7 +118,11 @@ export default function LikedYouScreen() {
         setMatchedProfile(profile);
         setTimeout(() => setMatchedProfile(null), 2000);
       }
-      setLikedByProfiles((prev) => prev.filter((p) => p.id !== profile.id));
+      setLikedByProfiles((prev) => {
+        const next = prev.filter((p) => p.id !== profile.id);
+        writeCache("likedYou", next);
+        return next;
+      });
     } catch (err) {
       console.log(err);
     }

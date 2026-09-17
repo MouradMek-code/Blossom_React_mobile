@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, Image, Pressable, ActivityIndicator, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,8 +9,10 @@ import { matchesFilters, getDefaultFilters } from "../api/profileFilters";
 import { seededShuffle } from "../api/shuffle";
 import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
+import { IMG } from "../api/images";
 import { endSessionAndGoToLogin } from "../api/session";
 import { getToken } from "../api/storage";
+import { peekCache, readCache, writeCache } from "../api/cache";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { useTheme } from "../context/ThemeContext";
@@ -23,18 +25,14 @@ const FILTERS_KEY = "blossom_filters";
 const FILTERS_VERSION_KEY = "blossom_filters_version";
 const FILTERS_VERSION = "2";
 
-// /likes/profiles_i_liked may return plain ids or objects wrapping one.
-function extractLikedId(entry) {
-  if (typeof entry === "number" || typeof entry === "string") return entry;
-  return entry.profile_id ?? entry.id ?? entry.liked_profile_id;
-}
-
 export default function ProfilesScreen() {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [profiles, setProfiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const currentIndexRef = useRef(0);
+  currentIndexRef.current = currentIndex;
   const [matchedProfile, setMatchedProfile] = useState(null);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [draftFilters, setDraftFilters] = useState({});
@@ -72,26 +70,66 @@ export default function ProfilesScreen() {
   function handleSwipeRight(profile) {
     likeProfile(profile);
     setCurrentIndex((i) => i + 1);
+    // Liked profiles never come back in Browse; take it out of the saved deck
+    // too, or the next instant start would show it again.
+    const cached = peekCache("browse");
+    if (cached) {
+      writeCache("browse", { ...cached, profiles: cached.profiles.filter((p) => p.id !== profile.id) });
+    }
   }
 
   function handleSwipeLeft() {
     setCurrentIndex((i) => i + 1);
   }
 
+  // The filters to start with: the saved ones, or the orientation-based default.
+  async function initialFilters(own) {
+    const savedVersion = await AsyncStorage.getItem(FILTERS_VERSION_KEY);
+    const saved = await AsyncStorage.getItem(FILTERS_KEY);
+    // Only honour a saved filter from the current version; otherwise fall
+    // back to the freshly-computed orientation default and drop the stale
+    // one so it can't keep shadowing the new default.
+    if (savedVersion === FILTERS_VERSION && saved !== null) return JSON.parse(saved);
+    await AsyncStorage.setItem(FILTERS_VERSION_KEY, FILTERS_VERSION);
+    await AsyncStorage.removeItem(FILTERS_KEY);
+    return getDefaultFilters(own);
+  }
+
   useEffect(() => {
+    let cancelled = false;
+
+    async function showDeck(list, own) {
+      const filters = own ? await initialFilters(own) : null;
+      if (cancelled) return;
+      if (filters) {
+        setDraftFilters(filters);
+        setAppliedFilters(filters);
+      }
+      // Randomise the deck so the same faces aren't always first.
+      setProfiles(seededShuffle(list, deckSeed));
+    }
+
     async function fetchAll() {
       const token = await getToken();
       if (!token || token === "null") {
         navigation.navigate("Login");
         return;
       }
+
+      // Instant start: show the last deck right away (memory, or disk after an
+      // app restart) while the fresh one loads.
+      const cached = await readCache("browse");
+      if (cached && !cancelled) {
+        await showDeck(cached.profiles, cached.own);
+        setLoading(false);
+      }
+
       try {
         setLoadError(false);
-        const [profilesResp, likedResp, ownResp] = await Promise.all([
+        const [profilesResp, ownResp] = await Promise.all([
+          // Already leaves out people you liked, matched or blocked - the
+          // separate /likes/profiles_i_liked request this used to make is gone.
           fetch(`${BASE_URL}/profile/all_profile`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`${BASE_URL}/likes/profiles_i_liked`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
           fetch(`${BASE_URL}/profile`, {
@@ -106,39 +144,27 @@ export default function ProfilesScreen() {
           throw new Error(`profiles failed with ${profilesResp.status}`);
         }
         const data = await profilesResp.json();
-        const likedData = likedResp.ok ? await likedResp.json() : [];
-        const likedIds = likedData.map(extractLikedId).filter((id) => id != null);
-        // Randomise the deck so the same faces aren't always first.
-        setProfiles(seededShuffle(data.filter((p) => !likedIds.includes(p.id)), deckSeed));
-        setCurrentIndex(0);
-
-        if (ownResp.ok) {
-          const ownData = await ownResp.json();
-          const defaults = getDefaultFilters(ownData);
-          const savedVersion = await AsyncStorage.getItem(FILTERS_VERSION_KEY);
-          const saved = await AsyncStorage.getItem(FILTERS_KEY);
-          // Only honour a saved filter from the current version; otherwise fall
-          // back to the freshly-computed orientation default and drop the stale
-          // one so it can't keep shadowing the new default.
-          let initial;
-          if (savedVersion === FILTERS_VERSION && saved !== null) {
-            initial = JSON.parse(saved);
-          } else {
-            initial = defaults;
-            await AsyncStorage.setItem(FILTERS_VERSION_KEY, FILTERS_VERSION);
-            await AsyncStorage.removeItem(FILTERS_KEY);
-          }
-          setDraftFilters(initial);
-          setAppliedFilters(initial);
+        const own = ownResp.ok ? await ownResp.json() : cached?.own || null;
+        // Capped so the saved copy stays small as the community grows.
+        writeCache("browse", { profiles: data.slice(0, 150), own });
+        // Don't swap the deck out from under someone who's already swiping;
+        // the fresh one is saved for next time.
+        if (!cancelled && (!cached || currentIndexRef.current === 0)) {
+          await showDeck(data, own);
+          setCurrentIndex(0);
         }
       } catch (err) {
-        // No internet / server trouble: stay logged in and offer a retry.
-        setLoadError(true);
+        // No internet / server trouble: stay logged in. With a saved deck on
+        // screen just keep it; otherwise offer a retry.
+        if (!cached && !cancelled) setLoadError(true);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchAll();
+    return () => {
+      cancelled = true;
+    };
   }, [reloadKey]);
 
   const filteredProfiles = useMemo(
@@ -209,7 +235,7 @@ export default function ProfilesScreen() {
             <Text style={styles.matchHeart}>❤️</Text>
             <Text style={styles.matchTitle}>It's a Match!</Text>
             <Image
-              source={{ uri: matchedProfile.photos?.[0]?.image_url }}
+              source={{ uri: IMG.thumb(matchedProfile.photos?.[0]?.image_url) }}
               style={styles.matchImage}
             />
             <Text style={styles.matchName}>{matchedProfile.first_name}</Text>

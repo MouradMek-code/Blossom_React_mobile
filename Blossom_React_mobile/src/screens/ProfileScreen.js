@@ -9,10 +9,12 @@ import { BASE_URL } from "../api/config";
 import { postJson } from "../api/errors";
 import { endSessionAndGoToLogin } from "../api/session";
 import { getToken, setProfileId, clearSession } from "../api/storage";
+import { peekCache, readCache, writeCache } from "../api/cache";
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
-  const [profile, setProfile] = useState(null);
+  // Last copy from this session, shown immediately while it refreshes.
+  const [profile, setProfile] = useState(() => peekCache("ownProfile"));
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -26,6 +28,10 @@ export default function ProfileScreen() {
         navigation.navigate("Login");
         return;
       }
+
+      // Instant start from the saved copy (disk, after an app restart).
+      const cached = await readCache("ownProfile");
+      if (cached && isMounted) setProfile((cur) => cur || cached);
 
       try {
         setLoadError(false);
@@ -46,8 +52,9 @@ export default function ProfileScreen() {
         if (isMounted) setProfile(data);
         await setProfileId(data.id);
       } catch (err) {
-        // No internet / server trouble: stay logged in and offer a retry.
-        if (isMounted) setLoadError(true);
+        // No internet / server trouble: stay logged in. With the saved copy on
+        // screen just keep it; otherwise offer a retry.
+        if (isMounted && !cached) setLoadError(true);
       }
     }
     fetchProfile();
@@ -55,6 +62,11 @@ export default function ProfileScreen() {
       isMounted = false;
     };
   }, [reloadKey]);
+
+  // Keep the saved copy current after every change (bio, photos, location).
+  useEffect(() => {
+    if (profile) writeCache("ownProfile", profile);
+  }, [profile]);
 
   async function handleSaveBio(bio) {
     const token = await getToken();
