@@ -1,5 +1,6 @@
-import { Image, StyleSheet } from "react-native";
+import { Image } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import ProfilesScreen from "../screens/ProfilesScreen";
 import LikedYouScreen from "../screens/LikedYouScreen";
@@ -44,6 +45,10 @@ function badgeValue(count) {
 export default function MainTabs() {
   const { t } = useTranslation();
   const { badges, markSeen } = useNavBadges();
+  const insets = useSafeAreaInsets();
+  // Room under the labels for the phone's navigation buttons. A floor of 10
+  // in case a phone reports no inset, so the labels never sit on the edge.
+  const bottomSpace = Math.max(insets.bottom, 10);
 
   return (
     <Tab.Navigator
@@ -59,9 +64,21 @@ export default function MainTabs() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: styles.bar,
-        tabBarLabelStyle: styles.label,
-        tabBarBadgeStyle: styles.badge,
+        // The height is set here rather than left to the default: the icon and
+        // its label need the full 60, and everything below that is the phone's
+        // own buttons.
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          height: 60 + bottomSpace,
+          paddingTop: 7,
+          paddingBottom: bottomSpace,
+        },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
+        // A phone set to large text would otherwise push the labels off the bar.
+        tabBarAllowFontScaling: false,
+        tabBarBadgeStyle: { backgroundColor: "#ff2d55", fontSize: 11, fontWeight: "700" },
         // Typing a message or searching a city shouldn't leave the bar
         // sitting on top of the keyboard.
         tabBarHideOnKeyboard: true,
@@ -105,13 +122,3 @@ export default function MainTabs() {
   );
 }
 
-const styles = StyleSheet.create({
-  bar: {
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 6,
-  },
-  label: { fontSize: 11, fontWeight: "600" },
-  badge: { backgroundColor: "#ff2d55", fontSize: 11, fontWeight: "700" },
-});

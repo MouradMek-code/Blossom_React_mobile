@@ -257,7 +257,8 @@
     "deleteMessage": "This permanently removes your profile, photos, matches and messages. It can't be undone.",
     "delete": "Delete",
     "deleteFailed": "Couldn't delete your account. Check your connection and try again.",
-    "footnote": "© {{year}} Blossom · 18+ only"
+    "footnote": "© {{year}} Blossom · 18+ only",
+    "subtitle": "Language, location, log out"
   },
   "likesYou": {
     "title": "People who like you",
@@ -265,5 +266,19 @@
     "likeBack": "Like back",
     "matchTitle": "It's a match!",
     "matchText": "You both liked each other"
+  },
+  "safety": {
+    "back": "Back",
+    "report": "Report",
+    "block": "Block",
+    "blockTitle": "Block {{name}}?",
+    "blockMessage": "You won't see each other again and won't be able to message each other.",
+    "blocking": "Blocking…",
+    "reportTitle": "Report this profile",
+    "reportQuestion": "Why are you reporting {{name}}?",
+    "reportPlaceholder": "Describe the issue…",
+    "submit": "Submit",
+    "sending": "Sending…",
+    "cancel": "Cancel"
   }
 }

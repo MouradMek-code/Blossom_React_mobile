@@ -1,30 +1,32 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Modal, TextInput, Pressable, Animated } from "react-native";
+import { View, Text, StyleSheet, Modal, TextInput, Pressable, Alert } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import PageNav from "../components/PageNav";
 import ProfileView from "../components/ProfileView";
 import { BASE_URL } from "../api/config";
 import { getToken } from "../api/storage";
+import { peekCache, writeCache } from "../api/cache";
 import { goToTab } from "../navigation/goToTab";
 import { useTheme } from "../context/ThemeContext";
-import { radius, spacing, shadow } from "../theme";
+import { radius, spacing, shadow, typography } from "../theme";
 
+// Someone's full profile. Liking and passing happen on the Browse cards, not
+// here. Opened from a chat (`matched`), it also offers Unmatch next to Report
+// and Block.
 export default function ProfileDetailsScreen() {
+  const { t } = useTranslation();
   const route = useRoute();
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { id } = route.params;
+  const { id, matched = false } = route.params;
 
   const [profile, setProfile] = useState(null);
   const [blocking, setBlocking] = useState(false);
+  const [unmatching, setUnmatching] = useState(false);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [blockModalVisible, setBlockModalVisible] = useState(false);
   const [reportReason, setReportReason] = useState("");
-  const [liked, setLiked] = useState(false);
-  const [liking, setLiking] = useState(false);
-  const [matchToast, setMatchToast] = useState(false);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -37,28 +39,6 @@ export default function ProfileDetailsScreen() {
     }
     fetchProfile();
   }, [id]);
-
-  async function handleLike() {
-    if (liked || liking) return;
-    setLiking(true);
-    try {
-      const token = await getToken();
-      const resp = await fetch(`${BASE_URL}/likes/${id}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      });
-      const data = await resp.json();
-      setLiked(true);
-      if (data.matched) {
-        setMatchToast(true);
-        setTimeout(() => setMatchToast(false), 3000);
-      }
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLiking(false);
-    }
-  }
 
   function handleBlock() {
     setBlockModalVisible(true);
@@ -77,6 +57,37 @@ export default function ProfileDetailsScreen() {
     } catch (err) {
       console.log("Block failed:", err);
       setBlocking(false);
+    }
+  }
+
+  // The server deletes the conversation with the match, hence the confirmation.
+  function handleUnmatch() {
+    Alert.alert(
+      t("messages.unmatchTitle", { name: profile.first_name }),
+      t("messages.unmatchMessage"),
+      [
+        { text: t("safety.cancel"), style: "cancel" },
+        { text: t("messages.unmatch"), style: "destructive", onPress: unmatch },
+      ],
+    );
+  }
+
+  async function unmatch() {
+    setUnmatching(true);
+    try {
+      const token = await getToken();
+      const resp = await fetch(`${BASE_URL}/matches/unmatch/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!resp.ok) throw new Error(`unmatch failed with ${resp.status}`);
+      // Gone from the chats list straight away, not after the next refresh.
+      const inbox = peekCache("inbox");
+      if (inbox) writeCache("inbox", inbox.filter((i) => i.profile.id !== Number(id)));
+      goToTab(navigation, "Messages");
+    } catch {
+      setUnmatching(false);
+      Alert.alert(t("messages.unmatchFailed"));
     }
   }
 
@@ -102,11 +113,31 @@ export default function ProfileDetailsScreen() {
     }
   }
 
+  const header = (
+    <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <Pressable
+        onPress={() => navigation.goBack()}
+        hitSlop={10}
+        style={styles.back}
+        accessibilityRole="button"
+        accessibilityLabel={t("safety.back")}
+      >
+        <Text style={[styles.backText, { color: colors.text }]}>←</Text>
+      </Pressable>
+      {profile ? (
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {profile.first_name}
+        </Text>
+      ) : null}
+    </View>
+  );
+
   if (!profile) {
     return (
       <View style={[styles.head, { backgroundColor: colors.background }]}>
         <PageNav />
-        <Text style={[styles.loading, { color: colors.textMuted }]}>Loading…</Text>
+        {header}
+        <Text style={[styles.loading, { color: colors.textMuted }]}>{t("loading")}</Text>
       </View>
     );
   }
@@ -114,54 +145,36 @@ export default function ProfileDetailsScreen() {
   return (
     <View style={[styles.head, { backgroundColor: colors.background }]}>
       <PageNav />
+      {header}
 
       <ProfileView
         profile={profile}
         showLocationLine={false}
         onBlock={handleBlock}
         onReport={handleReport}
+        onUnmatch={matched ? handleUnmatch : undefined}
         blocking={blocking}
+        unmatching={unmatching}
       />
-
-      {/* STICKY ACTION BAR */}
-      <View style={[styles.actionBar, { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: insets.bottom + 12 }]}>
-        <Pressable
-          style={[styles.passBtn, { borderColor: colors.border, backgroundColor: colors.surface }]}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.passBtnText}>✕</Text>
-        </Pressable>
-
-        <Pressable
-          style={[styles.likeBtn, liked && styles.likeBtnDone]}
-          onPress={handleLike}
-          disabled={liked || liking}
-        >
-          <Text style={styles.likeBtnText}>{liked ? "💖" : "❤️"}</Text>
-        </Pressable>
-      </View>
-
-      {/* MATCH TOAST */}
-      {matchToast && (
-        <View style={styles.matchToast}>
-          <Text style={styles.matchToastText}>🎉 It's a Match with {profile.first_name}!</Text>
-        </View>
-      )}
 
       {/* BLOCK MODAL */}
       <Modal visible={blockModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Block {profile.first_name}?</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              {t("safety.blockTitle", { name: profile.first_name })}
+            </Text>
             <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
-              You won't see each other again and won't be able to message them.
+              {t("safety.blockMessage")}
             </Text>
             <View style={styles.modalActions}>
               <Pressable style={styles.modalCancelButton} onPress={() => setBlockModalVisible(false)}>
-                <Text style={[styles.modalCancelText, { color: colors.textMuted }]}>Cancel</Text>
+                <Text style={[styles.modalCancelText, { color: colors.textMuted }]}>{t("safety.cancel")}</Text>
               </Pressable>
               <Pressable style={styles.modalDestructiveButton} onPress={confirmBlock} disabled={blocking}>
-                <Text style={styles.modalSubmitText}>{blocking ? "Blocking…" : "Block"}</Text>
+                <Text style={styles.modalSubmitText}>
+                  {blocking ? t("safety.blocking") : t("safety.block")}
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -172,22 +185,24 @@ export default function ProfileDetailsScreen() {
       <Modal visible={reportModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Report this profile</Text>
-            <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>Why are you reporting {profile.first_name}?</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t("safety.reportTitle")}</Text>
+            <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
+              {t("safety.reportQuestion", { name: profile.first_name })}
+            </Text>
             <TextInput
               style={[styles.modalInput, { borderColor: colors.border, color: colors.text }]}
               value={reportReason}
               onChangeText={setReportReason}
-              placeholder="Describe the issue…"
+              placeholder={t("safety.reportPlaceholder")}
               placeholderTextColor={colors.textMuted}
               multiline
             />
             <View style={styles.modalActions}>
               <Pressable style={styles.modalCancelButton} onPress={() => setReportModalVisible(false)}>
-                <Text style={[styles.modalCancelText, { color: colors.textMuted }]}>Cancel</Text>
+                <Text style={[styles.modalCancelText, { color: colors.textMuted }]}>{t("safety.cancel")}</Text>
               </Pressable>
               <Pressable style={styles.modalSubmitButton} onPress={submitReport}>
-                <Text style={styles.modalSubmitText}>Submit</Text>
+                <Text style={styles.modalSubmitText}>{t("safety.submit")}</Text>
               </Pressable>
             </View>
           </View>
@@ -201,45 +216,18 @@ const styles = StyleSheet.create({
   head: { flex: 1 },
   loading: { textAlign: "center", marginTop: 40, fontSize: 16 },
 
-  /* Sticky bar */
-  actionBar: {
-    position: "absolute",
-    bottom: 0, left: 0, right: 0,
+  /* Back + name */
+  header: {
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
-    gap: 24,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    ...shadow.md,
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
   },
-  passBtn: {
-    width: 54, height: 54, borderRadius: 27,
-    borderWidth: 2,
-    alignItems: "center", justifyContent: "center",
-    ...shadow.sm,
-  },
-  passBtnText: { fontSize: 20, color: "#999" },
-  likeBtn: {
-    width: 66, height: 66, borderRadius: 33,
-    backgroundColor: "#C1466B",
-    alignItems: "center", justifyContent: "center",
-    ...shadow.md,
-  },
-  likeBtnDone: { backgroundColor: "#ff6b9d" },
-  likeBtnText: { fontSize: 28 },
-
-  /* Toast */
-  matchToast: {
-    position: "absolute",
-    top: 100, left: 20, right: 20,
-    backgroundColor: "#C1466B",
-    borderRadius: 999,
-    padding: 14,
-    alignItems: "center",
-    ...shadow.lg,
-  },
-  matchToastText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  back: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  backText: { fontSize: 22 },
+  headerTitle: { ...typography.h3, flex: 1 },
 
   /* Modals */
   modalOverlay: {

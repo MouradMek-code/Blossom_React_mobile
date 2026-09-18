@@ -257,7 +257,8 @@
     "deleteMessage": "这将永久删除你的资料、照片、配对和消息，且无法恢复。",
     "delete": "删除",
     "deleteFailed": "删除账户失败。请检查网络后重试。",
-    "footnote": "© {{year}} Blossom · 仅限 18 岁以上"
+    "footnote": "© {{year}} Blossom · 仅限 18 岁以上",
+    "subtitle": "语言、位置、退出登录"
   },
   "likesYou": {
     "title": "喜欢你的人",
@@ -265,5 +266,19 @@
     "likeBack": "回喜欢",
     "matchTitle": "配对成功！",
     "matchText": "你们互相喜欢"
+  },
+  "safety": {
+    "back": "返回",
+    "report": "举报",
+    "block": "屏蔽",
+    "blockTitle": "屏蔽{{name}}？",
+    "blockMessage": "你们将不会再看到对方，也无法再互发消息。",
+    "blocking": "屏蔽中…",
+    "reportTitle": "举报此资料",
+    "reportQuestion": "你为什么要举报{{name}}？",
+    "reportPlaceholder": "描述问题…",
+    "submit": "提交",
+    "sending": "发送中…",
+    "cancel": "取消"
   }
 }

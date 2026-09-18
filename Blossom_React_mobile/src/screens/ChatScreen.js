@@ -176,20 +176,13 @@ export default function ChatScreen() {
     else goToTab(navigation, "Messages");
   }
 
-  // Everything you can do about the person you're talking to, on one menu -
-  // the chat is where unmatching belongs now that there's no matches list.
-  function openOptions() {
-    if (!partner) return;
-    Alert.alert(partner.first_name, undefined, [
-      {
-        text: t("messages.viewProfile"),
-        onPress: () => navigation.navigate("ProfileDetails", { id: partner.id }),
-      },
-      { text: t("messages.unmatch"), style: "destructive", onPress: confirmUnmatch },
-      { text: t("settings.cancel"), style: "cancel" },
-    ]);
+  // `matched` tells their profile screen to offer Unmatch as well.
+  function openProfile() {
+    navigation.navigate("ProfileDetails", { id: partner.id, matched: true });
   }
 
+  // Unmatching lives in the chat now that there's no matches list. The server
+  // deletes the conversation with it, so there's a confirmation first.
   function confirmUnmatch() {
     Alert.alert(
       t("messages.unmatchTitle", { name: partner.first_name }),
@@ -291,39 +284,38 @@ export default function ChatScreen() {
           <Text style={styles.backText}>←</Text>
         </Pressable>
         {partner ? (
-          <Pressable
-            style={styles.partner}
-            onPress={() => navigation.navigate("ProfileDetails", { id: partner.id })}
-          >
-            {partner.photo ? (
-              <Image source={{ uri: IMG.thumb(partner.photo) }} style={styles.partnerPhoto} />
-            ) : (
-              <View style={[styles.partnerPhoto, styles.partnerPhotoEmpty]}>
-                <Text>🌸</Text>
-              </View>
-            )}
+          <View style={styles.partner}>
+            <Pressable onPress={openProfile}>
+              {partner.photo ? (
+                <Image source={{ uri: IMG.thumb(partner.photo) }} style={styles.partnerPhoto} />
+              ) : (
+                <View style={[styles.partnerPhoto, styles.partnerPhotoEmpty]}>
+                  <Text>🌸</Text>
+                </View>
+              )}
+            </Pressable>
             <View style={styles.partnerText}>
-              <Text style={styles.partnerName} numberOfLines={1}>
-                {partner.first_name}
-                {partner.age ? `, ${partner.age}` : ""}
-              </Text>
-              <Text style={styles.partnerHint}>{t("messages.viewProfile")}</Text>
+              <Pressable onPress={openProfile}>
+                <Text style={styles.partnerName} numberOfLines={1}>
+                  {partner.first_name}
+                  {partner.age ? `, ${partner.age}` : ""}
+                </Text>
+              </Pressable>
+              {/* Both actions in plain sight, right under the name. */}
+              <View style={styles.partnerActions}>
+                <Pressable onPress={openProfile} hitSlop={8} accessibilityRole="button">
+                  <Text style={styles.partnerHint}>{t("messages.viewProfile")}</Text>
+                </Pressable>
+                <Text style={styles.dot}>·</Text>
+                <Pressable onPress={confirmUnmatch} hitSlop={8} accessibilityRole="button">
+                  <Text style={styles.unmatchText}>💔 {t("messages.unmatch")}</Text>
+                </Pressable>
+              </View>
             </View>
-          </Pressable>
+          </View>
         ) : (
           <Text style={styles.partnerName}>💬</Text>
         )}
-        {partner ? (
-          <Pressable
-            onPress={openOptions}
-            hitSlop={12}
-            style={styles.options}
-            accessibilityRole="button"
-            accessibilityLabel={t("messages.options")}
-          >
-            <Text style={styles.optionsText}>⋮</Text>
-          </Pressable>
-        ) : null}
       </View>
 
       <FlatList
@@ -408,14 +400,21 @@ const styles = StyleSheet.create({
   },
   back: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   backText: { fontSize: 22, color: colors.text },
-  options: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  optionsText: { fontSize: 22, color: colors.textMuted, fontWeight: "700" },
   partner: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
   partnerPhoto: { width: 44, height: 44, borderRadius: 22 },
   partnerPhotoEmpty: { alignItems: "center", justifyContent: "center", backgroundColor: colors.primarySoft },
   partnerText: { flex: 1 },
   partnerName: { ...typography.h3, fontSize: 17 },
-  partnerHint: { color: colors.primary, fontSize: 12, fontWeight: "600", marginTop: 1 },
+  partnerActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 2,
+  },
+  partnerHint: { color: colors.primary, fontSize: 12.5, fontWeight: "600" },
+  dot: { color: colors.textMuted, fontSize: 12.5 },
+  unmatchText: { color: colors.danger, fontSize: 12.5, fontWeight: "700" },
   messagesContainer: { padding: spacing.md },
   errorText: {
     color: colors.danger,

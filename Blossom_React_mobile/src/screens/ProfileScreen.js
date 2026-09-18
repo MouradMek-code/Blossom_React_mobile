@@ -181,6 +181,7 @@ export default function ProfileScreen() {
         onAddPhotoPress={handleAddPhotoPress}
         onDeletePhoto={handleDeletePhoto}
         uploadingPhoto={uploadingPhoto}
+        onOpenSettings={() => navigation.navigate("Settings")}
       />
     </View>
   );

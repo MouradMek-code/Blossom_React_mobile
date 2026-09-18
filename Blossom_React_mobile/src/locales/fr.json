@@ -257,7 +257,8 @@
     "deleteMessage": "Cela supprime définitivement votre profil, vos photos, vos matchs et vos messages. C'est irréversible.",
     "delete": "Supprimer",
     "deleteFailed": "Impossible de supprimer votre compte. Vérifiez votre connexion et réessayez.",
-    "footnote": "© {{year}} Blossom · 18+ uniquement"
+    "footnote": "© {{year}} Blossom · 18+ uniquement",
+    "subtitle": "Langue, localisation, déconnexion"
   },
   "likesYou": {
     "title": "Ces personnes vous aiment",
@@ -265,5 +266,19 @@
     "likeBack": "Liker aussi",
     "matchTitle": "C'est un match !",
     "matchText": "Vous vous êtes likés tous les deux"
+  },
+  "safety": {
+    "back": "Retour",
+    "report": "Signaler",
+    "block": "Bloquer",
+    "blockTitle": "Bloquer {{name}} ?",
+    "blockMessage": "Vous ne vous verrez plus et ne pourrez plus vous écrire.",
+    "blocking": "Blocage…",
+    "reportTitle": "Signaler ce profil",
+    "reportQuestion": "Pourquoi signalez-vous {{name}} ?",
+    "reportPlaceholder": "Décrivez le problème…",
+    "submit": "Envoyer",
+    "sending": "Envoi…",
+    "cancel": "Annuler"
   }
 }

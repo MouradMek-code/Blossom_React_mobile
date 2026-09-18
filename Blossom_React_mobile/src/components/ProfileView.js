@@ -11,6 +11,7 @@ import {
   StyleSheet,
   Dimensions,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { IMG } from "../api/images";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
@@ -32,7 +33,13 @@ export default function ProfileView({
   onBlock,
   onReport,
   blocking = false,
+  // Only for a match (profile opened from the chat).
+  onUnmatch,
+  unmatching = false,
+  // Only on your own profile: the way into Settings.
+  onOpenSettings,
 }) {
+  const { t } = useTranslation();
   const [editingBio, setEditingBio] = useState(false);
   const [bioDraft, setBioDraft] = useState(profile.bio || "");
   const [savingBio, setSavingBio] = useState(false);
@@ -98,12 +105,43 @@ export default function ProfileView({
         </View>
       )}
 
+      {/* Settings, spelled out and right under your name - a gear alone in
+          the corner was easy to miss. */}
+      {onOpenSettings && (
+        <Pressable
+          style={({ pressed }) => [styles.settingsRow, pressed && styles.settingsRowPressed]}
+          onPress={onOpenSettings}
+          accessibilityRole="button"
+        >
+          <Image
+            source={require("../../assets/images/tabs/settings.png")}
+            style={styles.settingsIcon}
+          />
+          <View style={styles.settingsText}>
+            <Text style={styles.settingsTitle}>{t("settings.title")}</Text>
+            <Text style={styles.settingsSubtitle} numberOfLines={1}>
+              {t("settings.subtitle")}
+            </Text>
+          </View>
+          <Text style={styles.settingsChevron}>›</Text>
+        </Pressable>
+      )}
+
       {/* Safety buttons */}
-      {(onBlock || onReport) && (
+      {(onBlock || onReport || onUnmatch) && (
         <View style={styles.safetyRow}>
+          {onUnmatch && (
+            <Pressable style={styles.unmatchButton} onPress={onUnmatch} disabled={unmatching}>
+              {unmatching ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Text style={styles.unmatchButtonText}>💔 {t("messages.unmatch")}</Text>
+              )}
+            </Pressable>
+          )}
           {onReport && (
             <Pressable style={styles.reportButton} onPress={onReport}>
-              <Text style={styles.reportButtonText}>⚠️ Report</Text>
+              <Text style={styles.reportButtonText}>⚠️ {t("safety.report")}</Text>
             </Pressable>
           )}
           {onBlock && (
@@ -111,7 +149,7 @@ export default function ProfileView({
               {blocking ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text style={styles.blockButtonText}>🚫 Block</Text>
+                <Text style={styles.blockButtonText}>🚫 {t("safety.block")}</Text>
               )}
             </Pressable>
           )}
@@ -326,8 +364,46 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
 
+  /* Settings entry (own profile) */
+  settingsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: colors.primarySoft,
+    ...shadow.sm,
+  },
+  settingsRowPressed: { backgroundColor: colors.primaryTint },
+  settingsIcon: { width: 26, height: 26, tintColor: colors.primary },
+  settingsText: { flex: 1 },
+  settingsTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
+  settingsSubtitle: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  settingsChevron: { fontSize: 24, color: colors.textMuted },
+
   /* Safety */
-  safetyRow: { flexDirection: "row", gap: spacing.sm, margin: spacing.md, marginTop: spacing.sm },
+  safetyRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    margin: spacing.md,
+    marginTop: spacing.sm,
+  },
+  unmatchButton: {
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryTint,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: radius.pill,
+  },
+  unmatchButtonText: { color: colors.primaryDeep, fontWeight: "700", fontSize: 13 },
   reportButton: {
     borderWidth: 1.5,
     borderColor: "#ddd",
