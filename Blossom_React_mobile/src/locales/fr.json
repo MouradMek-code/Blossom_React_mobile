@@ -170,7 +170,16 @@
     "adminSeed": "Ajouter les lieux de départ",
     "adminSeeding": "Ajout…",
     "adminSeedConfirm": "Ajouter la sélection de lieux Blossom pour Paris ? Les lieux déjà présents sont ignorés.",
-    "adminSeedDone": "{{added}} ajoutés, {{skipped}} déjà présents."
+    "adminSeedDone": "{{added}} ajoutés, {{skipped}} déjà présents.",
+    "mapLink": "Lien Google Maps",
+    "mapLinkHint": "Dans Google Maps, ouvrez le lieu, touchez Partager puis Copier le lien, et collez-le ici.",
+    "mapLinkPlaceholder": "Collez le lien ici",
+    "linkReading": "Lecture du lien…",
+    "linkNoName": "Nous n'avons pas pu lire le nom dans ce lien. Tapez-le ci-dessous.",
+    "errLink": "Collez le lien Google Maps du lieu.",
+    "whyOptional": "Pourquoi c'était bien ? (facultatif)",
+    "moreDetails": "Plus de détails (facultatif)",
+    "lessDetails": "Masquer les détails"
   },
   "founder": {
     "eyebrow": "Du même fondateur",

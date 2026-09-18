@@ -21,6 +21,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import PageNav from "../components/PageNav";
+import LocationFields from "../components/LocationFields";
+import { readCache } from "../api/cache";
 import { useBottomInset } from "../navigation/useBottomInset";
 import { BASE_URL, SITE_URL } from "../api/config";
 import { getToken, setProfileId } from "../api/storage";
@@ -804,19 +806,112 @@ function Chip({ label, active, onPress, small }) {
   );
 }
 
+const GOOGLE_MAPS_LINK = /^https?:\/\/(www\.)?([a-z-]+\.)?(google\.[a-z.]+|goo\.gl|maps\.app\.goo\.gl)\//i;
+
+// Sharing a place, kept to what takes seconds: paste the Google Maps link
+// (which also fills in the name and makes "Open in Google Maps" exact), pick
+// a vibe, done. City and country come from the profile; neighborhood and
+// "best for" wait behind "More details".
 function AddSpotForm({ onCancel, onCreated }) {
   const { t } = useTranslation();
-  const [name, setName] = useState("");
-  const [city, setCity] = useState("");
-  const [country, setCountry] = useState("");
-  const [description, setDescription] = useState("");
   const [mapUrl, setMapUrl] = useState("");
+  const [linkStatus, setLinkStatus] = useState(""); // "" | "reading" | "noName"
+  const [name, setName] = useState("");
+  const [place, setPlace] = useState({ country: "", city: "" });
+  const [editingPlace, setEditingPlace] = useState(false);
   const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
+  const [showDetails, setShowDetails] = useState(false);
   const [neighborhood, setNeighborhood] = useState("");
   const [bestFor, setBestFor] = useState([]);
   const [photo, setPhoto] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // The name we filled in from the link, so a newer link can replace it -
+  // but never a name the person typed themselves.
+  const autoName = useRef("");
+
+  function fillName(value) {
+    const previous = autoName.current;
+    autoName.current = value;
+    setName((cur) => (!cur.trim() || cur === previous ? value : cur));
+  }
+
+  // Most date spots are in the city people live in: start from their profile.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      let profile = await readCache("ownProfile");
+      if (!profile?.country) {
+        try {
+          const token = await getToken();
+          const resp = await fetch(`${BASE_URL}/profile`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          profile = resp.ok ? await resp.json() : null;
+        } catch {
+          profile = null;
+        }
+      }
+      if (alive && profile?.country) {
+        setPlace((cur) => (cur.country ? cur : { country: profile.country, city: profile.city || "" }));
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Pasting the link fills in the name. Some phones paste Google Maps' whole
+  // share text ("name / address / link"): keep just the link, and its first
+  // line already is the name.
+  useEffect(() => {
+    const raw = mapUrl.trim();
+    const found = raw.match(/https?:\/\/\S+/);
+    if (!found) {
+      setLinkStatus("");
+      return undefined;
+    }
+    if (found[0] !== raw) {
+      const firstLine = raw
+        .slice(0, found.index)
+        .split("\n")
+        .map((line) => line.trim())
+        .find(Boolean);
+      if (firstLine) fillName(firstLine);
+      setMapUrl(found[0]);
+      return undefined;
+    }
+    if (!GOOGLE_MAPS_LINK.test(raw)) {
+      setLinkStatus("");
+      return undefined;
+    }
+    let alive = true;
+    const timer = setTimeout(async () => {
+      setLinkStatus("reading");
+      try {
+        const token = await getToken();
+        const resp = await fetch(
+          `${BASE_URL}/date_spots/resolve_link?url=${encodeURIComponent(raw)}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        const data = resp.ok ? await resp.json() : null;
+        if (!alive) return;
+        if (data?.name) {
+          fillName(data.name);
+          setLinkStatus("");
+        } else {
+          setLinkStatus("noName");
+        }
+      } catch {
+        if (alive) setLinkStatus("noName");
+      }
+    }, 500);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [mapUrl]);
 
   function toggleBestFor(value) {
     setBestFor((cur) =>
@@ -837,24 +932,20 @@ function AddSpotForm({ onCancel, onCreated }) {
   async function submit() {
     if (submitting) return;
     setError("");
+    if (!mapUrl.trim()) return setError(t("dateSpots.errLink"));
+    if (!GOOGLE_MAPS_LINK.test(mapUrl.trim())) return setError(t("dateSpots.errMapUrl"));
     if (!name.trim()) return setError(t("dateSpots.errName"));
-    if (!city.trim() || !country.trim()) return setError(t("dateSpots.errPlace"));
-    if (description.trim().length < 10) return setError(t("dateSpots.errDesc"));
-    if (
-      mapUrl.trim() &&
-      !/^https?:\/\/(www\.)?([a-z-]+\.)?(google\.[a-z.]+|goo\.gl|maps\.app\.goo\.gl)\//i.test(mapUrl.trim())
-    )
-      return setError(t("dateSpots.errMapUrl"));
+    if (!place.city.trim() || !place.country.trim()) return setError(t("dateSpots.errPlace"));
 
     const body = new FormData();
     body.append("name", name.trim());
-    body.append("city", city.trim());
-    body.append("country", country.trim());
-    body.append("description", description.trim());
+    body.append("city", place.city.trim());
+    body.append("country", place.country.trim());
+    body.append("map_url", mapUrl.trim());
+    if (description.trim()) body.append("description", description.trim());
     if (neighborhood.trim()) body.append("neighborhood", neighborhood.trim());
     if (category) body.append("category", category);
     if (bestFor.length > 0) body.append("best_for", bestFor.join(","));
-    if (mapUrl.trim()) body.append("map_url", mapUrl.trim());
     if (photo) {
       body.append("image", {
         uri: photo.uri,
@@ -897,6 +988,31 @@ function AddSpotForm({ onCancel, onCreated }) {
         </View>
       )}
 
+      {/* 1. The Google Maps link: exact place, and usually the name too. */}
+      <Text style={styles.label}>
+        {t("dateSpots.mapLink")} <Text style={styles.req}>*</Text>
+      </Text>
+      <Text style={styles.hint}>{t("dateSpots.mapLinkHint")}</Text>
+      <TextInput
+        style={styles.input}
+        value={mapUrl}
+        onChangeText={setMapUrl}
+        placeholder={t("dateSpots.mapLinkPlaceholder")}
+        placeholderTextColor={colors.textMuted}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="url"
+      />
+      {linkStatus === "reading" ? (
+        <View style={styles.linkStatusRow}>
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={styles.linkStatus}>{t("dateSpots.linkReading")}</Text>
+        </View>
+      ) : linkStatus === "noName" ? (
+        <Text style={styles.linkStatus}>{t("dateSpots.linkNoName")}</Text>
+      ) : null}
+
+      {/* 2. Name - filled in from the link, still editable. */}
       <Text style={styles.label}>
         {t("dateSpots.name")} <Text style={styles.req}>*</Text>
       </Text>
@@ -908,55 +1024,13 @@ function AddSpotForm({ onCancel, onCreated }) {
         placeholderTextColor={colors.textMuted}
       />
 
-      <Text style={styles.label}>
-        {t("dateSpots.city")} <Text style={styles.req}>*</Text>
-      </Text>
-      <TextInput
-        style={styles.input}
-        value={city}
-        onChangeText={setCity}
-        placeholder={t("dateSpots.cityPlaceholder")}
-        placeholderTextColor={colors.textMuted}
-      />
-
-      <Text style={styles.label}>
-        {t("dateSpots.country")} <Text style={styles.req}>*</Text>
-      </Text>
-      <TextInput
-        style={styles.input}
-        value={country}
-        onChangeText={setCountry}
-        placeholder={t("dateSpots.countryPlaceholder")}
-        placeholderTextColor={colors.textMuted}
-      />
-
-      <Text style={styles.label}>{t("dateSpots.neighborhood")}</Text>
-      <TextInput
-        style={styles.input}
-        value={neighborhood}
-        onChangeText={setNeighborhood}
-        placeholder={t("dateSpots.neighborhoodPlaceholder")}
-        placeholderTextColor={colors.textMuted}
-      />
-
-      <Text style={styles.label}>
-        {t("dateSpots.why")} <Text style={styles.req}>*</Text>
-      </Text>
-      <TextInput
-        style={[styles.input, styles.textarea]}
-        value={description}
-        onChangeText={setDescription}
-        placeholder={t("dateSpots.whyPlaceholder")}
-        placeholderTextColor={colors.textMuted}
-        multiline
-      />
-
+      {/* 3. Vibe - one tap. */}
       <Text style={styles.label}>{t("dateSpots.category")}</Text>
       <View style={styles.pickRow}>
         {CATEGORIES.map((c) => (
           <Chip
             key={c}
-            label={categoryLabel(c, t)}
+            label={`${categoryEmoji(c)} ${categoryLabel(c, t)}`}
             active={category === c}
             onPress={() => setCategory(category === c ? "" : c)}
             small
@@ -964,34 +1038,67 @@ function AddSpotForm({ onCancel, onCreated }) {
         ))}
       </View>
 
-      <Text style={styles.label}>{t("dateSpots.bestFor")}</Text>
-      <View style={styles.pickRow}>
-        {BEST_FOR.map((b) => (
-          <Chip
-            key={b}
-            label={bestForLabel(b, t)}
-            active={bestFor.includes(b)}
-            onPress={() => toggleBestFor(b)}
-            small
-          />
-        ))}
+      {/* Where: their own city, changeable. */}
+      <View style={styles.placeRow}>
+        <Text style={styles.placeText} numberOfLines={1}>
+          📍 {[place.city, place.country].filter(Boolean).join(", ") || t("location.notSet")}
+        </Text>
+        <Pressable onPress={() => setEditingPlace((open) => !open)} hitSlop={8}>
+          <Text style={styles.placeChange}>
+            {editingPlace ? t("dateSpots.close") : t("location.change")}
+          </Text>
+        </Pressable>
       </View>
-
-      <Text style={styles.label}>{t("dateSpots.mapUrl")}</Text>
-      <TextInput
-        style={styles.input}
-        value={mapUrl}
-        onChangeText={setMapUrl}
-        placeholder={t("dateSpots.mapUrlPlaceholder")}
-        placeholderTextColor={colors.textMuted}
-        autoCapitalize="none"
-        keyboardType="url"
-      />
+      {editingPlace ? (
+        <LocationFields country={place.country} city={place.city} onChange={setPlace} />
+      ) : null}
 
       <Pressable style={styles.photoBtn} onPress={pickPhoto}>
         <Text style={styles.photoBtnText}>📷 {t("dateSpots.photo")}</Text>
       </Pressable>
       {photo ? <Image source={{ uri: photo.uri }} style={styles.preview} /> : null}
+
+      <Text style={styles.label}>{t("dateSpots.whyOptional")}</Text>
+      <TextInput
+        style={[styles.input, styles.textareaSmall]}
+        value={description}
+        onChangeText={setDescription}
+        placeholder={t("dateSpots.whyPlaceholder")}
+        placeholderTextColor={colors.textMuted}
+        multiline
+      />
+
+      {/* Rarely needed, so out of the way. */}
+      <Pressable onPress={() => setShowDetails((open) => !open)} style={styles.detailsToggle}>
+        <Text style={styles.detailsToggleText}>
+          {showDetails ? `− ${t("dateSpots.lessDetails")}` : `+ ${t("dateSpots.moreDetails")}`}
+        </Text>
+      </Pressable>
+      {showDetails ? (
+        <>
+          <Text style={styles.label}>{t("dateSpots.neighborhood")}</Text>
+          <TextInput
+            style={styles.input}
+            value={neighborhood}
+            onChangeText={setNeighborhood}
+            placeholder={t("dateSpots.neighborhoodPlaceholder")}
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Text style={styles.label}>{t("dateSpots.bestFor")}</Text>
+          <View style={styles.pickRow}>
+            {BEST_FOR.map((b) => (
+              <Chip
+                key={b}
+                label={bestForLabel(b, t)}
+                active={bestFor.includes(b)}
+                onPress={() => toggleBestFor(b)}
+                small
+              />
+            ))}
+          </View>
+        </>
+      ) : null}
 
       <Text style={styles.safety}>{t("dateSpots.safety")}</Text>
 
@@ -1266,6 +1373,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
   },
   textarea: { minHeight: 90, textAlignVertical: "top" },
+  textareaSmall: { minHeight: 64, textAlignVertical: "top" },
+  hint: { ...typography.bodyMuted, fontSize: 12.5, lineHeight: 18, marginBottom: spacing.xs },
+  linkStatusRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
+  linkStatus: { ...typography.bodyMuted, fontSize: 12.5, marginTop: 6 },
+  placeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceMuted,
+  },
+  placeText: { flex: 1, fontSize: 14.5, color: colors.text },
+  placeChange: { color: colors.primary, fontWeight: "700", fontSize: 13.5 },
+  detailsToggle: { marginTop: spacing.md, paddingVertical: 4 },
+  detailsToggleText: { color: colors.primary, fontWeight: "700", fontSize: 14 },
   photoBtn: {
     marginTop: spacing.md,
     borderWidth: 1.5,

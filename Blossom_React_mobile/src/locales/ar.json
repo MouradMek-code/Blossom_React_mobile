@@ -170,7 +170,16 @@
     "adminSeed": "إضافة أماكن البداية",
     "adminSeeding": "جارٍ الإضافة…",
     "adminSeedConfirm": "هل تريد إضافة أماكن Blossom المختارة لباريس؟ سيتم تخطي الأماكن الموجودة بالفعل.",
-    "adminSeedDone": "تمت إضافة {{added}}، و{{skipped}} موجودة بالفعل."
+    "adminSeedDone": "تمت إضافة {{added}}، و{{skipped}} موجودة بالفعل.",
+    "mapLink": "رابط خرائط Google",
+    "mapLinkHint": "في خرائط Google، افتح المكان، واضغط على مشاركة ثم نسخ الرابط، والصقه هنا.",
+    "mapLinkPlaceholder": "الصق الرابط هنا",
+    "linkReading": "جارٍ قراءة الرابط…",
+    "linkNoName": "تعذّرت قراءة الاسم من هذا الرابط. يُرجى كتابته أدناه.",
+    "errLink": "الصق رابط خرائط Google للمكان.",
+    "whyOptional": "لماذا كان رائعًا؟ (اختياري)",
+    "moreDetails": "تفاصيل إضافية (اختياري)",
+    "lessDetails": "إخفاء التفاصيل"
   },
   "founder": {
     "eyebrow": "من المؤسس",

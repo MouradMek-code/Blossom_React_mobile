@@ -170,7 +170,16 @@
     "adminSeed": "Add starter spots",
     "adminSeeding": "Adding…",
     "adminSeedConfirm": "Add Blossom's curated starter spots for Paris? Places already listed are skipped.",
-    "adminSeedDone": "{{added}} added, {{skipped}} already listed."
+    "adminSeedDone": "{{added}} added, {{skipped}} already listed.",
+    "mapLink": "Google Maps link",
+    "mapLinkHint": "In Google Maps, open the place, tap Share, then Copy link, and paste it here.",
+    "mapLinkPlaceholder": "Paste the link here",
+    "linkReading": "Reading the link…",
+    "linkNoName": "We couldn't read the name from this link. Please type it below.",
+    "errLink": "Please paste the Google Maps link of the place.",
+    "whyOptional": "Why was it great? (optional)",
+    "moreDetails": "More details (optional)",
+    "lessDetails": "Hide details"
   },
   "founder": {
     "eyebrow": "From the founder",

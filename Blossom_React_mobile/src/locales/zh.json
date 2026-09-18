@@ -170,7 +170,16 @@
     "adminSeed": "添加初始地点",
     "adminSeeding": "添加中…",
     "adminSeedConfirm": "添加 Blossom 为巴黎精选的初始地点？已存在的地点会被跳过。",
-    "adminSeedDone": "已添加 {{added}} 个，{{skipped}} 个已存在。"
+    "adminSeedDone": "已添加 {{added}} 个，{{skipped}} 个已存在。",
+    "mapLink": "Google 地图链接",
+    "mapLinkHint": "在 Google 地图中打开该地点，点击「分享」，再点「复制链接」，然后粘贴到这里。",
+    "mapLinkPlaceholder": "在此粘贴链接",
+    "linkReading": "正在读取链接…",
+    "linkNoName": "无法从这个链接读取名称，请在下方输入。",
+    "errLink": "请粘贴该地点的 Google 地图链接。",
+    "whyOptional": "为什么推荐这里？（可选）",
+    "moreDetails": "更多详情（可选）",
+    "lessDetails": "收起详情"
   },
   "founder": {
     "eyebrow": "来自创始人",
