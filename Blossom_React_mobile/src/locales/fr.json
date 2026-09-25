@@ -313,5 +313,27 @@
     "defaultTag": "Par défaut",
     "title": "Sur Blossom pour",
     "changeFailed": "Impossible d'enregistrer. Vérifiez votre connexion et réessayez."
+  },
+  "photos": {
+    "title": "Ajoutez vos photos",
+    "subtitle": "Ajoutez au moins {{min}} photos (jusqu'à {{max}}). Les photos où l'on voit bien votre visage attirent le plus de matchs.",
+    "add": "Ajouter une photo",
+    "addButton": "+ Ajouter des photos",
+    "section": "Photos",
+    "none": "Aucune photo pour l'instant.",
+    "remove": "Retirer la photo",
+    "tapToRetry": "Touchez pour réessayer",
+    "uploading": "Envoi de vos photos…",
+    "addOne": "Ajoutez encore 1 photo pour continuer",
+    "addMore": "Ajoutez encore {{count}} photos pour continuer",
+    "continue": "Découvrir les profils →",
+    "connection": "La photo n'a pas pu être envoyée. Vérifiez votre connexion et réessayez.",
+    "failedTitle": "Photo non envoyée",
+    "deleteTitle": "Supprimer cette photo ?",
+    "deleteText": "Elle sera retirée de votre profil.",
+    "deleteConfirm": "Supprimer",
+    "cancel": "Annuler",
+    "deleteFailed": "Impossible de supprimer la photo. Réessayez.",
+    "notImage": "Choisissez une photo (JPG, PNG, HEIC…)."
   }
 }

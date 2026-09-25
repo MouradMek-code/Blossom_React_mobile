@@ -222,14 +222,14 @@ export default function ProfileView({
 
       {/* Photos */}
       <Section
-        title="Photos"
+        title={t("photos.section")}
         action={
           editable && (
             <Pressable style={styles.actionButton} onPress={onAddPhotoPress} disabled={uploadingPhoto}>
               {uploadingPhoto ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <Text style={styles.actionButtonText}>+ Add Photo</Text>
+                <Text style={styles.actionButtonText}>{t("photos.addButton")}</Text>
               )}
             </Pressable>
           )
@@ -241,14 +241,20 @@ export default function ProfileView({
               <Pressable key={p.id} style={styles.photoWrap} onPress={() => setLightboxPhoto(p.image_url)}>
                 <Image source={{ uri: IMG.card(p.image_url) }} style={styles.photo} />
                 {editable && (
-                  <Pressable style={styles.deletePhotoButton} onPress={() => onDeletePhoto?.(p.id)}>
+                  <Pressable
+                    style={styles.deletePhotoButton}
+                    onPress={() => onDeletePhoto?.(p.id)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("photos.remove")}
+                  >
                     <Text style={styles.deletePhotoButtonText}>✕</Text>
                   </Pressable>
                 )}
               </Pressable>
             ))
           ) : (
-            <Text style={styles.bodyMuted}>No photos added yet.</Text>
+            <Text style={styles.bodyMuted}>{t("photos.none")}</Text>
           )}
         </View>
       </Section>

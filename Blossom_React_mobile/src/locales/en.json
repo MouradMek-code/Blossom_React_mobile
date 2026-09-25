@@ -313,5 +313,27 @@
     "defaultTag": "Default",
     "title": "On Blossom for",
     "changeFailed": "Couldn't save. Check your connection and try again."
+  },
+  "photos": {
+    "title": "Add your photos",
+    "subtitle": "Add at least {{min}} photos (up to {{max}}). Clear photos of your face get the most matches.",
+    "add": "Add a photo",
+    "addButton": "+ Add photos",
+    "section": "Photos",
+    "none": "No photos added yet.",
+    "remove": "Remove photo",
+    "tapToRetry": "Tap to retry",
+    "uploading": "Uploading your photos…",
+    "addOne": "Add 1 more photo to continue",
+    "addMore": "Add {{count}} more photos to continue",
+    "continue": "Go check profiles →",
+    "connection": "The photo didn't upload. Check your connection and try again.",
+    "failedTitle": "Photo not uploaded",
+    "deleteTitle": "Delete this photo?",
+    "deleteText": "It will be removed from your profile.",
+    "deleteConfirm": "Delete",
+    "cancel": "Cancel",
+    "deleteFailed": "Couldn't delete the photo. Please try again.",
+    "notImage": "Please choose a photo (JPG, PNG, HEIC…)."
   }
 }

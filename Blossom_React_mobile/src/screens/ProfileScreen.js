@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
-import { View, Text, Image, Pressable, StyleSheet } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { View, Text, Image, Pressable, Alert, StyleSheet } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
-import * as ImagePicker from "expo-image-picker";
 import PageNav from "../components/PageNav";
 import ProfileView from "../components/ProfileView";
 import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
 import { postJson } from "../api/errors";
-import { invalidate } from "../navigation/useAutoRefresh";
+import { invalidate, useAutoRefresh } from "../navigation/useAutoRefresh";
+import { deletePhoto, pickPhotos, uploadPhoto } from "../api/photoUpload";
 import { endSessionAndGoToLogin } from "../api/session";
 import { getToken, setProfileId } from "../api/storage";
 import { peekCache, readCache, writeCache } from "../api/cache";
@@ -23,48 +23,54 @@ export default function ProfileScreen() {
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchProfile() {
-      const token = await getToken();
-      if (!token || token === "null") {
-        navigation.navigate("Login");
+  const mounted = useRef(true);
+  useEffect(() => () => {
+    mounted.current = false;
+  }, []);
+
+  const loadProfile = useCallback(async () => {
+    const token = await getToken();
+    if (!token || token === "null") {
+      navigation.navigate("Login");
+      return;
+    }
+
+    // Instant start from the saved copy (disk, after an app restart).
+    const cached = await readCache("ownProfile");
+    if (cached && mounted.current) setProfile((cur) => cur || cached);
+
+    try {
+      setLoadError(false);
+      const resp = await fetch(`${BASE_URL}/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (resp.status === 401) {
+        await endSessionAndGoToLogin(navigation);
         return;
       }
-
-      // Instant start from the saved copy (disk, after an app restart).
-      const cached = await readCache("ownProfile");
-      if (cached && isMounted) setProfile((cur) => cur || cached);
-
-      try {
-        setLoadError(false);
-        const resp = await fetch(`${BASE_URL}/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (resp.status === 401) {
-          await endSessionAndGoToLogin(navigation);
-          return;
-        }
-        if (resp.status === 404) {
-          // Token valid but no profile yet — resume signup flow
-          navigation.navigate("SignUp");
-          return;
-        }
-        if (resp.status !== 200) throw new Error(`profile failed with ${resp.status}`);
-        const data = await resp.json();
-        if (isMounted) setProfile(data);
-        await setProfileId(data.id);
-      } catch (err) {
-        // No internet / server trouble: stay logged in. With the saved copy on
-        // screen just keep it; otherwise offer a retry.
-        if (isMounted && !cached) setLoadError(true);
+      if (resp.status === 404) {
+        // Token valid but no profile yet — resume signup flow
+        navigation.navigate("SignUp");
+        return;
       }
+      if (resp.status !== 200) throw new Error(`profile failed with ${resp.status}`);
+      const data = await resp.json();
+      if (mounted.current) setProfile(data);
+      await setProfileId(data.id);
+    } catch (err) {
+      // No internet / server trouble: stay logged in. With the saved copy on
+      // screen just keep it; otherwise offer a retry.
+      if (mounted.current && !cached) setLoadError(true);
     }
-    fetchProfile();
-    return () => {
-      isMounted = false;
-    };
-  }, [reloadKey]);
+  }, [navigation]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile, reloadKey]);
+
+  // The tab stays open in the background: coming back to it (or to the app)
+  // shows the latest copy - e.g. photos changed on the website.
+  useAutoRefresh(loadProfile, { minIntervalMs: 30000, skipFirst: true });
 
   // Keep the saved copy current after every change (bio, photos, location).
   useEffect(() => {
@@ -111,57 +117,49 @@ export default function ProfileScreen() {
     invalidate("browse");
   }
 
+  // Each photo shows as soon as it is saved.
   async function handleAddPhotoPress() {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return;
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-    });
-    if (result.canceled) return;
-
-    const asset = result.assets[0];
+    const assets = await pickPhotos({ max: 6 });
+    if (!assets.length) return;
     setUploadingPhoto(true);
-    try {
-      const token = await getToken();
-      const formData = new FormData();
-      formData.append("image", {
-        uri: asset.uri,
-        name: asset.fileName || "photo.jpg",
-        type: asset.mimeType || "image/jpeg",
-      });
-
-      const resp = await fetch(`${BASE_URL}/profile/image`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      const newPhoto = await resp.json();
-      if (resp.status !== 200) throw new Error("Failed to upload photo");
-      setProfile((prev) => ({ ...prev, photos: [...(prev.photos || []), newPhoto] }));
-    } catch (err) {
-      console.log("Photo upload failed:", err);
-    } finally {
-      setUploadingPhoto(false);
+    const known = new Set((profile?.photos || []).map((p) => p.id));
+    let failure = null;
+    for (const asset of assets) {
+      try {
+        const photo = await uploadPhoto(asset, known);
+        known.add(photo.id);
+        if (mounted.current) setProfile((prev) => withPhoto(prev, photo));
+      } catch (err) {
+        failure = err.message || t("photos.connection");
+      }
+    }
+    if (!mounted.current) return;
+    setUploadingPhoto(false);
+    if (failure !== null) {
+      Alert.alert(t("photos.failedTitle"), failure);
+      loadProfile(); // show whatever did get saved
     }
   }
 
-  async function handleDeletePhoto(photoId) {
-    const token = await getToken();
-    try {
-      const resp = await fetch(`${BASE_URL}/profile/image/${photoId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (resp.status !== 200) throw new Error("Failed to delete photo");
-      setProfile((prev) => ({
-        ...prev,
-        photos: prev.photos.filter((p) => p.id !== photoId),
-      }));
-    } catch (err) {
-      console.log("Photo delete failed:", err);
-    }
+  function handleDeletePhoto(photoId) {
+    Alert.alert(t("photos.deleteTitle"), t("photos.deleteText"), [
+      { text: t("photos.cancel"), style: "cancel" },
+      {
+        text: t("photos.deleteConfirm"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deletePhoto(photoId);
+            setProfile((prev) => ({
+              ...prev,
+              photos: (prev.photos || []).filter((p) => p.id !== photoId),
+            }));
+          } catch {
+            Alert.alert(t("photos.deleteFailed"));
+          }
+        },
+      },
+    ]);
   }
 
   // Language, location, logging out and deleting the account all live one tap
@@ -205,6 +203,12 @@ export default function ProfileScreen() {
       />
     </View>
   );
+}
+
+function withPhoto(profile, photo) {
+  const photos = profile?.photos || [];
+  if (photos.some((p) => p.id === photo.id)) return profile;
+  return { ...profile, photos: [...photos, { id: photo.id, image_url: photo.image_url }] };
 }
 
 const styles = StyleSheet.create({

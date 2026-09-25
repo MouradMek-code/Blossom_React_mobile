@@ -313,5 +313,27 @@
     "defaultTag": "默认",
     "title": "来 Blossom 是为了",
     "changeFailed": "保存失败。请检查网络后重试。"
+  },
+  "photos": {
+    "title": "添加你的照片",
+    "subtitle": "至少添加 {{min}} 张照片（最多 {{max}} 张）。清晰露脸的照片最容易获得配对。",
+    "add": "添加照片",
+    "addButton": "+ 添加照片",
+    "section": "照片",
+    "none": "还没有添加照片。",
+    "remove": "移除照片",
+    "tapToRetry": "点击重试",
+    "uploading": "正在上传照片…",
+    "addOne": "再添加 1 张照片即可继续",
+    "addMore": "再添加 {{count}} 张照片即可继续",
+    "continue": "去看看资料 →",
+    "connection": "照片上传失败。请检查网络连接后重试。",
+    "failedTitle": "照片未上传",
+    "deleteTitle": "删除这张照片？",
+    "deleteText": "它将从你的资料中移除。",
+    "deleteConfirm": "删除",
+    "cancel": "取消",
+    "deleteFailed": "无法删除照片，请重试。",
+    "notImage": "请选择一张照片（JPG、PNG、HEIC…）。"
   }
 }
