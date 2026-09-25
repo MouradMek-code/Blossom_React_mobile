@@ -1,8 +1,10 @@
-import { useEffect, useImperativeHandle, useState, forwardRef } from "react";
+import { useEffect, useImperativeHandle, useMemo, useState, forwardRef } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, Modal, FlatList, SafeAreaView } from "react-native";
-import questions from "../data/questions.json";
+import { useTranslation } from "react-i18next";
+import allQuestions from "../data/questions.json";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 import { saveSignupDraft } from "../api/storage";
+import { CONNECTION_EMOJI, CONNECTION_TYPES, questionsFor } from "../api/connection";
 
 const StartProfile = forwardRef(function StartProfile(
   { setQuestionEnded, answer, setAnswer, initialIndex = 0, autoStart = false, onReadyChange },
@@ -11,6 +13,11 @@ const StartProfile = forwardRef(function StartProfile(
   const [started, setStart] = useState(autoStart);
   const [indiceQuestion, setIndiceQuestion] = useState(initialIndex);
   const [clicked, setClicked] = useState(false);
+  // Someone here only for language exchange skips the dating questions.
+  const questions = useMemo(
+    () => questionsFor(allQuestions, answer.connection_type),
+    [answer.connection_type],
+  );
 
   useEffect(() => {
     onReadyChange?.(started && clicked);
@@ -258,9 +265,11 @@ function ProgressBar({ indiceQuestion, length }) {
 }
 
 function QuestionOption({ question, handleClicked, clicked, setAnswer, answer, setClicked }) {
+  const { t } = useTranslation();
+  const title = question.field === "connection_type" ? t("connection.question") : question.question;
   return (
     <View style={styles.questions}>
-      <Text style={styles.questionTitle}>{question.question}</Text>
+      <Text style={styles.questionTitle}>{title}</Text>
       <Question
         question={question}
         handleClicked={handleClicked}
@@ -273,7 +282,71 @@ function QuestionOption({ question, handleClicked, clicked, setAnswer, answer, s
   );
 }
 
+// "What brings you to Blossom?": dating, language exchange or both. "Both" is
+// chosen already, so Next works straight away.
+function ConnectionQuestion({ answer, setAnswer, setClicked }) {
+  const { t } = useTranslation();
+  const selected = answer.connection_type || "both";
+
+  function choose(type) {
+    setAnswer((prev) => {
+      const next = { ...prev, connection_type: type };
+      // Language exchange is about friendship; its relationship question is
+      // skipped. Changing their mind brings that question back.
+      if (type === "language") next.relationship_goal = "Friendship";
+      else if (prev.connection_type === "language") delete next.relationship_goal;
+      return next;
+    });
+    setClicked(true);
+  }
+
+  useEffect(() => {
+    if (answer.connection_type) setClicked(true);
+    else choose("both");
+    // Only on first showing: pick the default once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <View style={styles.connectionList}>
+      <Text style={styles.connectionHint}>{t("connection.hint")}</Text>
+      {CONNECTION_TYPES.map((type) => {
+        const isSelected = selected === type;
+        return (
+          <Pressable
+            key={type}
+            style={[styles.connectionCard, isSelected && styles.connectionCardSelected]}
+            onPress={() => choose(type)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: isSelected }}
+          >
+            <Text style={styles.connectionEmoji}>{CONNECTION_EMOJI[type]}</Text>
+            <View style={styles.connectionText}>
+              <View style={styles.connectionTitleRow}>
+                <Text style={[styles.connectionTitle, isSelected && styles.connectionTitleSelected]}>
+                  {t(`connection.${type}`)}
+                </Text>
+                {type === "both" ? (
+                  <Text style={styles.connectionDefault}>{t("connection.defaultTag")}</Text>
+                ) : null}
+              </View>
+              <Text style={styles.connectionDesc}>{t(`connection.${type}Desc`)}</Text>
+            </View>
+            <View style={[styles.radio, isSelected && styles.radioSelected]}>
+              {isSelected ? <View style={styles.radioDot} /> : null}
+            </View>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 function Question({ question, handleClicked, answer, setAnswer, setClicked }) {
+  if (question.field === "connection_type") {
+    return <ConnectionQuestion answer={answer} setAnswer={setAnswer} setClicked={setClicked} />;
+  }
+
   if (question.field === "personality_type") {
     const selected = answer.personality_type ? answer.personality_type.split(", ") : [];
     function toggle(option) {
@@ -377,6 +450,48 @@ function Question({ question, handleClicked, answer, setAnswer, setClicked }) {
 }
 
 const styles = StyleSheet.create({
+  /* "What brings you to Blossom?" */
+  connectionList: { gap: spacing.sm, marginTop: spacing.xs },
+  connectionHint: { ...typography.bodyMuted, fontSize: 13, textAlign: "center", marginBottom: spacing.xs },
+  connectionCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  connectionCardSelected: { borderColor: colors.primary, backgroundColor: colors.primaryTint },
+  connectionEmoji: { fontSize: 28, width: 44, textAlign: "center" },
+  connectionText: { flex: 1 },
+  connectionTitleRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
+  connectionTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
+  connectionTitleSelected: { color: colors.primaryDeep },
+  connectionDefault: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.primary,
+    backgroundColor: colors.primarySoft,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    overflow: "hidden",
+  },
+  connectionDesc: { ...typography.bodyMuted, fontSize: 13, lineHeight: 18, marginTop: 3 },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors.borderStrong,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radioSelected: { borderColor: colors.primary },
+  radioDot: { width: 11, height: 11, borderRadius: 6, backgroundColor: colors.primary },
+
   container: { padding: spacing.md },
   title: { ...typography.h2, textAlign: "center", marginBottom: spacing.md },
   letStart: { alignItems: "center", padding: spacing.md },

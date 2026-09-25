@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { IMG } from "../api/images";
+import { CONNECTION_EMOJI, CONNECTION_TYPES, connectionLabel, connectionOf } from "../api/connection";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 // Height is stored as a string that already includes the unit (e.g. "170 cm"),
@@ -38,12 +39,33 @@ export default function ProfileView({
   unmatching = false,
   // Only on your own profile: the way into Settings.
   onOpenSettings,
+  // Only on your own profile: switch between dating, language exchange, both.
+  onChangeConnection,
 }) {
   const { t } = useTranslation();
   const [editingBio, setEditingBio] = useState(false);
   const [bioDraft, setBioDraft] = useState(profile.bio || "");
   const [savingBio, setSavingBio] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
+  const [savingConnection, setSavingConnection] = useState(null);
+  const [connectionError, setConnectionError] = useState("");
+
+  const connection = connectionOf(profile);
+  // Dating questions weren't asked of someone only here for language exchange.
+  const datingProfile = connection !== "language";
+
+  async function chooseConnection(type) {
+    if (type === connection || savingConnection) return;
+    setSavingConnection(type);
+    setConnectionError("");
+    try {
+      await onChangeConnection(type);
+    } catch {
+      setConnectionError(t("connection.changeFailed"));
+    } finally {
+      setSavingConnection(null);
+    }
+  }
 
   async function handleSaveBio() {
     setSavingBio(true);
@@ -71,6 +93,9 @@ export default function ProfileView({
               <Text style={styles.heroAge}>, {profile.age}</Text>
             </Text>
             <View style={styles.heroBadges}>
+              <Text style={[styles.heroBadge, styles.heroConnection]}>
+                {connectionLabel(connection, t)}
+              </Text>
               {profile.city ? (
                 <Text style={styles.heroBadge}>📍 {profile.city}</Text>
               ) : null}
@@ -98,6 +123,7 @@ export default function ProfileView({
             </Text>
           )}
           <View style={styles.badges}>
+            <Text style={styles.badge}>{connectionLabel(connection, t)}</Text>
             <Text style={styles.badge}>💘 {profile.relationship_goal || "Not specified"}</Text>
             {profile.occupation ? <Text style={styles.badge}>💼 {profile.occupation}</Text> : null}
             {profile.education ? <Text style={styles.badge}>🎓 {profile.education}</Text> : null}
@@ -155,6 +181,44 @@ export default function ProfileView({
           )}
         </View>
       )}
+
+      {/* Your own profile: dating, language exchange or both - one tap. */}
+      {editable && onChangeConnection ? (
+        <Section title={t("connection.title")}>
+          {CONNECTION_TYPES.map((type, index) => {
+            const isSelected = connection === type;
+            return (
+              <Pressable
+                key={type}
+                style={({ pressed }) => [
+                  styles.connectionRow,
+                  index < CONNECTION_TYPES.length - 1 && styles.factDivider,
+                  pressed && styles.connectionRowPressed,
+                ]}
+                onPress={() => chooseConnection(type)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected }}
+              >
+                <Text style={styles.connectionEmoji}>{CONNECTION_EMOJI[type]}</Text>
+                <View style={styles.connectionText}>
+                  <Text style={[styles.connectionTitle, isSelected && styles.connectionTitleSelected]}>
+                    {t(`connection.${type}`)}
+                  </Text>
+                  <Text style={styles.connectionDesc}>{t(`connection.${type}Desc`)}</Text>
+                </View>
+                {savingConnection === type ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <View style={[styles.radio, isSelected && styles.radioSelected]}>
+                    {isSelected ? <View style={styles.radioDot} /> : null}
+                  </View>
+                )}
+              </Pressable>
+            );
+          })}
+          {connectionError !== "" ? <Text style={styles.connectionError}>{connectionError}</Text> : null}
+        </Section>
+      ) : null}
 
       {/* Photos */}
       <Section
@@ -238,17 +302,22 @@ export default function ProfileView({
         <Fact label="Pets" value={profile.has_pets} last />
       </Section>
 
-      <Section title="Family & Future">
-        <Fact label="Children" value={profile.has_children} />
-        <Fact label="Wants children" value={profile.wants_children} />
-        <Fact label="Goal" value={profile.relationship_goal} last />
-      </Section>
+      {/* Not asked of someone only here for language exchange. */}
+      {datingProfile ? (
+        <>
+          <Section title="Family & Future">
+            <Fact label="Children" value={profile.has_children} />
+            <Fact label="Wants children" value={profile.wants_children} />
+            <Fact label="Goal" value={profile.relationship_goal} last />
+          </Section>
 
-      <Section title="Dating Preferences">
-        <Fact label="Ideal first date" value={profile.first_date_preference} />
-        <Fact label="Past relationships" value={profile.past_relationships_count} />
-        <Fact label="Last breakup reason" value={profile.last_breakup_reason} last />
-      </Section>
+          <Section title="Dating Preferences">
+            <Fact label="Ideal first date" value={profile.first_date_preference} />
+            <Fact label="Past relationships" value={profile.past_relationships_count} />
+            <Fact label="Last breakup reason" value={profile.last_breakup_reason} last />
+          </Section>
+        </>
+      ) : null}
 
       <Section title="Speaks">
         <View style={styles.tags}>
@@ -363,6 +432,28 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: radius.pill,
   },
+
+  /* Dating / language exchange / both (own profile) */
+  heroConnection: { backgroundColor: "rgba(193,70,107,0.85)", borderColor: "rgba(255,255,255,0.5)" },
+  connectionRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: 12 },
+  connectionRowPressed: { opacity: 0.7 },
+  connectionEmoji: { fontSize: 24, width: 40, textAlign: "center" },
+  connectionText: { flex: 1 },
+  connectionTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+  connectionTitleSelected: { color: colors.primary },
+  connectionDesc: { ...typography.bodyMuted, fontSize: 12.5, lineHeight: 17, marginTop: 2 },
+  connectionError: { color: colors.danger, fontSize: 13, marginTop: spacing.sm },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors.borderStrong,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radioSelected: { borderColor: colors.primary },
+  radioDot: { width: 11, height: 11, borderRadius: 6, backgroundColor: colors.primary },
 
   /* Settings entry (own profile) */
   settingsRow: {

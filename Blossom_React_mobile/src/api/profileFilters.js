@@ -2,6 +2,8 @@
 // sexual orientation. Users can always change it in the filter modal.
 export function getDefaultFilters(ownProfile) {
   if (!ownProfile) return {};
+  // Language exchange is friendship: no gender preset.
+  if (ownProfile.connection_type === "language") return {};
 
   const isMan = ownProfile.gender === "Man";
   const isWoman = ownProfile.gender === "Woman";

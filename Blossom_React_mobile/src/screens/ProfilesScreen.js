@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, Image, Pressable, ActivityIndicator, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { useBottomInset } from "../navigation/useBottomInset";
+import { useAutoRefresh } from "../navigation/useAutoRefresh";
 import PageNav from "../components/PageNav";
 import SwipeCard from "../components/SwipeCard";
 import ProfileFilterModal from "../components/ProfileFilterModal";
 import { matchesFilters, getDefaultFilters } from "../api/profileFilters";
 import { seededShuffle } from "../api/shuffle";
+import { mergeDeck } from "../api/deck";
 import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
 import { IMG } from "../api/images";
@@ -24,25 +27,55 @@ const FILTERS_KEY = "blossom_filters";
 // matching the web app (whose sessionStorage naturally resets each session).
 const FILTERS_VERSION_KEY = "blossom_filters_version";
 const FILTERS_VERSION = "2";
+// How old the deck can get before coming back to Browse (or to the app)
+// loads the latest people.
+const REFRESH_AFTER_MS = 30000;
+
+// The filters to start with: the saved ones, or the orientation-based default.
+async function loadInitialFilters(own) {
+  const savedVersion = await AsyncStorage.getItem(FILTERS_VERSION_KEY);
+  const saved = await AsyncStorage.getItem(FILTERS_KEY);
+  // Only honour a saved filter from the current version; otherwise fall
+  // back to the freshly-computed orientation default and drop the stale
+  // one so it can't keep shadowing the new default.
+  if (savedVersion === FILTERS_VERSION && saved !== null) return JSON.parse(saved);
+  await AsyncStorage.setItem(FILTERS_VERSION_KEY, FILTERS_VERSION);
+  await AsyncStorage.removeItem(FILTERS_KEY);
+  return getDefaultFilters(own);
+}
 
 export default function ProfilesScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const navigation = useNavigation();
   const bottomInset = useBottomInset();
   const [profiles, setProfiles] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const currentIndexRef = useRef(0);
-  currentIndexRef.current = currentIndex;
+  // Passed or liked during this session: not shown again until "Refresh" on
+  // the end-of-deck screen (or new filters) starts the deck over.
+  const [passed, setPassed] = useState(() => new Set());
   const [matchedProfile, setMatchedProfile] = useState(null);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [draftFilters, setDraftFilters] = useState({});
   const [appliedFilters, setAppliedFilters] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
+  const [startingOver, setStartingOver] = useState(false);
   // One seed per mount: the deck order is random each visit but stays put
   // while the user swipes through it.
   const [deckSeed] = useState(() => Math.random());
+
+  // The refresh runs from app and screen events, long after the render that
+  // created it - it reads the current deck through these.
+  const profilesRef = useRef(profiles);
+  profilesRef.current = profiles;
+  const passedRef = useRef(passed);
+  passedRef.current = passed;
+  const filtersRef = useRef(appliedFilters);
+  filtersRef.current = appliedFilters;
+  const ownRef = useRef(null);
+  // What the filters were set up for (dating / language exchange / both).
+  const filtersFor = useRef(null);
+  const refreshingRef = useRef(false);
 
   async function likeProfile(profile) {
     const token = await getToken();
@@ -67,9 +100,13 @@ export default function ProfilesScreen() {
     }
   }
 
+  function markPassed(profile) {
+    setPassed((cur) => new Set(cur).add(profile.id));
+  }
+
   function handleSwipeRight(profile) {
     likeProfile(profile);
-    setCurrentIndex((i) => i + 1);
+    markPassed(profile);
     // Liked profiles never come back in Browse; take it out of the saved deck
     // too, or the next instant start would show it again.
     const cached = peekCache("browse");
@@ -78,57 +115,58 @@ export default function ProfilesScreen() {
     }
   }
 
-  function handleSwipeLeft() {
-    setCurrentIndex((i) => i + 1);
+  function handleSwipeLeft(profile) {
+    markPassed(profile);
   }
 
-  // The filters to start with: the saved ones, or the orientation-based default.
-  async function initialFilters(own) {
-    const savedVersion = await AsyncStorage.getItem(FILTERS_VERSION_KEY);
-    const saved = await AsyncStorage.getItem(FILTERS_KEY);
-    // Only honour a saved filter from the current version; otherwise fall
-    // back to the freshly-computed orientation default and drop the stale
-    // one so it can't keep shadowing the new default.
-    if (savedVersion === FILTERS_VERSION && saved !== null) return JSON.parse(saved);
-    await AsyncStorage.setItem(FILTERS_VERSION_KEY, FILTERS_VERSION);
-    await AsyncStorage.removeItem(FILTERS_KEY);
-    return getDefaultFilters(own);
-  }
+  // Once, and again only if they switch between dating, language exchange and
+  // both (the default filters differ): redoing it on every refresh would undo
+  // a change being made in the filter window.
+  const setUpFilters = useCallback(async (own) => {
+    if (!own) return;
+    const type = own.connection_type || "both";
+    if (filtersFor.current === type) return;
+    filtersFor.current = type;
+    const filters = await loadInitialFilters(own);
+    setDraftFilters(filters);
+    setAppliedFilters(filters);
+  }, []);
 
+  // Instant start: the last deck saved on the phone shows at once, while
+  // the first refresh fetches the latest.
   useEffect(() => {
-    let cancelled = false;
-
-    async function showDeck(list, own) {
-      const filters = own ? await initialFilters(own) : null;
-      if (cancelled) return;
-      if (filters) {
-        setDraftFilters(filters);
-        setAppliedFilters(filters);
-      }
-      // Randomise the deck so the same faces aren't always first.
-      setProfiles(seededShuffle(list, deckSeed));
-    }
-
-    async function fetchAll() {
-      const token = await getToken();
-      if (!token || token === "null") {
-        navigation.navigate("Login");
-        return;
-      }
-
-      // Instant start: show the last deck right away (memory, or disk after an
-      // app restart) while the fresh one loads.
+    let alive = true;
+    (async () => {
       const cached = await readCache("browse");
-      if (cached && !cancelled) {
-        await showDeck(cached.profiles, cached.own);
-        setLoading(false);
-      }
+      if (!alive || !cached) return;
+      ownRef.current = ownRef.current || cached.own || null;
+      await setUpFilters(cached.own);
+      if (!alive) return;
+      // Shuffled, so the same faces aren't always first.
+      setProfiles((cur) => (cur.length ? cur : seededShuffle(cached.profiles, deckSeed)));
+      setLoading(false);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [deckSeed, setUpFilters]);
 
+  // Loads the latest people and folds them into the deck (see mergeDeck):
+  // new members appear right after the card on screen, updated profiles
+  // show their new details, and the card under the user's finger never moves.
+  // `startOver` also brings back the people passed this session.
+  const refresh = useCallback(
+    async ({ startOver = false } = {}) => {
+      if (refreshingRef.current) return;
+      refreshingRef.current = true;
       try {
-        setLoadError(false);
+        const token = await getToken();
+        if (!token || token === "null") {
+          navigation.navigate("Login");
+          return;
+        }
         const [profilesResp, ownResp] = await Promise.all([
-          // Already leaves out people you liked, matched or blocked - the
-          // separate /likes/profiles_i_liked request this used to make is gone.
+          // Already leaves out people you liked, matched or blocked.
           fetch(`${BASE_URL}/profile/all_profile`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
@@ -144,35 +182,51 @@ export default function ProfilesScreen() {
           throw new Error(`profiles failed with ${profilesResp.status}`);
         }
         const data = await profilesResp.json();
-        const own = ownResp.ok ? await ownResp.json() : cached?.own || null;
+        const own = ownResp.ok ? await ownResp.json() : ownRef.current;
+        ownRef.current = own;
+        await setUpFilters(own);
+
+        if (startOver) {
+          passedRef.current = new Set();
+          setPassed(passedRef.current);
+        }
+        const isUpcoming = (p) =>
+          !passedRef.current.has(p.id) && matchesFilters(p, filtersRef.current);
+        // Until the first swipe (or when starting over) the order is free to
+        // change; after that, only new people slot in.
+        const reshuffle = startOver || passedRef.current.size === 0;
+        setProfiles((cur) => mergeDeck(cur, data, { isUpcoming, reshuffle, seed: deckSeed }));
         // Capped so the saved copy stays small as the community grows.
         writeCache("browse", { profiles: data.slice(0, 150), own });
-        // Don't swap the deck out from under someone who's already swiping;
-        // the fresh one is saved for next time.
-        if (!cancelled && (!cached || currentIndexRef.current === 0)) {
-          await showDeck(data, own);
-          setCurrentIndex(0);
-        }
-      } catch (err) {
-        // No internet / server trouble: stay logged in. With a saved deck on
-        // screen just keep it; otherwise offer a retry.
-        if (!cached && !cancelled) setLoadError(true);
+        setLoadError(false);
+      } catch {
+        // No internet or server trouble: stay logged in and keep the deck on
+        // screen; only an empty screen needs the retry button.
+        if (profilesRef.current.length === 0) setLoadError(true);
       } finally {
-        if (!cancelled) setLoading(false);
+        refreshingRef.current = false;
+        setLoading(false);
       }
-    }
-    fetchAll();
-    return () => {
-      cancelled = true;
-    };
-  }, [reloadKey]);
-
-  const filteredProfiles = useMemo(
-    () => profiles.filter((p) => matchesFilters(p, appliedFilters)),
-    [profiles, appliedFilters],
+    },
+    [navigation, deckSeed, setUpFilters],
   );
 
-  const remaining = filteredProfiles.slice(currentIndex, currentIndex + 2);
+  // On first opening, on coming back to Browse, and on coming back to the
+  // app - the tab stays alive all session, so it wouldn't reload otherwise.
+  useAutoRefresh(refresh, { minIntervalMs: REFRESH_AFTER_MS, key: "browse" });
+
+  async function startOver() {
+    setStartingOver(true);
+    await refresh({ startOver: true });
+    setStartingOver(false);
+  }
+
+  const upcoming = useMemo(
+    () => profiles.filter((p) => !passed.has(p.id) && matchesFilters(p, appliedFilters)),
+    [profiles, passed, appliedFilters],
+  );
+
+  const remaining = upcoming.slice(0, 2);
   const activeFilterCount = Object.keys(appliedFilters).length;
 
   function openFilters() {
@@ -182,7 +236,8 @@ export default function ProfilesScreen() {
 
   async function applyFilters() {
     setAppliedFilters(draftFilters);
-    setCurrentIndex(0);
+    // New filters start the deck over, people passed earlier included.
+    setPassed(new Set());
     setFilterModalVisible(false);
     await AsyncStorage.setItem(FILTERS_VERSION_KEY, FILTERS_VERSION);
     await AsyncStorage.setItem(FILTERS_KEY, JSON.stringify(draftFilters));
@@ -206,7 +261,7 @@ export default function ProfilesScreen() {
       <View style={styles.toolbar}>
         <Pressable style={[styles.filterButton, { borderColor: colors.primary, backgroundColor: colors.surface }]} onPress={openFilters}>
           <Text style={[styles.filterButtonText, { color: colors.primary }]}>
-            ⚙️ Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+            ⚙️ {t("browse.filters")}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
           </Text>
         </Pressable>
       </View>
@@ -215,7 +270,7 @@ export default function ProfilesScreen() {
         <LoadError
           onRetry={() => {
             setLoading(true);
-            setReloadKey((k) => k + 1);
+            refresh();
           }}
         />
       ) : null}
@@ -233,13 +288,13 @@ export default function ProfilesScreen() {
         <View style={styles.matchOverlay}>
           <View style={[styles.matchCard, { backgroundColor: colors.surface }]}>
             <Text style={styles.matchHeart}>❤️</Text>
-            <Text style={styles.matchTitle}>It's a Match!</Text>
+            <Text style={styles.matchTitle}>{t("likesYou.matchTitle")}</Text>
             <Image
               source={{ uri: IMG.thumb(matchedProfile.photos?.[0]?.image_url) }}
               style={styles.matchImage}
             />
             <Text style={styles.matchName}>{matchedProfile.first_name}</Text>
-            <Text>You both liked each other</Text>
+            <Text>{t("likesYou.matchText")}</Text>
           </View>
         </View>
       )}
@@ -251,13 +306,23 @@ export default function ProfilesScreen() {
               {activeFilterCount > 0 ? "🔍" : "🌸"}
             </Text>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              {activeFilterCount > 0 ? "No matches for your filters" : "You've seen everyone!"}
+              {activeFilterCount > 0 ? t("browse.noMatchTitle") : t("browse.emptyTitle")}
             </Text>
             <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
-              {activeFilterCount > 0
-                ? "Try widening your search — tap ⚙️ Filters to adjust."
-                : "Check back later — new people join every day 💌"}
+              {activeFilterCount > 0 ? t("browse.noMatchText") : t("browse.emptyText")}
             </Text>
+            {/* The latest people, and everyone passed this session again. */}
+            <Pressable
+              style={[styles.refreshButton, startingOver && { opacity: 0.7 }]}
+              onPress={startOver}
+              disabled={startingOver}
+            >
+              {startingOver ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.refreshButtonText}>🔄 {t("browse.refresh")}</Text>
+              )}
+            </Pressable>
           </View>
         ) : (
           remaining
@@ -267,7 +332,7 @@ export default function ProfilesScreen() {
                 profile={profile}
                 isTop={i === 0}
                 onSwipeRight={() => handleSwipeRight(profile)}
-                onSwipeLeft={() => handleSwipeLeft()}
+                onSwipeLeft={() => handleSwipeLeft(profile)}
                 onViewDetails={
                   i === 0
                     ? () => navigation.navigate("ProfileDetails", { id: profile.id })
@@ -283,7 +348,7 @@ export default function ProfilesScreen() {
         <View style={[styles.actions, { paddingBottom: bottomInset + spacing.md }]}>
           <Pressable
             style={[styles.actionButton, styles.nopeButton, { backgroundColor: colors.surface }]}
-            onPress={() => handleSwipeLeft()}
+            onPress={() => handleSwipeLeft(remaining[0])}
           >
             <Text style={styles.nopeButtonText}>✕</Text>
           </Pressable>
@@ -342,6 +407,17 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     maxWidth: 280,
   },
+  refreshButton: {
+    marginTop: spacing.lg,
+    minWidth: 150,
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 13,
+    ...shadow.md,
+  },
+  refreshButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   actions: {
     flexDirection: "row",
     justifyContent: "center",

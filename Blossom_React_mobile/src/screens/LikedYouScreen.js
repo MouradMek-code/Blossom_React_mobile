@@ -1,8 +1,9 @@
 import { useCallback, useState } from "react";
 import { View, Text, Image, Pressable, FlatList, StyleSheet } from "react-native";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { useBottomInset } from "../navigation/useBottomInset";
+import { useAutoRefresh } from "../navigation/useAutoRefresh";
 import PageNav from "../components/PageNav";
 import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
@@ -98,13 +99,10 @@ export default function LikedYouScreen() {
     }
   }, [navigation]);
 
-  // The tab stays mounted, so refresh every time it's opened - otherwise new
-  // likes would only appear after restarting the app.
-  useFocusEffect(
-    useCallback(() => {
-      fetchLikedBy();
-    }, [fetchLikedBy]),
-  );
+  // The tab stays mounted all session: refresh each time it's opened and when
+  // the app comes back from the background - otherwise new likes would only
+  // appear after restarting the app.
+  useAutoRefresh(fetchLikedBy, { minIntervalMs: 5000 });
 
   async function handleLikeBack(profile) {
     const token = await getToken();

@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import {
+  AppState,
   View,
   Text,
   Image,
@@ -88,7 +89,14 @@ export default function MessagesScreen() {
         }).catch(() => {});
       });
       const interval = setInterval(load, REFRESH_MS);
-      return () => clearInterval(interval);
+      // Back from the background: at once, not at the next tick.
+      const sub = AppState.addEventListener("change", (state) => {
+        if (state === "active") load();
+      });
+      return () => {
+        clearInterval(interval);
+        sub.remove();
+      };
     }, [load]),
   );
 

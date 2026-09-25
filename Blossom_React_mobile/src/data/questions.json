@@ -1,5 +1,14 @@
 [
   {
+    "field": "connection_type",
+    "question": "What brings you to Blossom?",
+    "options": [
+      "dating",
+      "language",
+      "both"
+    ]
+  },
+  {
     "type": "textarea",
     "field": "bio",
     "question": "Tell people about yourself"
@@ -221,6 +230,10 @@
       "Marriage",
       "Open Relationship",
       "Not Sure Yet"
+    ],
+    "for": [
+      "dating",
+      "both"
     ]
   },
   {
@@ -243,6 +256,10 @@
       "Casual Hangout (no pressure)",
       "Still figuring it out",
       "Prefer not to say"
+    ],
+    "for": [
+      "dating",
+      "both"
     ]
   },
   {
@@ -256,6 +273,10 @@
       "6-10",
       "More than 10",
       "Prefer not to say"
+    ],
+    "for": [
+      "dating",
+      "both"
     ]
   },
   {
@@ -275,6 +296,10 @@
       "Mutual decision",
       "Other",
       "Prefer not to say"
+    ],
+    "for": [
+      "dating",
+      "both"
     ]
   },
   {
@@ -283,6 +308,10 @@
     "options": [
       "Yes",
       "No"
+    ],
+    "for": [
+      "dating",
+      "both"
     ]
   },
   {
@@ -294,6 +323,10 @@
       "Maybe",
       "No",
       "Undecided"
+    ],
+    "for": [
+      "dating",
+      "both"
     ]
   },
   {

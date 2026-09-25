@@ -179,7 +179,9 @@
     "errLink": "Please paste the Google Maps link of the place.",
     "whyOptional": "Why was it great? (optional)",
     "moreDetails": "More details (optional)",
-    "lessDetails": "Hide details"
+    "lessDetails": "Hide details",
+    "signUpToShare": "Create a free account to share your favorite places.",
+    "haveAccount": "Already a member? Log in"
   },
   "founder": {
     "eyebrow": "From the founder",
@@ -289,5 +291,27 @@
     "submit": "Submit",
     "sending": "Sending…",
     "cancel": "Cancel"
+  },
+  "browse": {
+    "filters": "Filters",
+    "emptyTitle": "You've seen everyone!",
+    "emptyText": "New people join every day. Refresh to see who's new and everyone you passed.",
+    "noMatchTitle": "No matches for your filters",
+    "noMatchText": "Try widening your search: tap ⚙️ Filters to adjust.",
+    "refresh": "Refresh",
+    "new": "New"
+  },
+  "connection": {
+    "question": "What brings you to Blossom?",
+    "hint": "You can change this anytime on your profile.",
+    "dating": "Dating",
+    "datingDesc": "Meet someone special and go on real dates.",
+    "language": "Language exchange",
+    "languageDesc": "Practice a language with native speakers, as friends.",
+    "both": "Dating & language exchange",
+    "bothDesc": "Both: real dates, and practicing languages together.",
+    "defaultTag": "Default",
+    "title": "On Blossom for",
+    "changeFailed": "Couldn't save. Check your connection and try again."
   }
 }

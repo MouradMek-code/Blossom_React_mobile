@@ -179,7 +179,9 @@
     "errLink": "请粘贴该地点的 Google 地图链接。",
     "whyOptional": "为什么推荐这里？（可选）",
     "moreDetails": "更多详情（可选）",
-    "lessDetails": "收起详情"
+    "lessDetails": "收起详情",
+    "signUpToShare": "创建免费账号，分享你喜欢的地点。",
+    "haveAccount": "已经是会员？登录"
   },
   "founder": {
     "eyebrow": "来自创始人",
@@ -289,5 +291,27 @@
     "submit": "提交",
     "sending": "发送中…",
     "cancel": "取消"
+  },
+  "browse": {
+    "filters": "筛选",
+    "emptyTitle": "你已经看完所有人了！",
+    "emptyText": "每天都有新人加入。刷新即可看到新成员和你跳过的人。",
+    "noMatchTitle": "没有符合筛选条件的人",
+    "noMatchText": "试着放宽条件：点击 ⚙️ 筛选进行调整。",
+    "refresh": "刷新",
+    "new": "新人"
+  },
+  "connection": {
+    "question": "你来 Blossom 是为了什么？",
+    "hint": "你可以随时在个人资料中修改。",
+    "dating": "约会",
+    "datingDesc": "认识特别的人，来一场真正的约会。",
+    "language": "语言交换",
+    "languageDesc": "以朋友的方式，和母语者练习语言。",
+    "both": "约会和语言交换",
+    "bothDesc": "两者都要：真正的约会，也一起练习语言。",
+    "defaultTag": "默认",
+    "title": "来 Blossom 是为了",
+    "changeFailed": "保存失败。请检查网络后重试。"
   }
 }

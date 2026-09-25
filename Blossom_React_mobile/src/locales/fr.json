@@ -179,7 +179,9 @@
     "errLink": "Collez le lien Google Maps du lieu.",
     "whyOptional": "Pourquoi c'était bien ? (facultatif)",
     "moreDetails": "Plus de détails (facultatif)",
-    "lessDetails": "Masquer les détails"
+    "lessDetails": "Masquer les détails",
+    "signUpToShare": "Créez un compte gratuit pour partager vos lieux préférés.",
+    "haveAccount": "Déjà membre ? Se connecter"
   },
   "founder": {
     "eyebrow": "Du même fondateur",
@@ -289,5 +291,27 @@
     "submit": "Envoyer",
     "sending": "Envoi…",
     "cancel": "Annuler"
+  },
+  "browse": {
+    "filters": "Filtres",
+    "emptyTitle": "Vous avez vu tout le monde !",
+    "emptyText": "De nouvelles personnes arrivent chaque jour. Actualisez pour voir les nouveaux et les profils passés.",
+    "noMatchTitle": "Personne ne correspond à vos filtres",
+    "noMatchText": "Élargissez votre recherche : touchez ⚙️ Filtres pour ajuster.",
+    "refresh": "Actualiser",
+    "new": "Nouveau profil"
+  },
+  "connection": {
+    "question": "Qu'est-ce qui vous amène sur Blossom ?",
+    "hint": "Vous pourrez le modifier à tout moment sur votre profil.",
+    "dating": "Rencontres",
+    "datingDesc": "Rencontrer quelqu'un de spécial et aller à de vrais rendez-vous.",
+    "language": "Échange linguistique",
+    "languageDesc": "Pratiquer une langue avec des natifs, en toute amitié.",
+    "both": "Rencontres et échange linguistique",
+    "bothDesc": "Les deux : de vrais rendez-vous, et pratiquer des langues ensemble.",
+    "defaultTag": "Par défaut",
+    "title": "Sur Blossom pour",
+    "changeFailed": "Impossible d'enregistrer. Vérifiez votre connexion et réessayez."
   }
 }

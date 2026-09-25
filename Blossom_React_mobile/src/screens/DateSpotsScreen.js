@@ -24,6 +24,7 @@ import PageNav from "../components/PageNav";
 import LocationFields from "../components/LocationFields";
 import { readCache } from "../api/cache";
 import { useBottomInset } from "../navigation/useBottomInset";
+import { useAutoRefresh } from "../navigation/useAutoRefresh";
 import { BASE_URL, SITE_URL } from "../api/config";
 import { getToken, setProfileId } from "../api/storage";
 import { IMG } from "../api/images";
@@ -269,9 +270,13 @@ export default function DateSpotsScreen() {
     setSelected((cur) => (cur && cur.id === updated.id ? { ...cur, ...updated } : cur));
   }
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  // `silent`: a background refresh - the list stays on screen instead of the
+  // spinner, and a failure goes unnoticed.
+  const load = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLoading(true);
+      setError("");
+    }
     const params = [];
     if (country) params.push(`country=${encodeURIComponent(country)}`);
     if (city) params.push(`city=${encodeURIComponent(city)}`);
@@ -283,18 +288,23 @@ export default function DateSpotsScreen() {
         fetch(`${BASE_URL}/date_spots${qs}`),
         fetch(`${BASE_URL}/date_spots/locations`),
       ]);
+      if (silent && !spotsResp.ok) return;
       setSpots(spotsResp.ok ? await spotsResp.json() : []);
       setLocations(locResp.ok ? await locResp.json() : []);
     } catch {
-      setError(NETWORK_ERROR);
+      if (!silent) setError(NETWORK_ERROR);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [country, city, category, bestFor]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // The Spots tab stays alive all session: pick up places shared since, when
+  // the user comes back to it or to the app.
+  useAutoRefresh(() => load({ silent: true }), { minIntervalMs: 60000, skipFirst: true });
 
   // Opened from a chat invite card: navigate("DateSpots", { spotId }).
   // If active filters hide that spot, clear them once and look again.
@@ -371,9 +381,19 @@ ${SITE_URL}/date-spots/${spot.id}`,
             </Text>
           </Pressable>
         ) : (
-          <Text style={[styles.loginHint, { color: colors.textMuted }]}>
-            {t("dateSpots.loginHint")}
-          </Text>
+          // Visitors get the same button: sharing needs a free account, so it
+          // takes them to sign-up (members can log in from the line below).
+          <View style={styles.guestShare}>
+            <Pressable style={styles.addBtn} onPress={() => navigation.navigate("SignUp")}>
+              <Text style={styles.addBtnText}>＋ {t("dateSpots.share")}</Text>
+            </Pressable>
+            <Text style={[styles.loginHint, { color: colors.textMuted }]}>
+              {t("dateSpots.signUpToShare")}
+            </Text>
+            <Pressable onPress={() => navigation.navigate("Login")} hitSlop={8}>
+              <Text style={styles.loginLink}>{t("dateSpots.haveAccount")}</Text>
+            </Pressable>
+          </View>
         )}
 
         {error !== "" && (
@@ -1152,6 +1172,8 @@ const styles = StyleSheet.create({
   },
   addBtnText: { color: "#fff", fontWeight: "600", fontSize: 15 },
   loginHint: { textAlign: "center", fontSize: 14 },
+  guestShare: { alignItems: "center", gap: spacing.sm },
+  loginLink: { color: colors.primary, fontWeight: "700", fontSize: 14 },
 
   filters: {
     flexDirection: "row",

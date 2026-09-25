@@ -7,6 +7,8 @@ import PageNav from "../components/PageNav";
 import ProfileView from "../components/ProfileView";
 import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
+import { postJson } from "../api/errors";
+import { invalidate } from "../navigation/useAutoRefresh";
 import { endSessionAndGoToLogin } from "../api/session";
 import { getToken, setProfileId } from "../api/storage";
 import { peekCache, readCache, writeCache } from "../api/cache";
@@ -90,6 +92,23 @@ export default function ProfileScreen() {
     const data = await resp.json();
     if (resp.status !== 200) throw new Error("Failed to update bio");
     setProfile(data);
+  }
+
+  // Dating, language exchange or both. Throws on failure; ProfileView says so.
+  async function handleChangeConnection(type) {
+    const token = await getToken();
+    const result = await postJson(`${BASE_URL}/profile/connection`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ connection_type: type }),
+    });
+    if (!result.ok) throw new Error(result.message);
+    setProfile(result.data);
+    // Who shows up in Browse depends on it: reload it on the next visit.
+    invalidate("browse");
   }
 
   async function handleAddPhotoPress() {
@@ -182,6 +201,7 @@ export default function ProfileScreen() {
         onDeletePhoto={handleDeletePhoto}
         uploadingPhoto={uploadingPhoto}
         onOpenSettings={() => navigation.navigate("Settings")}
+        onChangeConnection={handleChangeConnection}
       />
     </View>
   );
