@@ -49,6 +49,27 @@ export default function SettingsScreen() {
   const [savingLocation, setSavingLocation] = useState(false);
   const [locationError, setLocationError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  // From the tab bar's last check; confirmed below.
+  const [isAdmin, setIsAdmin] = useState(() => Boolean(peekCache("nav")?.is_admin));
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const token = await getToken();
+      if (!token || token === "null") return;
+      try {
+        const resp = await fetch(`${BASE_URL}/user/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (resp.ok && alive) setIsAdmin(Boolean((await resp.json()).is_admin));
+      } catch {
+        // Offline: keep what the tab bar knew.
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // The saved profile shows the current city at once; the refresh keeps it
   // right if it was changed elsewhere.
@@ -175,6 +196,19 @@ export default function SettingsScreen() {
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: bottomInset + spacing.xl }]}
       >
+        {isAdmin && (
+          <Section title={t("admin.section")}>
+            <Pressable
+              style={({ pressed }) => [styles.row, styles.rowLast, pressed && styles.rowPressed]}
+              onPress={() => navigation.navigate("Admin")}
+              accessibilityRole="button"
+            >
+              <Text style={styles.rowLabel}>🛡️ {t("admin.allMembers")}</Text>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+          </Section>
+        )}
+
         <Section title={t("settings.language")}>
           {LANGUAGES.map((option, index) => (
             <Pressable

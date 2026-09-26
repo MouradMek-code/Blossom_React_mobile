@@ -165,14 +165,27 @@ export default function ProfileScreen() {
   // Language, location, logging out and deleting the account all live one tap
   // away, in Settings.
   const settingsButton = (
-    <Pressable
-      onPress={() => navigation.navigate("Settings")}
-      hitSlop={12}
-      accessibilityRole="button"
-      accessibilityLabel={t("settings.title")}
-    >
-      <Image source={require("../../assets/images/tabs/settings.png")} style={styles.settingsIcon} />
-    </Pressable>
+    <View style={styles.headerButtons}>
+      {/* Admins: the member list, one tap away. */}
+      {peekCache("nav")?.is_admin ? (
+        <Pressable
+          onPress={() => navigation.navigate("Admin")}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={t("admin.allMembers")}
+        >
+          <Text style={styles.adminIcon}>🛡️</Text>
+        </Pressable>
+      ) : null}
+      <Pressable
+        onPress={() => navigation.navigate("Settings")}
+        hitSlop={12}
+        accessibilityRole="button"
+        accessibilityLabel={t("settings.title")}
+      >
+        <Image source={require("../../assets/images/tabs/settings.png")} style={styles.settingsIcon} />
+      </Pressable>
+    </View>
   );
 
   if (!profile) {
@@ -215,4 +228,6 @@ const styles = StyleSheet.create({
   head: { flex: 1, backgroundColor: "#FBF8F6" },
   loading: { textAlign: "center", marginTop: 40 },
   settingsIcon: { width: 24, height: 24, tintColor: colors.textSoft },
+  headerButtons: { flexDirection: "row", alignItems: "center", gap: 18 },
+  adminIcon: { fontSize: 20 },
 });

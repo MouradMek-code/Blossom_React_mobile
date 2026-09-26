@@ -102,5 +102,8 @@ export function openNotificationTarget(navigationRef, data = {}) {
     navigationRef.dispatch(StackActions.popTo("Main", { screen: "Messages" }));
   } else if (data.type === "like") {
     navigationRef.dispatch(StackActions.popTo("Main", { screen: "LikedYou" }));
+  } else if (data.type === "new_profile") {
+    // Admins only: the member list, with the newcomer highlighted.
+    navigationRef.navigate("Admin", { highlight: Number(data.profileId) || undefined });
   }
 }

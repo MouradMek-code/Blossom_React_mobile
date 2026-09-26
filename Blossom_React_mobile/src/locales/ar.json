@@ -335,5 +335,26 @@
     "cancel": "إلغاء",
     "deleteFailed": "تعذّر حذف الصورة. حاول مرة أخرى.",
     "notImage": "اختر صورة (JPG أو PNG أو HEIC…)."
+  },
+  "admin": {
+    "section": "الإدارة",
+    "allMembers": "كل الأعضاء",
+    "title": "الإدارة",
+    "filter_all": "الأعضاء",
+    "filter_new": "هذا الأسبوع",
+    "filter_incomplete": "غير مكتمل",
+    "search": "ابحث بالاسم أو البريد أو المدينة…",
+    "joined": "انضم في {{date}}",
+    "photos": "📷 {{count}}",
+    "noProfile": "مسجّل، بلا ملف شخصي بعد",
+    "newBadge": "✨ جديد",
+    "adminBadge": "مشرف",
+    "deleteTitle": "حذف {{name}}؟",
+    "deleteText": "سيتم حذف حسابه وكل بياناته نهائيًا.",
+    "deleteConfirm": "حذف",
+    "cancel": "إلغاء",
+    "deleteFailed": "تعذّر حذف هذا الحساب. حاول مرة أخرى.",
+    "empty": "لا أحد يطابق البحث.",
+    "forbidden": "هذه الصفحة للمشرفين فقط."
   }
 }

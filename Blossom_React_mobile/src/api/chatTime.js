@@ -6,7 +6,8 @@
 // trimmed to milliseconds, which every JS engine parses.
 export function parseServerDate(value) {
   if (!value) return null;
-  let s = String(value).replace(/(\.\d{3})\d+/, "$1");
+  // "2026-09-15 10:00:00" (a space, from str() on the server) -> ISO "T".
+  let s = String(value).replace(/^(\d{4}-\d\d-\d\d) /, "$1T").replace(/(\.\d{3})\d+/, "$1");
   if (!/[zZ]$|[+-]\d\d:?\d\d$/.test(s)) s += "Z";
   const date = new Date(s);
   return Number.isNaN(date.getTime()) ? null : date;

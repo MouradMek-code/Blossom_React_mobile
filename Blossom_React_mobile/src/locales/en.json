@@ -335,5 +335,26 @@
     "cancel": "Cancel",
     "deleteFailed": "Couldn't delete the photo. Please try again.",
     "notImage": "Please choose a photo (JPG, PNG, HEIC…)."
+  },
+  "admin": {
+    "section": "Admin",
+    "allMembers": "All members",
+    "title": "Admin",
+    "filter_all": "Members",
+    "filter_new": "New this week",
+    "filter_incomplete": "Unfinished",
+    "search": "Search name, email, city…",
+    "joined": "Joined {{date}}",
+    "photos": "📷 {{count}}",
+    "noProfile": "Signed up, no profile yet",
+    "newBadge": "✨ New",
+    "adminBadge": "Admin",
+    "deleteTitle": "Delete {{name}}?",
+    "deleteText": "Their account and all their data will be deleted. This can't be undone.",
+    "deleteConfirm": "Delete",
+    "cancel": "Cancel",
+    "deleteFailed": "Couldn't delete this account. Please try again.",
+    "empty": "No one matches.",
+    "forbidden": "This page is for admins only."
   }
 }

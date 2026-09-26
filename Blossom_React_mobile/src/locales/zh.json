@@ -335,5 +335,26 @@
     "cancel": "取消",
     "deleteFailed": "无法删除照片，请重试。",
     "notImage": "请选择一张照片（JPG、PNG、HEIC…）。"
+  },
+  "admin": {
+    "section": "管理员",
+    "allMembers": "所有会员",
+    "title": "管理员",
+    "filter_all": "会员",
+    "filter_new": "本周新增",
+    "filter_incomplete": "未完成",
+    "search": "搜索姓名、邮箱、城市…",
+    "joined": "{{date}} 加入",
+    "photos": "📷 {{count}}",
+    "noProfile": "已注册，尚无资料",
+    "newBadge": "✨ 新人",
+    "adminBadge": "管理员",
+    "deleteTitle": "删除 {{name}}？",
+    "deleteText": "其账户和所有数据将被删除，且无法恢复。",
+    "deleteConfirm": "删除",
+    "cancel": "取消",
+    "deleteFailed": "无法删除该账户，请重试。",
+    "empty": "没有匹配的人。",
+    "forbidden": "此页面仅限管理员。"
   }
 }

@@ -335,5 +335,26 @@
     "cancel": "Annuler",
     "deleteFailed": "Impossible de supprimer la photo. Réessayez.",
     "notImage": "Choisissez une photo (JPG, PNG, HEIC…)."
+  },
+  "admin": {
+    "section": "Admin",
+    "allMembers": "Tous les membres",
+    "title": "Admin",
+    "filter_all": "Membres",
+    "filter_new": "Cette semaine",
+    "filter_incomplete": "Inachevés",
+    "search": "Chercher un nom, e-mail, ville…",
+    "joined": "Inscrit le {{date}}",
+    "photos": "📷 {{count}}",
+    "noProfile": "Inscrit, pas encore de profil",
+    "newBadge": "✨ Nouveau",
+    "adminBadge": "Admin",
+    "deleteTitle": "Supprimer {{name}} ?",
+    "deleteText": "Son compte et toutes ses données seront supprimés. C'est définitif.",
+    "deleteConfirm": "Supprimer",
+    "cancel": "Annuler",
+    "deleteFailed": "Impossible de supprimer ce compte. Réessayez.",
+    "empty": "Aucun résultat.",
+    "forbidden": "Cette page est réservée aux admins."
   }
 }
