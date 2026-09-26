@@ -4,16 +4,19 @@ import { useTranslation } from "react-i18next";
 import { BASE_URL, PRIVACY_POLICY_URL } from "../api/config";
 import { setToken, saveSignupDraft, clearSignupDraft } from "../api/storage";
 import { postJson } from "../api/errors";
+import { ageFromIso, birthDateToIso, formatBirthDate, isoToBirthDate } from "../api/birthDate";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 export default function FormSignUp({ setRegistered, error, setError, verify, setVerified, prefill }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [username, setUsername] = useState(prefill?.username || "");
   const [email, setEmail] = useState(prefill?.email || "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState(prefill?.phoneNumber || "");
-  const [dateOfBirth, setDateOfBirth] = useState(prefill?.dateOfBirth || "");
+  // Typed as DD/MM/YYYY (slashes added automatically); sent as YYYY-MM-DD.
+  const [dobText, setDobText] = useState(() => isoToBirthDate(prefill?.dateOfBirth));
+  const dateOfBirth = birthDateToIso(dobText) || "";
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSignUp() {
@@ -29,20 +32,11 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
     if (!phoneNumber.trim() || !/^\+?[0-9\s-]{7,}$/.test(phoneNumber.trim()))
       return setError("Please enter a valid phone number, including country code (e.g. +33…).");
 
-    const birth = new Date(dateOfBirth);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth) || isNaN(birth.getTime())) {
-      return setError("Please enter your date of birth as YYYY-MM-DD.");
+    if (!dateOfBirth) {
+      return setError(dobText.length === 10 ? t("signup.dobNotReal") : t("signup.dobInvalid"));
     }
-    const today = new Date();
-    const age =
-      today.getFullYear() -
-      birth.getFullYear() -
-      (today.getMonth() < birth.getMonth() ||
-      (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())
-        ? 1
-        : 0);
-    if (age < 18) {
-      return setError("You must be at least 18 years old to sign up.");
+    if (ageFromIso(dateOfBirth) < 18) {
+      return setError(t("signup.dobTooYoung"));
     }
 
     setSubmitting(true);
@@ -144,14 +138,22 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
           <View style={styles.group}>
             <Text style={styles.label}>{t("signup.dobLabel")} <Text style={styles.req}>*</Text></Text>
             <TextInput
-              style={styles.input}
-              value={dateOfBirth}
-              onChangeText={setDateOfBirth}
-              placeholder="YYYY-MM-DD (e.g. 1998-05-20)"
+              style={[styles.input, styles.dobInput]}
+              value={dobText}
+              onChangeText={(text) => setDobText(formatBirthDate(text))}
+              placeholder={t("signup.dobPlaceholder")}
               placeholderTextColor={colors.textMuted}
-              keyboardType="numbers-and-punctuation"
+              keyboardType="number-pad"
+              maxLength={10}
             />
-            <Text style={styles.hint}>Format: YYYY-MM-DD · You must be 18 or older.</Text>
+            {dateOfBirth ? (
+              <Text style={styles.dobOk}>
+                ✓ {formatBirthday(dateOfBirth, i18n.language)} · {t("signup.dobAge", { age: ageFromIso(dateOfBirth) })}
+              </Text>
+            ) : dobText.length === 10 ? (
+              <Text style={styles.dobBad}>{t("signup.dobNotReal")}</Text>
+            ) : null}
+            <Text style={styles.hint}>{t("signup.dobHint")}</Text>
           </View>
 
           <Pressable
@@ -193,6 +195,19 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
       )}
     </View>
   );
+}
+
+// "20 May 1998", in the app's language.
+function formatBirthday(iso, language) {
+  try {
+    return new Date(`${iso}T12:00:00`).toLocaleDateString(language, {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    return isoToBirthDate(iso);
+  }
 }
 
 function VerificationForm({ username, email, setEmail, password, phoneNumber, dateOfBirth, setError, setRegistered }) {
@@ -485,6 +500,9 @@ const styles = StyleSheet.create({
   requiredNote: { ...typography.bodyMuted, fontSize: 12.5, marginBottom: spacing.sm },
   req: { color: colors.primary, fontWeight: "700" },
   hint: { ...typography.bodyMuted, fontSize: 11.5, marginTop: 5 },
+  dobInput: { fontSize: 17, letterSpacing: 1.5 },
+  dobOk: { marginTop: 6, fontSize: 13, fontWeight: "600", color: colors.success },
+  dobBad: { marginTop: 6, fontSize: 13, fontWeight: "600", color: colors.danger },
   group: { marginBottom: spacing.md },
   label: { ...typography.label, letterSpacing: 0.5, marginBottom: spacing.xs },
   input: {

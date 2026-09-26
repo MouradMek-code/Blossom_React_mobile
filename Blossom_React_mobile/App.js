@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { I18nextProvider } from "react-i18next";
 import RootNavigator from "./src/navigation/RootNavigator";
 import PushNotifications from "./src/components/PushNotifications";
+import VisitTracker from "./src/components/VisitTracker";
 import { refreshSessionIfNeeded } from "./src/api/session";
 import { getProfileId, getToken } from "./src/api/storage";
 import i18n, { initI18n } from "./src/i18n";
@@ -53,6 +54,7 @@ function AppInner({ initialRoute }) {
           <StatusBar style="dark" />
         </NavigationContainer>
         <PushNotifications navigationRef={navigationRef} navReady={navReady} />
+        <VisitTracker navigationRef={navigationRef} navReady={navReady} />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

@@ -14,6 +14,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import PageNav from "../components/PageNav";
+import AdminDashboard from "../components/AdminDashboard";
 import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
 import { getToken } from "../api/storage";
@@ -47,6 +48,8 @@ export default function AdminScreen() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [deletingId, setDeletingId] = useState(null);
+  // A "new profile" notification opens the member list; otherwise the dashboard.
+  const [tab, setTab] = useState(highlight ? "members" : "dashboard");
   const loadingRef = useRef(false);
 
   const load = useCallback(async () => {
@@ -81,7 +84,9 @@ export default function AdminScreen() {
   // Opened (again) from a "New profile" notification: fetch now, so the new
   // member is on the list.
   useEffect(() => {
-    if (highlight) load();
+    if (!highlight) return;
+    setTab("members");
+    load();
   }, [highlight, load]);
 
   function confirmDelete(user) {
@@ -221,7 +226,26 @@ export default function AdminScreen() {
         <Text style={styles.title}>🛡️ {t("admin.title")}</Text>
       </View>
 
-      {users === null ? (
+      <View style={styles.tabs}>
+        {[
+          ["dashboard", t("dashboard.dashboardLink")],
+          ["members", t("dashboard.membersLink")],
+        ].map(([key, label]) => (
+          <Pressable
+            key={key}
+            onPress={() => setTab(key)}
+            style={[styles.tab, tab === key && styles.tabActive]}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: tab === key }}
+          >
+            <Text style={[styles.tabText, tab === key && styles.tabTextActive]}>{label}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {tab === "dashboard" ? (
+        <AdminDashboard bottomInset={bottomInset} />
+      ) : users === null ? (
         loadError ? (
           <LoadError onRetry={load} />
         ) : (
@@ -298,6 +322,22 @@ const styles = StyleSheet.create({
   backText: { fontSize: 22, color: colors.text },
   title: { ...typography.h3, fontSize: 18 },
   loading: { marginTop: 40 },
+  tabs: {
+    flexDirection: "row",
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tab: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 11,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  tabActive: { borderBottomColor: colors.primary },
+  tabText: { fontSize: 14, fontWeight: "600", color: colors.textMuted },
+  tabTextActive: { color: colors.text, fontWeight: "700" },
   list: { padding: spacing.md },
   stats: { flexDirection: "row", gap: spacing.sm, marginBottom: spacing.md },
   stat: {

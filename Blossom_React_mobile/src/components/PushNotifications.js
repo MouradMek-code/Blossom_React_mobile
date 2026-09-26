@@ -11,9 +11,22 @@ let registering = false;
 let lastAttempt = 0;
 const handledResponses = new Set();
 
-// Registers the phone once someone is logged in with a finished profile -
-// not during sign-up, so the permission prompt doesn't interrupt it. Checked
-// on start, on every screen change (covers logging in and finishing sign-up)
+// Is this account ready for notifications? A finished profile - not during
+// sign-up, so the permission prompt doesn't interrupt it - or an admin, who
+// gets "new profile" notifications even without a dating profile.
+async function readyForPush(authToken) {
+  const headers = { Authorization: `Bearer ${authToken}` };
+  const resp = await fetch(`${BASE_URL}/user/badges`, { headers });
+  if (resp.ok) {
+    const nav = await resp.json();
+    return Boolean(nav.has_profile || nav.is_admin);
+  }
+  // Older backend without /user/badges.
+  return (await fetch(`${BASE_URL}/profile`, { headers })).status === 200;
+}
+
+// Registers the phone once the account is ready (see above). Checked on
+// start, on every screen change (covers logging in and finishing sign-up)
 // and when the app returns to the foreground.
 async function registerIfNeeded() {
   const authToken = await getToken();
@@ -24,10 +37,7 @@ async function registerIfNeeded() {
   registering = true;
   lastAttempt = Date.now();
   try {
-    const resp = await fetch(`${BASE_URL}/profile`, {
-      headers: { Authorization: `Bearer ${authToken}` },
-    });
-    if (resp.status !== 200) return; // no profile yet - still signing up
+    if (!(await readyForPush(authToken))) return; // still signing up
     await registerForPushNotifications(authToken);
     // Registered, or the user said no: either way, don't ask again this session.
     registeredFor = authToken;
