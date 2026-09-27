@@ -9,15 +9,20 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  AppState,
+  Linking,
   StyleSheet,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
+import * as Notifications from "expo-notifications";
 import PageNav from "../components/PageNav";
 import AdminDashboard from "../components/AdminDashboard";
+import AdminOffers from "../components/AdminOffers";
 import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
 import { getToken } from "../api/storage";
+import { registerForPushNotifications } from "../api/push";
 import { peekCache, writeCache } from "../api/cache";
 import { IMG } from "../api/images";
 import { isNewMember } from "../api/newMember";
@@ -49,7 +54,51 @@ export default function AdminScreen() {
   const [filter, setFilter] = useState("all");
   const [deletingId, setDeletingId] = useState(null);
   // A "new profile" notification opens the member list; otherwise the dashboard.
-  const [tab, setTab] = useState(highlight ? "members" : "dashboard");
+  const [tab, setTab] = useState(route.params?.tab || (highlight ? "members" : "dashboard"));
+  // Opened from a notification that names a tab (e.g. a partner request).
+  useEffect(() => {
+    if (route.params?.tab) setTab(route.params.tab);
+  }, [route.params?.tab]);
+  // Blossom's notifications turned off on this phone: new-profile alerts
+  // can't arrive, so say so (and only then).
+  const [alertsOff, setAlertsOff] = useState(false);
+
+  // Make sure this phone gets the "new profile" notifications: registering
+  // it while logged in as admin subscribes it for good. Checked on opening
+  // and when coming back from the phone's settings.
+  useEffect(() => {
+    let alive = true;
+    async function check() {
+      try {
+        const { status } = await Notifications.getPermissionsAsync();
+        if (!alive) return;
+        setAlertsOff(status !== "granted");
+        if (status === "granted") await registerForPushNotifications(await getToken());
+      } catch {
+        // Offline: checked again next time.
+      }
+    }
+    check();
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") check();
+    });
+    return () => {
+      alive = false;
+      sub.remove();
+    };
+  }, []);
+
+  async function turnOnAlerts() {
+    try {
+      if (await registerForPushNotifications(await getToken())) {
+        setAlertsOff(false);
+        return;
+      }
+    } catch {
+      // fall through to the settings
+    }
+    Linking.openSettings(); // refused before: only the phone's settings can allow it
+  }
   const loadingRef = useRef(false);
 
   const load = useCallback(async () => {
@@ -226,10 +275,18 @@ export default function AdminScreen() {
         <Text style={styles.title}>🛡️ {t("admin.title")}</Text>
       </View>
 
+      {alertsOff && (
+        <Pressable style={styles.alertsOff} onPress={turnOnAlerts} accessibilityRole="button">
+          <Text style={styles.alertsOffText}>🔕 {t("admin.alertsOff")}</Text>
+          <Text style={styles.alertsOffAction}>{t("admin.turnOn")}</Text>
+        </Pressable>
+      )}
+
       <View style={styles.tabs}>
         {[
           ["dashboard", t("dashboard.dashboardLink")],
           ["members", t("dashboard.membersLink")],
+          ["promos", t("offers.tab")],
         ].map(([key, label]) => (
           <Pressable
             key={key}
@@ -245,6 +302,8 @@ export default function AdminScreen() {
 
       {tab === "dashboard" ? (
         <AdminDashboard bottomInset={bottomInset} />
+      ) : tab === "promos" ? (
+        <AdminOffers bottomInset={bottomInset} />
       ) : users === null ? (
         loadError ? (
           <LoadError onRetry={load} />
@@ -322,6 +381,16 @@ const styles = StyleSheet.create({
   backText: { fontSize: 22, color: colors.text },
   title: { ...typography.h3, fontSize: 18 },
   loading: { marginTop: 40 },
+  alertsOff: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    backgroundColor: "#FDECEA",
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+  },
+  alertsOffText: { flex: 1, fontSize: 13, color: colors.text, lineHeight: 18 },
+  alertsOffAction: { fontSize: 13, fontWeight: "700", color: colors.danger },
   tabs: {
     flexDirection: "row",
     backgroundColor: colors.surface,

@@ -28,6 +28,7 @@ import { useAutoRefresh } from "../navigation/useAutoRefresh";
 import { BASE_URL, SITE_URL } from "../api/config";
 import { getToken, setProfileId } from "../api/storage";
 import { IMG } from "../api/images";
+import { offerTerms } from "../api/offers";
 import { friendlyError, NETWORK_ERROR, postJson } from "../api/errors";
 import {
   BEST_FOR,
@@ -348,6 +349,11 @@ ${SITE_URL}/date-spots/${spot.id}`,
     }
   }
 
+  // Spots with a venue promotion for couples: their own row, and a filter.
+  const [promoOnly, setPromoOnly] = useState(false);
+  const promoSpots = spots.filter((s) => s.offer);
+  const shownSpots = promoOnly ? promoSpots : spots;
+
   function openSpot(spot) {
     setSelected(spot);
     track(spot.id, "view");
@@ -375,11 +381,20 @@ ${SITE_URL}/date-spots/${spot.id}`,
         </Text>
 
         {hasToken ? (
-          <Pressable style={styles.addBtn} onPress={() => setFormOpen((o) => !o)}>
-            <Text style={styles.addBtnText}>
-              {formOpen ? t("dateSpots.close") : `＋ ${t("dateSpots.share")}`}
-            </Text>
-          </Pressable>
+          <>
+            <Pressable style={styles.addBtn} onPress={() => setFormOpen((o) => !o)}>
+              <Text style={styles.addBtnText}>
+                {formOpen ? t("dateSpots.close") : `＋ ${t("dateSpots.share")}`}
+              </Text>
+            </Pressable>
+            {/* Promotion codes a match and I got at spots with 🎁. */}
+            <Pressable style={styles.myPromosBtn} onPress={() => navigation.navigate("Vouchers")}>
+              <Text style={styles.myPromosText}>{t("offers.myPromos")}</Text>
+            </Pressable>
+            <Pressable onPress={() => Linking.openURL(`${SITE_URL}/partner`)} hitSlop={8}>
+              <Text style={styles.partnerLink}>{t("partners.link")}</Text>
+            </Pressable>
+          </>
         ) : (
           // Visitors get the same button: sharing needs a free account, so it
           // takes them to sign-up (members can log in from the line below).
@@ -412,8 +427,35 @@ ${SITE_URL}/date-spots/${spot.id}`,
           />
         )}
 
+        {promoSpots.length > 0 && !promoOnly ? (
+          <View style={styles.promoRow}>
+            <Text style={styles.promoRowTitle}>{t("offers.promoRow")}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.promoRowList}>
+              {promoSpots.map((spot) => (
+                <Pressable key={spot.id} style={styles.promoCard} onPress={() => openSpot(spot)}>
+                  <SpotBackdrop
+                    spot={spot}
+                    uri={IMG.card(spot.image_url)}
+                    style={styles.promoCardImage}
+                    emojiStyle={styles.noImageEmoji}
+                  />
+                  <View style={styles.promoCardBody}>
+                    <Text style={styles.promoCardName} numberOfLines={1}>{spot.name}</Text>
+                    <Text style={styles.promoCardOffer} numberOfLines={2}>🎁 {spot.offer.title}</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+
         {/* Filter chips - each row is named so it's clear what it filters. */}
         <View style={styles.filterBar}>
+          {promoSpots.length > 0 || promoOnly ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+              <Chip label={t("offers.onlyPromos")} active={promoOnly} onPress={() => setPromoOnly((v) => !v)} small />
+            </ScrollView>
+          ) : null}
           <Text style={styles.filterLabel}>{t("dateSpots.country")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
             <Chip
@@ -474,7 +516,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
 
         {loading ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
-        ) : spots.length === 0 ? (
+        ) : shownSpots.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>📍</Text>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
@@ -487,7 +529,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
             </Text>
           </View>
         ) : (
-          spots.map((spot, i) => (
+          shownSpots.map((spot, i) => (
             <Pressable
               key={spot.id}
               style={[styles.card, i === 0 && styles.featured]}
@@ -509,6 +551,14 @@ ${SITE_URL}/date-spots/${spot.id}`,
                 </View>
               ) : null}
               <View style={styles.cardInfo}>
+                {/* A venue promotion for couples who go together. */}
+                {spot.offer ? (
+                  <View style={styles.offerPill}>
+                    <Text style={styles.offerPillText} numberOfLines={1}>
+                      🎁 {spot.offer.title}
+                    </Text>
+                  </View>
+                ) : null}
                 {spot.category ? (
                   <View style={styles.tag}>
                     <Text style={styles.tagText}>
@@ -598,6 +648,16 @@ ${SITE_URL}/date-spots/${spot.id}`,
               <Text style={styles.detailTitle}>{selected?.name}</Text>
               <Text style={styles.detailPlace}>📍 {fullPlace(selected)}</Text>
               <SpotStats spot={selected} t={t} style={styles.detailStats} />
+              {selected?.offer ? (
+                <View style={styles.offerBox}>
+                  <Text style={styles.offerBoxTitle}>🎁 {selected.offer.title}</Text>
+                  {selected.offer.details ? (
+                    <Text style={styles.offerBoxDetails}>{selected.offer.details}</Text>
+                  ) : null}
+                  <Text style={styles.offerBoxTerms}>{offerTerms(selected.offer, t)}</Text>
+                  <Text style={styles.offerBoxHow}>{t("offers.howTo")}</Text>
+                </View>
+              ) : null}
               <Text style={[styles.detailText, { color: colors.textSoft }]}>
                 {selected?.description}
               </Text>
@@ -1255,6 +1315,56 @@ const styles = StyleSheet.create({
   },
   featuredFlagText: { color: colors.primaryDeep, fontSize: 11, fontWeight: "700", letterSpacing: 0.6 },
   cardInfo: { position: "absolute", left: 0, right: 0, bottom: 0, padding: spacing.md },
+  offerPill: {
+    alignSelf: "flex-start",
+    backgroundColor: "#FFB547",
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 6,
+    maxWidth: "100%",
+  },
+  offerPillText: { color: "#3D2300", fontWeight: "800", fontSize: 12.5 },
+  offerBox: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: "#FFF4E5",
+    borderWidth: 1,
+    borderColor: "#FFD8A3",
+  },
+  offerBoxTitle: { fontSize: 17, fontWeight: "800", color: "#3D2300" },
+  offerBoxDetails: { fontSize: 14, color: "#5C3A0A", marginTop: 4 },
+  offerBoxTerms: { fontSize: 13, color: "#6B3E00", marginTop: 8, fontWeight: "600" },
+  offerBoxHow: { fontSize: 13, color: "#6B4A1E", marginTop: 6, lineHeight: 19 },
+  promoRow: { marginTop: spacing.md },
+  promoRowTitle: { fontSize: 15, fontWeight: "800", color: colors.text, marginBottom: spacing.sm },
+  promoRowList: { gap: 10, paddingRight: spacing.md },
+  promoCard: {
+    width: 170,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    overflow: "hidden",
+    borderWidth: 1.5,
+    borderColor: "#FFD8A3",
+    ...shadow.sm,
+  },
+  promoCardImage: { width: "100%", height: 90 },
+  promoCardBody: { padding: 10 },
+  promoCardName: { fontSize: 14, fontWeight: "700", color: colors.text },
+  promoCardOffer: { fontSize: 12.5, fontWeight: "700", color: "#6B3E00", marginTop: 3 },
+  myPromosBtn: {
+    alignSelf: "center",
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: "#FFB547",
+    backgroundColor: "#FFF4E5",
+  },
+  myPromosText: { color: "#6B3E00", fontWeight: "700", fontSize: 14 },
+  partnerLink: { alignSelf: "center", marginTop: spacing.sm, color: colors.primaryDeep, fontWeight: "700", fontSize: 13.5 },
   tag: {
     alignSelf: "flex-start",
     backgroundColor: "rgba(255,255,255,0.2)",
