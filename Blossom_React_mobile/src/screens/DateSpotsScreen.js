@@ -391,9 +391,6 @@ ${SITE_URL}/date-spots/${spot.id}`,
             <Pressable style={styles.myPromosBtn} onPress={() => navigation.navigate("Vouchers")}>
               <Text style={styles.myPromosText}>{t("offers.myPromos")}</Text>
             </Pressable>
-            <Pressable onPress={() => Linking.openURL(`${SITE_URL}/partner`)} hitSlop={8}>
-              <Text style={styles.partnerLink}>{t("partners.link")}</Text>
-            </Pressable>
           </>
         ) : (
           // Visitors get the same button: sharing needs a free account, so it
@@ -407,6 +404,10 @@ ${SITE_URL}/date-spots/${spot.id}`,
             </Text>
             <Pressable onPress={() => navigation.navigate("Login")} hitSlop={8}>
               <Text style={styles.loginLink}>{t("dateSpots.haveAccount")}</Text>
+            </Pressable>
+            {/* Café owners visiting the app: the way in, without scrolling. */}
+            <Pressable onPress={() => Linking.openURL(`${SITE_URL}/partner`)} hitSlop={8}>
+              <Text style={styles.guestPartner}>{t("partners.link")}</Text>
             </Pressable>
           </View>
         )}
@@ -582,6 +583,21 @@ ${SITE_URL}/date-spots/${spot.id}`,
             </Pressable>
           ))
         )}
+
+        {/* Café and restaurant owners: how to offer a treat to Blossom couples. */}
+        <View style={styles.partnerCard}>
+          <Text style={styles.partnerCardTitle}>🏪 {t("business.appCardTitle")}</Text>
+          <Text style={styles.partnerCardText}>{t("business.appCardText")}</Text>
+          <Pressable
+            style={({ pressed }) => [styles.partnerCardBtn, pressed && { opacity: 0.85 }]}
+            onPress={() => Linking.openURL(`${SITE_URL}/partner`)}
+          >
+            <Text style={styles.partnerCardBtnText}>{t("business.appCardButton")}</Text>
+          </Pressable>
+          <Pressable onPress={() => Linking.openURL(`${SITE_URL}/business`)} hitSlop={8}>
+            <Text style={styles.partnerCardMore}>{t("business.homeMore")} →</Text>
+          </Pressable>
+        </View>
       </ScrollView>
 
       {/* Detail view.
@@ -1364,7 +1380,28 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF4E5",
   },
   myPromosText: { color: "#6B3E00", fontWeight: "700", fontSize: 14 },
-  partnerLink: { alignSelf: "center", marginTop: spacing.sm, color: colors.primaryDeep, fontWeight: "700", fontSize: 13.5 },
+  guestPartner: { color: "#6B3E00", fontWeight: "700", fontSize: 13.5, marginTop: 2 },
+  partnerCard: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: "#FFF4E5",
+    borderWidth: 1,
+    borderColor: "#FFD8A3",
+    alignItems: "center",
+  },
+  partnerCardTitle: { fontSize: 16.5, fontWeight: "800", color: "#3D2300", textAlign: "center" },
+  partnerCardText: { fontSize: 14, color: "#5C3A0A", textAlign: "center", marginTop: 6, lineHeight: 20 },
+  partnerCardBtn: {
+    marginTop: spacing.md,
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 11,
+  },
+  partnerCardBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+  partnerCardMore: { marginTop: spacing.sm, color: colors.primaryDeep, fontWeight: "700", fontSize: 13.5 },
   tag: {
     alignSelf: "flex-start",
     backgroundColor: "rgba(255,255,255,0.2)",

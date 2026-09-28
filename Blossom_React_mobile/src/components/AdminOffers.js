@@ -18,7 +18,7 @@ import { getToken } from "../api/storage";
 import { formatBirthDate } from "../api/birthDate";
 import { formatDeadline, formatHours, formatTimeInput, localToIso } from "../api/offers";
 import { useAutoRefresh } from "../navigation/useAutoRefresh";
-import { PartnerRequests, PartnerVenues } from "./PartnerAdmin";
+import { BusinessMessages, PartnerRequests, PartnerVenues } from "./PartnerAdmin";
 import { colors, radius, spacing, shadow } from "../theme";
 
 const STATE_COLORS = {
@@ -202,6 +202,7 @@ export default function AdminOffers({ bottomInset = 0 }) {
         ))
       )}
       <PartnerVenues refreshKey={partnerKey} />
+      <BusinessMessages />
     </ScrollView>
   );
 }

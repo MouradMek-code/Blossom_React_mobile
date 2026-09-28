@@ -4,6 +4,7 @@ import PageNav from "../components/PageNav";
 import StartHome from "../components/StartHome";
 import HowItWorks from "../components/HowItWorks";
 import FounderProjects from "../components/FounderProjects";
+import ForVenuesCard from "../components/ForVenuesCard";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -44,6 +45,8 @@ export default function HomeScreen() {
         <StartHome />
       </View>
       <HowItWorks />
+      {/* Café and restaurant owners, before they even have an account. */}
+      <ForVenuesCard style={styles.venues} />
       <FounderProjects />
     </ScrollView>
   );
@@ -52,6 +55,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { flexGrow: 1 },
+  venues: { marginHorizontal: 16, marginVertical: 24 },
   hero: {
     width: "100%",
     overflow: "hidden",

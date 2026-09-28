@@ -105,7 +105,7 @@ export function openNotificationTarget(navigationRef, data = {}) {
   } else if (data.type === "voucher") {
     // "⏰ Your promotion ends in 5 h": straight to the code.
     navigationRef.navigate("Vouchers", { highlight: Number(data.voucherId) || undefined });
-  } else if (data.type === "partner_request") {
+  } else if (data.type === "partner_request" || data.type === "business_message") {
     // "🏪 New partner request": straight to the requests, in Admin → Promos.
     navigationRef.navigate("Admin", { tab: "promos" });
   } else if (data.type === "new_profile") {

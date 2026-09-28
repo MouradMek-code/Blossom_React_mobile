@@ -13,7 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import PageNav from "../components/PageNav";
 import LocationFields from "../components/LocationFields";
-import { BASE_URL } from "../api/config";
+import { BASE_URL, SITE_URL } from "../api/config";
 import { postJson } from "../api/errors";
 import { tidyCity } from "../api/geo";
 import { changeLanguage } from "../i18n";
@@ -266,6 +266,14 @@ export default function SettingsScreen() {
               <Text style={styles.rowAction}>{t("location.change")}</Text>
             </Pressable>
           )}
+        </Section>
+
+        {/* Cafés and restaurants: the business pages on the website. */}
+        <Section title={t("business.settingsSection")}>
+          <LinkRow label={t("business.settingsPartner")} url={`${SITE_URL}/partner`} />
+          <LinkRow label={t("business.settingsCheck")} url={`${SITE_URL}/venue`} />
+          <LinkRow label={t("business.settingsLost")} url={`${SITE_URL}/business#lost-link`} />
+          <LinkRow label={t("business.settingsContact")} url={`${SITE_URL}/business#contact`} last />
         </Section>
 
         <Section title={t("settings.about")}>

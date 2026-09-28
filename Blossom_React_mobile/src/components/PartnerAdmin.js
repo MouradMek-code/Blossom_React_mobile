@@ -248,6 +248,57 @@ export function PartnerVenues({ refreshKey }) {
   );
 }
 
+// "Contact us" messages from businesses: reply by email, mark as handled.
+export function BusinessMessages() {
+  const { t, i18n } = useTranslation();
+  const [messages, setMessages] = useState(null);
+
+  const load = useCallback(async () => {
+    const result = await call("/partners/contact");
+    if (result.ok) setMessages(result.data);
+  }, []);
+
+  useAutoRefresh(load, { minIntervalMs: 15000 });
+
+  async function setHandled(message, handled) {
+    const result = await call(`/partners/contact/${message.id}/handled`, "POST", { handled });
+    if (result.ok) setMessages((cur) => cur.map((m) => (m.id === message.id ? result.data : m)));
+  }
+
+  if (!messages) return null;
+  return (
+    <View style={styles.block}>
+      <Text style={styles.blockTitle}>{t("business.messages")}</Text>
+      {messages.length === 0 ? <Text style={styles.muted}>{t("business.noMessages")}</Text> : null}
+      {messages.map((m) => (
+        <View key={m.id} style={[styles.card, m.handled && { opacity: 0.6 }]}>
+          <View style={styles.cardTop}>
+            <Text style={styles.kind}>{t(`business.topic_${m.topic}`)}</Text>
+            <Text style={styles.muted}>{formatDeadline(m.created_at, i18n.language)}</Text>
+          </View>
+          <Text style={styles.title}>
+            {m.name}
+            {m.business ? ` · ${m.business}` : ""}
+          </Text>
+          <Text style={styles.line}>{m.message}</Text>
+          <Text style={styles.muted}>
+            {m.email}
+            {m.phone ? ` · ${m.phone}` : ""}
+          </Text>
+          <View style={styles.actions}>
+            <Pressable style={styles.btn} onPress={() => Linking.openURL(`mailto:${m.email}?subject=Blossom`)}>
+              <Text style={styles.btnText}>{t("business.reply")}</Text>
+            </Pressable>
+            <Pressable style={styles.btn} onPress={() => setHandled(m, !m.handled)}>
+              <Text style={styles.btnText}>{m.handled ? t("business.reopen") : t("business.markHandled")}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   block: { marginBottom: spacing.lg },
   blockTitle: { fontSize: 16, fontWeight: "800", color: colors.text, marginBottom: spacing.sm },
