@@ -10,7 +10,7 @@ import { friendlyError } from "./errors";
 const MAX_SIDE = 1600;
 const TIMEOUT_MS = 90000;
 
-async function shrink(asset) {
+export async function shrink(asset) {
   const original = {
     uri: asset.uri,
     name: asset.fileName || "photo.jpg",

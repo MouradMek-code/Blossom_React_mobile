@@ -194,6 +194,9 @@ export default function DateSpotsScreen() {
   const [category, setCategory] = useState("");
   const [bestFor, setBestFor] = useState("");
   const [inviteSpot, setInviteSpot] = useState(null);
+  const [editing, setEditing] = useState(null); // the spot being edited
+  const [myProfileId, setMyProfileId] = useState(null);
+  const scrollRef = useRef(null);
 
   // The token only carries the username, so ask the backend whether this
   // account is an admin - that gates the counter editor below each photo.
@@ -210,7 +213,10 @@ export default function DateSpotsScreen() {
           headers: { Authorization: `Bearer ${tk}` },
         });
         const data = resp.ok ? await resp.json() : null;
-        if (alive) setIsAdmin(Boolean(data?.is_admin));
+        if (alive) {
+          setIsAdmin(Boolean(data?.is_admin));
+          setMyProfileId(data?.profile_id ?? null);
+        }
         // Chat works out which bubbles are "mine" from the stored profile id.
         // An invite sends the user straight into a conversation, so make sure
         // it's there.
@@ -267,8 +273,22 @@ export default function DateSpotsScreen() {
   // list behind it, so the new numbers show without a refetch.
   function applyStats(updated) {
     if (!updated?.id) return;
-    setSpots((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
-    setSelected((cur) => (cur && cur.id === updated.id ? { ...cur, ...updated } : cur));
+    const merge = (spot) => ({ ...spot, ...updated, offer: updated.offer ?? spot.offer });
+    setSpots((prev) => prev.map((s) => (s.id === updated.id ? merge(s) : s)));
+    setSelected((cur) => (cur && cur.id === updated.id ? merge(cur) : cur));
+  }
+
+  // Authors edit their own places; admins edit any (photo, text, link...).
+  function canEdit(spot) {
+    return isAdmin || (myProfileId != null && spot?.profile?.id === myProfileId);
+  }
+
+  // The edit form lives at the top of the list, like the share form.
+  function startEdit(spot) {
+    setSelected(null);
+    setFormOpen(false);
+    setEditing(spot);
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
   }
 
   // `silent`: a background refresh - the list stays on screen instead of the
@@ -373,7 +393,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
     <View style={[styles.head, { backgroundColor: colors.background }]}>
       <PageNav />
 
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll}>
         <Text style={styles.eyebrow}>{t("dateSpots.eyebrow")}</Text>
         <Text style={styles.title}>{t("dateSpots.title")}</Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
@@ -382,7 +402,13 @@ ${SITE_URL}/date-spots/${spot.id}`,
 
         {hasToken ? (
           <>
-            <Pressable style={styles.addBtn} onPress={() => setFormOpen((o) => !o)}>
+            <Pressable
+              style={styles.addBtn}
+              onPress={() => {
+                setEditing(null);
+                setFormOpen((o) => !o);
+              }}
+            >
               <Text style={styles.addBtnText}>
                 {formOpen ? t("dateSpots.close") : `＋ ${t("dateSpots.share")}`}
               </Text>
@@ -418,12 +444,25 @@ ${SITE_URL}/date-spots/${spot.id}`,
           </View>
         )}
 
-        {formOpen && hasToken && (
+        {formOpen && hasToken && !editing && (
           <AddSpotForm
             onCancel={() => setFormOpen(false)}
-            onCreated={() => {
+            onSaved={() => {
               setFormOpen(false);
               load();
+            }}
+          />
+        )}
+
+        {editing && hasToken && (
+          <AddSpotForm
+            key={editing.id}
+            initial={editing}
+            onCancel={() => setEditing(null)}
+            onSaved={(updated) => {
+              setEditing(null);
+              applyStats(updated);
+              load({ silent: true });
             }}
           />
         )}
@@ -664,6 +703,14 @@ ${SITE_URL}/date-spots/${spot.id}`,
               <Text style={styles.detailTitle}>{selected?.name}</Text>
               <Text style={styles.detailPlace}>📍 {fullPlace(selected)}</Text>
               <SpotStats spot={selected} t={t} style={styles.detailStats} />
+              {canEdit(selected) ? (
+                <Pressable
+                  style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.8 }]}
+                  onPress={() => startEdit(selected)}
+                >
+                  <Text style={styles.editBtnText}>✏️ {t("dateSpots.edit")}</Text>
+                </Pressable>
+              ) : null}
               {selected?.offer ? (
                 <View style={styles.offerBox}>
                   <Text style={styles.offerBoxTitle}>🎁 {selected.offer.title}</Text>
@@ -908,18 +955,25 @@ const GOOGLE_MAPS_LINK = /^https?:\/\/(www\.)?([a-z-]+\.)?(google\.[a-z.]+|goo\.
 // (which also fills in the name and makes "Open in Google Maps" exact), pick
 // a vibe, done. City and country come from the profile; neighborhood and
 // "best for" wait behind "More details".
-function AddSpotForm({ onCancel, onCreated }) {
+// With `initial`, the same form edits that place (its author, or an admin).
+function AddSpotForm({ initial, onCancel, onSaved }) {
   const { t } = useTranslation();
-  const [mapUrl, setMapUrl] = useState("");
+  const editing = Boolean(initial);
+  const [mapUrl, setMapUrl] = useState(initial?.map_url || "");
   const [linkStatus, setLinkStatus] = useState(""); // "" | "reading" | "noName"
-  const [name, setName] = useState("");
-  const [place, setPlace] = useState({ country: "", city: "" });
+  const [name, setName] = useState(initial?.name || "");
+  const [place, setPlace] = useState({
+    country: initial?.country || "",
+    city: initial?.city || "",
+  });
   const [editingPlace, setEditingPlace] = useState(false);
-  const [category, setCategory] = useState("");
-  const [description, setDescription] = useState("");
-  const [showDetails, setShowDetails] = useState(false);
-  const [neighborhood, setNeighborhood] = useState("");
-  const [bestFor, setBestFor] = useState([]);
+  const [category, setCategory] = useState(initial?.category || "");
+  const [description, setDescription] = useState(initial?.description || "");
+  const [showDetails, setShowDetails] = useState(
+    Boolean(initial?.neighborhood || initial?.best_for?.length),
+  );
+  const [neighborhood, setNeighborhood] = useState(initial?.neighborhood || "");
+  const [bestFor, setBestFor] = useState(initial?.best_for || []);
   const [photo, setPhoto] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -934,7 +988,9 @@ function AddSpotForm({ onCancel, onCreated }) {
   }
 
   // Most date spots are in the city people live in: start from their profile.
+  // (An edited place already has its own city.)
   useEffect(() => {
+    if (editing) return undefined;
     let alive = true;
     (async () => {
       let profile = await readCache("ownProfile");
@@ -956,7 +1012,7 @@ function AddSpotForm({ onCancel, onCreated }) {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [editing]);
 
   // Pasting the link fills in the name. Some phones paste Google Maps' whole
   // share text ("name / address / link"): keep just the link, and its first
@@ -978,7 +1034,8 @@ function AddSpotForm({ onCancel, onCreated }) {
       setMapUrl(found[0]);
       return undefined;
     }
-    if (!GOOGLE_MAPS_LINK.test(raw)) {
+    // Nothing to look up for the link the place already had.
+    if (!GOOGLE_MAPS_LINK.test(raw) || (editing && raw === initial?.map_url)) {
       setLinkStatus("");
       return undefined;
     }
@@ -1007,7 +1064,7 @@ function AddSpotForm({ onCancel, onCreated }) {
       alive = false;
       clearTimeout(timer);
     };
-  }, [mapUrl]);
+  }, [mapUrl, editing, initial?.map_url]);
 
   function toggleBestFor(value) {
     setBestFor((cur) =>
@@ -1025,14 +1082,15 @@ function AddSpotForm({ onCancel, onCreated }) {
     if (!result.canceled) setPhoto(result.assets[0]);
   }
 
-  async function submit() {
-    if (submitting) return;
-    setError("");
-    if (!mapUrl.trim()) return setError(t("dateSpots.errLink"));
-    if (!GOOGLE_MAPS_LINK.test(mapUrl.trim())) return setError(t("dateSpots.errMapUrl"));
-    if (!name.trim()) return setError(t("dateSpots.errName"));
-    if (!place.city.trim() || !place.country.trim()) return setError(t("dateSpots.errPlace"));
+  function photoPart() {
+    return {
+      uri: photo.uri,
+      name: photo.fileName || "spot.jpg",
+      type: photo.mimeType || "image/jpeg",
+    };
+  }
 
+  async function create(token) {
     const body = new FormData();
     body.append("name", name.trim());
     body.append("city", place.city.trim());
@@ -1042,41 +1100,70 @@ function AddSpotForm({ onCancel, onCreated }) {
     if (neighborhood.trim()) body.append("neighborhood", neighborhood.trim());
     if (category) body.append("category", category);
     if (bestFor.length > 0) body.append("best_for", bestFor.join(","));
-    if (photo) {
-      body.append("image", {
-        uri: photo.uri,
-        name: photo.fileName || "spot.jpg",
-        type: photo.mimeType || "image/jpeg",
-      });
+    if (photo) body.append("image", photoPart());
+    return postJson(`${BASE_URL}/date_spots`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body,
+    });
+  }
+
+  // Details go as JSON (so clearing a field works), then the photo separately
+  // if a new one was picked.
+  async function saveEdit(token) {
+    const result = await postJson(`${BASE_URL}/date_spots/${initial.id}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: name.trim(),
+        city: place.city.trim(),
+        country: place.country.trim(),
+        neighborhood: neighborhood.trim(),
+        description: description.trim(),
+        category,
+        best_for: bestFor,
+        map_url: mapUrl.trim(),
+      }),
+    });
+    if (!result.ok || !photo) return result;
+    const body = new FormData();
+    body.append("image", photoPart());
+    return postJson(`${BASE_URL}/date_spots/${initial.id}/image`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+      body,
+    });
+  }
+
+  async function submit() {
+    if (submitting) return;
+    setError("");
+    // Required when sharing; older places being edited may not have one yet.
+    if (!editing && !mapUrl.trim()) return setError(t("dateSpots.errLink"));
+    if (mapUrl.trim() && !GOOGLE_MAPS_LINK.test(mapUrl.trim())) {
+      return setError(t("dateSpots.errMapUrl"));
     }
+    if (!name.trim()) return setError(t("dateSpots.errName"));
+    if (!place.city.trim() || !place.country.trim()) return setError(t("dateSpots.errPlace"));
 
     setSubmitting(true);
     const token = await getToken();
-    let resp;
-    try {
-      resp = await fetch(`${BASE_URL}/date_spots`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body,
-      });
-    } catch {
-      setSubmitting(false);
-      return setError(NETWORK_ERROR);
-    }
-    let data = null;
-    try {
-      data = await resp.json();
-    } catch {
-      data = null;
-    }
+    const result = editing ? await saveEdit(token) : await create(token);
     setSubmitting(false);
-    if (!resp.ok) return setError(friendlyError(data, resp));
-    onCreated();
+    if (!result.ok) return setError(result.message);
+    onSaved(result.data);
   }
+
+  const shownPhoto = photo ? photo.uri : editing && initial.image_url ? IMG.card(initial.image_url) : null;
 
   return (
     <View style={styles.form}>
-      <Text style={styles.formTitle}>{t("dateSpots.formTitle")}</Text>
+      <Text style={styles.formTitle}>
+        {editing ? t("dateSpots.editTitle") : t("dateSpots.formTitle")}
+      </Text>
 
       {error !== "" && (
         <View style={styles.errorBox}>
@@ -1086,7 +1173,7 @@ function AddSpotForm({ onCancel, onCreated }) {
 
       {/* 1. The Google Maps link: exact place, and usually the name too. */}
       <Text style={styles.label}>
-        {t("dateSpots.mapLink")} <Text style={styles.req}>*</Text>
+        {t("dateSpots.mapLink")} {!editing ? <Text style={styles.req}>*</Text> : null}
       </Text>
       <Text style={styles.hint}>{t("dateSpots.mapLinkHint")}</Text>
       <TextInput
@@ -1150,9 +1237,11 @@ function AddSpotForm({ onCancel, onCreated }) {
       ) : null}
 
       <Pressable style={styles.photoBtn} onPress={pickPhoto}>
-        <Text style={styles.photoBtnText}>📷 {t("dateSpots.photo")}</Text>
+        <Text style={styles.photoBtnText}>
+          📷 {editing ? t("dateSpots.photoReplace") : t("dateSpots.photo")}
+        </Text>
       </Pressable>
-      {photo ? <Image source={{ uri: photo.uri }} style={styles.preview} /> : null}
+      {shownPhoto ? <Image source={{ uri: shownPhoto }} style={styles.preview} /> : null}
 
       <Text style={styles.label}>{t("dateSpots.whyOptional")}</Text>
       <TextInput
@@ -1210,7 +1299,9 @@ function AddSpotForm({ onCancel, onCreated }) {
           {submitting ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <Text style={styles.submitText}>{t("dateSpots.submit")}</Text>
+            <Text style={styles.submitText}>
+              {editing ? t("dateSpots.saveChanges") : t("dateSpots.submit")}
+            </Text>
           )}
         </Pressable>
       </View>
@@ -1437,6 +1528,17 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: spacing.sm,
   },
+  editBtn: {
+    alignSelf: "flex-start",
+    marginTop: spacing.md,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    backgroundColor: colors.primarySoft,
+  },
+  editBtnText: { color: colors.primaryDark, fontWeight: "700", fontSize: 14 },
   detailTag: {
     alignSelf: "flex-start",
     backgroundColor: colors.primarySoft,

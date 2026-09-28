@@ -234,6 +234,9 @@ function LanguagePicker({ field, options, answer, setAnswer, setClicked }) {
 
 export default StartProfile;
 
+// One question on its own (the admin's "profile for a friend" form shows them all).
+export { Question as ProfileQuestion };
+
 function LetsStartButton({ length, onPress }) {
   return (
     <View style={styles.letStart}>

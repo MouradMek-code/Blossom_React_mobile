@@ -9,6 +9,7 @@ import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import ChatScreen from "../screens/ChatScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import AdminScreen from "../screens/AdminScreen";
+import FriendProfilesScreen from "../screens/FriendProfilesScreen";
 import VouchersScreen from "../screens/VouchersScreen";
 import LocationPickerScreen from "../screens/LocationPickerScreen";
 import NotFoundScreen from "../screens/NotFoundScreen";
@@ -36,6 +37,7 @@ export default function RootNavigator({ initialRouteName = "Home" }) {
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Admin" component={AdminScreen} />
+      <Stack.Screen name="FriendProfiles" component={FriendProfilesScreen} />
       <Stack.Screen name="Vouchers" component={VouchersScreen} />
       <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
       <Stack.Screen name="NotFound" component={NotFoundScreen} />

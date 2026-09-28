@@ -218,6 +218,7 @@ export default function AdminScreen() {
             {isNew && <Text style={styles.newBadge}>{t("admin.newBadge")}</Text>}
             {u.is_admin && <Text style={styles.adminBadge}>{t("admin.adminBadge")}</Text>}
           </View>
+          {u.pending_friend && <Text style={styles.pendingFriend}>{t("friends.pendingBadge")}</Text>}
           <Text style={styles.sub} numberOfLines={1}>
             @{u.username} · {u.email}
           </Text>
@@ -329,6 +330,15 @@ export default function AdminScreen() {
           }
           ListHeaderComponent={
             <View>
+              {/* A friend's answers and photos -> a profile they confirm by email. */}
+              <Pressable
+                style={({ pressed }) => [styles.friendsBtn, pressed && styles.rowPressed]}
+                onPress={() => navigation.navigate("FriendProfiles")}
+                accessibilityRole="button"
+              >
+                <Text style={styles.friendsBtnText}>👯 {t("friends.title")}</Text>
+                <Text style={styles.friendsBtnArrow}>→</Text>
+              </Pressable>
               <View style={styles.stats}>
                 {FILTERS.map((key) => (
                   <Pressable
@@ -473,6 +483,21 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   sub: { fontSize: 13, color: colors.textSoft, marginTop: 2 },
+  pendingFriend: { fontSize: 12, fontWeight: "700", color: "#8A5300", marginTop: 2 },
+  friendsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.primaryTint,
+    borderWidth: 1.5,
+    borderColor: colors.primarySoft,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+    marginBottom: spacing.md,
+  },
+  friendsBtnText: { fontSize: 15, fontWeight: "700", color: colors.primaryDeep },
+  friendsBtnArrow: { fontSize: 18, color: colors.primaryDeep },
   meta: { fontSize: 12, color: colors.textMuted, marginTop: 3 },
   warn: { color: colors.danger, fontWeight: "600" },
   deleteBtn: {
