@@ -147,7 +147,10 @@ function RequestCard({ request: r, language, onDone }) {
       ) : null}
       {r.message ? <Text style={styles.muted}>💬 {r.message}</Text> : null}
       {r.suggested_spot ? (
-        <Text style={styles.line}>🔗 {t("partners.existingSpot", { name: r.suggested_spot.name })}</Text>
+        <Text style={styles.line}>
+          🔗 {t("partners.existingSpot", { name: r.suggested_spot.name })}
+          {r.spot_chosen ? ` (${t("partners.chosenByVenue")})` : ""}
+        </Text>
       ) : null}
 
       {editing ? (

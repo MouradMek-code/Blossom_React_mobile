@@ -14,6 +14,7 @@ import {
   StyleSheet,
   BackHandler,
   Animated,
+  Alert,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -278,9 +279,36 @@ export default function DateSpotsScreen() {
     setSelected((cur) => (cur && cur.id === updated.id ? merge(cur) : cur));
   }
 
-  // Authors edit their own places; admins edit any (photo, text, link...).
+  // Admins edit any spot; members the ones they shared - until a spot becomes
+  // a partner (venue or gifts): then only admins (the server says the same).
   function canEdit(spot) {
-    return isAdmin || (myProfileId != null && spot?.profile?.id === myProfileId);
+    if (isAdmin) return true;
+    return myProfileId != null && spot?.profile?.id === myProfileId && !spot?.partner;
+  }
+
+  // Admins (any spot) and whoever shared it. Its gifts and the codes couples
+  // got there go with it, so the confirmation says so.
+  const [deleting, setDeleting] = useState(false);
+  function confirmDelete(spot) {
+    Alert.alert(t("dateSpots.delete"), t("dateSpots.deleteConfirm", { name: spot.name }), [
+      { text: t("dateSpots.cancel"), style: "cancel" },
+      { text: t("dateSpots.delete"), style: "destructive", onPress: () => deleteSpot(spot) },
+    ]);
+  }
+
+  async function deleteSpot(spot) {
+    setDeleting(true);
+    const result = await postJson(`${BASE_URL}/date_spots/${spot.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setDeleting(false);
+    if (!result.ok) {
+      Alert.alert(t("dateSpots.delete"), result.message);
+      return;
+    }
+    setSpots((prev) => prev.filter((s) => s.id !== spot.id));
+    setSelected(null);
   }
 
   // The edit form lives at the top of the list, like the share form.
@@ -712,12 +740,23 @@ ${SITE_URL}/date-spots/${spot.id}`,
               <Text style={styles.detailPlace}>📍 {fullPlace(selected)}</Text>
               <SpotStats spot={selected} t={t} style={styles.detailStats} />
               {canEdit(selected) ? (
-                <Pressable
-                  style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.8 }]}
-                  onPress={() => startEdit(selected)}
-                >
-                  <Text style={styles.editBtnText}>✏️ {t("dateSpots.edit")}</Text>
-                </Pressable>
+                <View style={styles.manageRow}>
+                  <Pressable
+                    style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.8 }]}
+                    onPress={() => startEdit(selected)}
+                  >
+                    <Text style={styles.editBtnText}>✏️ {t("dateSpots.edit")}</Text>
+                  </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [styles.editBtn, styles.deleteBtn, (pressed || deleting) && { opacity: 0.7 }]}
+                    onPress={() => confirmDelete(selected)}
+                    disabled={deleting}
+                  >
+                    <Text style={[styles.editBtnText, styles.deleteBtnText]}>
+                      🗑️ {deleting ? t("dateSpots.deleting") : t("dateSpots.delete")}
+                    </Text>
+                  </Pressable>
+                </View>
               ) : null}
               {selected?.offer ? (
                 <View style={styles.offerBox}>
@@ -736,6 +775,15 @@ ${SITE_URL}/date-spots/${spot.id}`,
                 <Text style={[styles.detailAuthor, { color: colors.textMuted }]}>
                   {t("dateSpots.sharedBy", { name: selected.profile.first_name })}
                 </Text>
+              ) : null}
+              {/* The café's staff: ask for a gift on this very spot (website form). */}
+              {selected && !selected.offer ? (
+                <Pressable
+                  onPress={() => Linking.openURL(`${SITE_URL}/partner?spot=${selected.id}`)}
+                  hitSlop={8}
+                >
+                  <Text style={styles.venueLink}>🏪 {t("partners.spotLink")} →</Text>
+                </Pressable>
               ) : null}
             </View>
           </ScrollView>
@@ -1547,6 +1595,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
   },
   editBtnText: { color: colors.primaryDark, fontWeight: "700", fontSize: 14 },
+  manageRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  deleteBtn: { borderColor: "#F2C4C0", backgroundColor: "#FDECEA" },
+  deleteBtnText: { color: colors.danger },
+  venueLink: { marginTop: spacing.lg, fontSize: 14, fontWeight: "700", color: colors.primaryDeep },
   detailTag: {
     alignSelf: "flex-start",
     backgroundColor: colors.primarySoft,

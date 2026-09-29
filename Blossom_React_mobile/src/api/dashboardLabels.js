@@ -15,6 +15,18 @@ const PLACES = {
   "/privacy-policy": "Privacy policy",
   "/terms": "Terms",
   "/forgot_password": "Forgot password",
+  "/messages": "Chats",
+  "/chat/:id": "A chat",
+  "/liked_you": "Likes",
+  "/settings": "Settings",
+  "/promotions": "My gifts",
+  "/partner": "Partner form (venues)",
+  "/business": "For venues",
+  "/venue": "Venue code check",
+  "/venue/manage/:token": "Venue manager page",
+  "/poster/:id": "Venue poster",
+  "/claim/:token": "Friend profile activation",
+  "/delete-account": "Delete account",
   Home: "Home screen",
   SignUp: "Sign up",
   Login: "Log in",
@@ -26,7 +38,83 @@ const PLACES = {
   Messages: "Chats",
   LikedYou: "Likes",
   ForgotPassword: "Forgot password",
+  Spots: "Date spots",
+  Profile: "Own profile",
+  Settings: "Settings",
+  Vouchers: "My gifts",
+  LocationPicker: "Choosing a city",
+  NotFound: "Page not found",
 };
+
+// A page or screen's human name (an unknown one as it is).
+export function placeLabel(key) {
+  return PLACES[key] || key;
+}
+
+// What a member did on a day (counts from GET /analytics/day), in order:
+// [key, icon, shows a count].
+export const DAY_ACTIONS = [
+  ["signed_up", "🆕", false],
+  ["profile_created", "📝", false],
+  ["profile_finished", "🌸", false],
+  ["likes", "❤️", true],
+  ["matches", "💞", true],
+  ["messages", "💬", true],
+  ["invites", "📍", true],
+  ["gift_codes", "🎁", true],
+  ["gifts_used", "✅", true],
+  ["spots_shared", "📌", true],
+  ["reports", "🚩", true],
+];
+
+// "❤️ Likes: 3", "🌸 Finished profile"
+export function actionChips(actions, t) {
+  return DAY_ACTIONS.filter(([key]) => actions?.[key]).map(([key, icon, counted]) =>
+    counted ? `${icon} ${t(`dashboard.act_${key}`)}: ${actions[key]}` : `${icon} ${t(`dashboard.act_${key}`)}`,
+  );
+}
+
+// 42 s -> "< 1 min", 1500 s -> "25 min", 4800 s -> "1 h 20".
+export function durationLabel(seconds, t) {
+  const minutes = Math.round((seconds || 0) / 60);
+  if (minutes < 1) return t("dashboard.underMinute");
+  if (minutes < 60) return t("dashboard.minutes", { count: minutes });
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours} h ${String(rest).padStart(2, "0")}` : `${hours} h`;
+}
+
+// "2026-09-29" in the viewer's time zone.
+export function localDay(date = new Date()) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+// The day before / after a "2026-09-29".
+export function shiftDay(iso, days) {
+  const date = new Date(`${iso}T12:00:00`);
+  date.setDate(date.getDate() + days);
+  return localDay(date);
+}
+
+// "Monday 29 September" in the viewer's language.
+export function longDate(iso, language) {
+  try {
+    return new Date(`${iso}T12:00:00`).toLocaleDateString(language, { weekday: "long", day: "numeric", month: "long" });
+  } catch {
+    return iso;
+  }
+}
+
+// "14:05" for a time sent by the server (UTC, with a Z).
+export function clockTime(iso, language) {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return iso.slice(11, 16);
+  }
+}
 
 export function breakdownLabel(kind, key, t) {
   if (key === "unknown") return t("dashboard.unknown");
