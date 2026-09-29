@@ -5,6 +5,7 @@ import StartHome from "../components/StartHome";
 import HowItWorks from "../components/HowItWorks";
 import FounderProjects from "../components/FounderProjects";
 import ForVenuesCard from "../components/ForVenuesCard";
+import DateGifts from "../components/DateGifts";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -45,6 +46,8 @@ export default function HomeScreen() {
         <StartHome />
       </View>
       <HowItWorks />
+      {/* The venue gifts, for the people who date. */}
+      <DateGifts />
       {/* Café and restaurant owners, before they even have an account. */}
       <ForVenuesCard style={styles.venues} />
       <FounderProjects />

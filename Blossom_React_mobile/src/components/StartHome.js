@@ -51,6 +51,14 @@ export default function StartHome() {
           <Text style={styles.ctaArrow}>→</Text>
         </Pressable>
       )}
+      {/* The venue gifts: opens the date spots that have one. */}
+      <Pressable
+        style={({ pressed }) => [styles.giftLine, pressed && { opacity: 0.8 }]}
+        onPress={() => navigation.navigate("DateSpots", { gifts: true })}
+        accessibilityRole="button"
+      >
+        <Text style={styles.giftLineText}>🎁 {t("gifts.heroLine")} →</Text>
+      </Pressable>
       <Text style={styles.trustLine}>{t("home.trustLine")}</Text>
     </Animated.View>
   );
@@ -115,6 +123,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
   },
+  giftLine: {
+    marginTop: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.45)",
+    backgroundColor: "rgba(255,255,255,0.14)",
+  },
+  giftLineText: { color: "#fff", fontSize: 14, fontWeight: "600", textAlign: "center" },
   trustLine: {
     marginTop: 22,
     fontSize: 13.5,

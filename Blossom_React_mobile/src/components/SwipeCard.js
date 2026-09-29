@@ -13,14 +13,17 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
 import { IMG } from "../api/images";
 import { isNewMember } from "../api/newMember";
-import { connectionLabel, connectionOf, languagesLine } from "../api/connection";
+import { CONNECTION_DOTS, connectionOf, languagesLine } from "../api/connection";
 import { colors, radius, spacing, shadow } from "../theme";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
 
 export default function SwipeCard({ profile, onSwipeLeft, onSwipeRight, onViewDetails, isTop }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // Small caps with letter spacing for Latin scripts only: spacing breaks
+  // Arabic's joined letters, and Chinese has no capitals.
+  const latinScript = !/^(ar|zh)/.test(i18n.language || "");
   const position = useRef(new Animated.ValueXY()).current;
 
   // PanResponder.create's callbacks close over whatever these refs pointed to
@@ -118,7 +121,8 @@ export default function SwipeCard({ profile, onSwipeLeft, onSwipeRight, onViewDe
       {/* Joined less than a week ago. */}
       {isNewMember(profile) ? (
         <Animated.View style={[styles.newBadge, { opacity: badgeOpacity }]}>
-          <Text style={styles.newBadgeText}>✨ {t("browse.new")}</Text>
+          <View style={styles.newDot} />
+          <Text style={[styles.newBadgeText, latinScript && styles.smallCaps]}>{t("browse.new")}</Text>
         </Animated.View>
       ) : null}
 
@@ -134,7 +138,14 @@ export default function SwipeCard({ profile, onSwipeLeft, onSwipeRight, onViewDe
         <View style={styles.overlayRow}>
           <View style={styles.overlayInfo}>
             {/* What they're here for: dating, language exchange or both. */}
-            <Text style={styles.connection}>{connectionLabel(connection, t)}</Text>
+            <View style={styles.connection}>
+              <View style={styles.dots}>
+                {CONNECTION_DOTS[connection].map((color, i) => (
+                  <View key={color} style={[styles.dot, { backgroundColor: color }, i > 0 && styles.dotOverlap]} />
+                ))}
+              </View>
+              <Text style={styles.connectionText}>{t(`connection.${connection}`)}</Text>
+            </View>
             <Text style={styles.name}>
               {profile.first_name}, {profile.age}
             </Text>
@@ -202,18 +213,31 @@ const styles = StyleSheet.create({
     textShadowRadius: 8,
   },
   location: { color: "rgba(255,255,255,0.92)", fontSize: 14, marginTop: 4 },
+  // Dating / language exchange / both: a quiet dark-glass chip with a colour
+  // dot, readable on any photo.
   connection: {
+    flexDirection: "row",
+    alignItems: "center",
     alignSelf: "flex-start",
-    color: "#fff",
-    fontSize: 12.5,
-    fontWeight: "700",
-    backgroundColor: "rgba(193,70,107,0.85)",
+    gap: 7,
+    backgroundColor: "rgba(20,14,12,0.45)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.22)",
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: radius.pill,
-    overflow: "hidden",
-    marginBottom: 6,
+    marginBottom: 8,
   },
+  dots: { flexDirection: "row", alignItems: "center" },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: "rgba(20,14,12,0.55)",
+  },
+  dotOverlap: { marginLeft: -3 },
+  connectionText: { color: "#fff", fontSize: 12, fontWeight: "600", letterSpacing: 0.2 },
   languages: { color: "rgba(255,255,255,0.92)", fontSize: 13.5, marginTop: 4 },
   tag: {
     color: "#fff",
@@ -234,17 +258,23 @@ const styles = StyleSheet.create({
     ...shadow.sm,
   },
   detailsButtonText: { color: colors.primaryDeep, fontWeight: "600", fontSize: 12.5 },
+  // Joined this week: a small white label, rose dot, small caps.
   newBadge: {
     position: "absolute",
     top: spacing.md,
     left: spacing.md,
-    backgroundColor: colors.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(255,255,255,0.94)",
     borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
     ...shadow.sm,
   },
-  newBadgeText: { color: "#fff", fontWeight: "800", fontSize: 13, letterSpacing: 0.3 },
+  newDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary },
+  newBadgeText: { color: colors.primaryDeep, fontWeight: "700", fontSize: 12 },
+  smallCaps: { textTransform: "uppercase", letterSpacing: 1, fontSize: 11 },
   stamp: {
     position: "absolute",
     top: 40,

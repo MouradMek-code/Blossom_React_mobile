@@ -4,6 +4,14 @@ export const CONNECTION_TYPES = ["dating", "language", "both"];
 
 export const CONNECTION_EMOJI = { dating: "💘", language: "🌍", both: "💘🌍" };
 
+// The colour dots on the Browse cards: rose for dating, sky blue for language
+// exchange, both for both.
+export const CONNECTION_DOTS = {
+  dating: ["#FF8FB1"],
+  language: ["#8FD3FF"],
+  both: ["#FF8FB1", "#8FD3FF"],
+};
+
 export function connectionOf(profile) {
   const value = profile?.connection_type;
   return CONNECTION_TYPES.includes(value) ? value : "both";

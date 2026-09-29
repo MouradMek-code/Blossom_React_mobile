@@ -709,5 +709,23 @@
     "view": "Voir le profil",
     "errAge": "Ton ami doit avoir au moins 18 ans.",
     "pendingBadge": "⏳ En attente de l'ami"
+  },
+  "gifts": {
+    "eyebrow": "Cafés et restaurants partenaires",
+    "title": "Votre premier rendez-vous, avec un petit cadeau 🎁",
+    "subtitle": "Des cafés et restaurants offrent un cadeau aux couples Blossom : un verre, un dessert, une réduction… Voici comment l'obtenir.",
+    "step1Title": "Matchez",
+    "step1Text": "Vous vous plaisez : vous pouvez discuter.",
+    "step2Title": "Invitez-le ou invitez-la dans un spot 🎁",
+    "step2Text": "Depuis la discussion, invitez votre match dans un café ou un restaurant partenaire.",
+    "step3Title": "Votre match appuie sur « Je viens »",
+    "step3Text": "Vous recevez un code pour vous deux.",
+    "step4Title": "Montrez votre code",
+    "step4Text": "Sur place, avant la date limite. Profitez de votre cadeau !",
+    "nowTitle": "Cadeaux disponibles en ce moment",
+    "button": "Voir les spots avec cadeau",
+    "fine": "Gratuit pour vous · places limitées · un cadeau par personne et par mois",
+    "owner": "Vous tenez un café ou un restaurant ? Offrez un cadeau",
+    "heroLine": "Des cadeaux pour les couples dans les cafés partenaires"
   }
 }

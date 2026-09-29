@@ -374,6 +374,14 @@ ${SITE_URL}/date-spots/${spot.id}`,
   const promoSpots = spots.filter((s) => s.offer);
   const shownSpots = promoOnly ? promoSpots : spots;
 
+  // Home's "See spots with gifts": navigate("DateSpots", { gifts: true })
+  // opens the list with the gifts filter on.
+  useEffect(() => {
+    if (!route.params?.gifts) return;
+    setPromoOnly(true);
+    navigation.setParams({ gifts: undefined });
+  }, [route.params?.gifts, navigation]);
+
   function openSpot(spot) {
     setSelected(spot);
     track(spot.id, "view");
