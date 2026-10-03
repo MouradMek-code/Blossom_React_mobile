@@ -509,6 +509,17 @@ export default function ChatScreen() {
           <Text style={styles.partnerName}>💬</Text>
         )}
       </View>
+      {details?.event ? (
+        <Pressable
+          style={styles.eventBanner}
+          onPress={() => navigation.navigate("EventDetail", { id: details.event.id })}
+          accessibilityRole="button"
+        >
+          <Text style={styles.eventBannerText} numberOfLines={1}>
+            {t("events.matchedThrough", { title: details.event.title })}
+          </Text>
+        </Pressable>
+      ) : null}
 
       <FlatList
         ref={listRef}
@@ -800,4 +811,13 @@ const styles = StyleSheet.create({
   // A message shown instantly while it's still being sent.
   pendingBubble: { opacity: 0.65 },
   pendingStatus: { color: "#fff", fontSize: 11, textAlign: "right", marginTop: 3 },
+  // "Matched through the event: ..." under the header.
+  eventBanner: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    backgroundColor: colors.primaryTint,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.primarySoft,
+  },
+  eventBannerText: { color: colors.primaryDeep, fontWeight: "700", fontSize: 13 },
 });

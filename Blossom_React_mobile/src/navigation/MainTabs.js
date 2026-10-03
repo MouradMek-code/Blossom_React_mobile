@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import ProfilesScreen from "../screens/ProfilesScreen";
-import LikedYouScreen from "../screens/LikedYouScreen";
+import EventsScreen from "../screens/EventsScreen";
 import DateSpotsScreen from "../screens/DateSpotsScreen";
 import MessagesScreen from "../screens/MessagesScreen";
 import ProfileScreen from "../screens/ProfileScreen";
@@ -14,8 +14,8 @@ const Tab = createBottomTabNavigator();
 
 const ICONS = {
   Profiles: require("../../assets/images/tabs/browse.png"),
-  LikedYou: require("../../assets/images/tabs/likes.png"),
   Spots: require("../../assets/images/tabs/spots.png"),
+  Events: require("../../assets/images/tabs/events.png"),
   Messages: require("../../assets/images/tabs/chats.png"),
   Profile: require("../../assets/images/tabs/profile.png"),
 };
@@ -55,7 +55,6 @@ export default function MainTabs() {
       initialRouteName="Profiles"
       screenListeners={({ route }) => ({
         focus: () => {
-          if (route.name === "LikedYou") markSeen("likes");
           // New matches are shown at the top of the chats list.
           if (route.name === "Messages") markSeen("matches");
         },
@@ -90,18 +89,14 @@ export default function MainTabs() {
         options={{ title: t("tabs.browse"), tabBarIcon: tabIcon("Profiles") }}
       />
       <Tab.Screen
-        name="LikedYou"
-        component={LikedYouScreen}
-        options={{
-          title: t("tabs.likes"),
-          tabBarIcon: tabIcon("LikedYou"),
-          tabBarBadge: badgeValue(badges.likes),
-        }}
-      />
-      <Tab.Screen
         name="Spots"
         component={DateSpotsScreen}
         options={{ title: t("tabs.spots"), tabBarIcon: tabIcon("Spots") }}
+      />
+      <Tab.Screen
+        name="Events"
+        component={EventsScreen}
+        options={{ title: t("tabs.events"), tabBarIcon: tabIcon("Events") }}
       />
       <Tab.Screen
         name="Messages"
@@ -109,8 +104,9 @@ export default function MainTabs() {
         options={{
           title: t("tabs.chats"),
           tabBarIcon: tabIcon("Messages"),
-          // Unread chats and new matches both live on this tab.
-          tabBarBadge: badgeValue(badges.messages + badges.matches),
+          // Unread chats, new matches and new likes ("See who likes you" is
+          // a banner at the top of Chats) all live on this tab.
+          tabBarBadge: badgeValue(badges.messages + badges.matches + badges.likes),
         }}
       />
       <Tab.Screen

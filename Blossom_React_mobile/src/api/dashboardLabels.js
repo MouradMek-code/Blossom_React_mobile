@@ -27,6 +27,10 @@ const PLACES = {
   "/poster/:id": "Venue poster",
   "/claim/:token": "Friend profile activation",
   "/delete-account": "Delete account",
+  "/events": "Events",
+  "/events/:id": "An event",
+  "/events/new": "Creating an event",
+  "/events/:id/edit": "Editing an event",
   Home: "Home screen",
   SignUp: "Sign up",
   Login: "Log in",
@@ -43,6 +47,9 @@ const PLACES = {
   Settings: "Settings",
   Vouchers: "My gifts",
   LocationPicker: "Choosing a city",
+  Events: "Events",
+  EventDetail: "An event",
+  EventForm: "Creating an event",
   NotFound: "Page not found",
 };
 
@@ -64,6 +71,9 @@ export const DAY_ACTIONS = [
   ["gift_codes", "🎁", true],
   ["gifts_used", "✅", true],
   ["spots_shared", "📌", true],
+  ["events_created", "📅", true],
+  ["event_interests", "🙋", true],
+  ["event_comments", "🗨️", true],
   ["reports", "🚩", true],
 ];
 

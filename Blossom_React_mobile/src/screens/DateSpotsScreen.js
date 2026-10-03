@@ -21,6 +21,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
+import { KIND_EMOJI, eventDay, eventWhen } from "../api/events";
 import PageNav from "../components/PageNav";
 import LocationFields from "../components/LocationFields";
 import { readCache } from "../api/cache";
@@ -175,7 +176,7 @@ function AdminStatsEditor({ spot, token, t, onSaved }) {
 }
 
 export default function DateSpotsScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { colors } = useTheme();
   const navigation = useNavigation();
   const route = useRoute();
@@ -196,6 +197,7 @@ export default function DateSpotsScreen() {
   const [bestFor, setBestFor] = useState("");
   const [inviteSpot, setInviteSpot] = useState(null);
   const [editing, setEditing] = useState(null); // the spot being edited
+  const [suggestSent, setSuggestSent] = useState(false);
   const [myProfileId, setMyProfileId] = useState(null);
   const scrollRef = useRef(null);
 
@@ -311,7 +313,20 @@ export default function DateSpotsScreen() {
     setSelected(null);
   }
 
-  // The edit form lives at the top of the list, like the share form.
+  // "Suggest a place" (members) / "Add a place" (admins): the form sits at the
+  // bottom of the list - the gifts come first.
+  function openSuggest() {
+    if (!hasToken) {
+      navigation.navigate("SignUp");
+      return;
+    }
+    setEditing(null);
+    setSuggestSent(false);
+    setFormOpen(true);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
+  }
+
+  // The edit form lives at the top of the list.
   function startEdit(spot) {
     setSelected(null);
     setFormOpen(false);
@@ -436,58 +451,28 @@ ${SITE_URL}/date-spots/${spot.id}`,
           {t("dateSpots.subtitle")}
         </Text>
 
-        {hasToken ? (
-          <>
-            <Pressable
-              style={styles.addBtn}
-              onPress={() => {
-                setEditing(null);
-                setFormOpen((o) => !o);
-              }}
-            >
-              <Text style={styles.addBtnText}>
-                {formOpen ? t("dateSpots.close") : `＋ ${t("dateSpots.share")}`}
-              </Text>
-            </Pressable>
-            {/* Promotion codes a match and I got at spots with 🎁. */}
+        <View style={styles.heroLinks}>
+          {/* Promotion codes a match and I got at spots with 🎁. */}
+          {hasToken ? (
             <Pressable style={styles.myPromosBtn} onPress={() => navigation.navigate("Vouchers")}>
               <Text style={styles.myPromosText}>{t("offers.myPromos")}</Text>
             </Pressable>
-          </>
-        ) : (
-          // Visitors get the same button: sharing needs a free account, so it
-          // takes them to sign-up (members can log in from the line below).
-          <View style={styles.guestShare}>
-            <Pressable style={styles.addBtn} onPress={() => navigation.navigate("SignUp")}>
-              <Text style={styles.addBtnText}>＋ {t("dateSpots.share")}</Text>
+          ) : null}
+          {/* Café owners visiting the app: the way in, without scrolling. */}
+          <Pressable onPress={() => Linking.openURL(`${SITE_URL}/partner`)} hitSlop={8}>
+            <Text style={styles.guestPartner}>{t("dateSpots.offerGiftLink")}</Text>
+          </Pressable>
+          {isAdmin ? (
+            <Pressable style={styles.adminAddBtn} onPress={openSuggest}>
+              <Text style={styles.adminAddText}>＋ {t("dateSpots.addPlace")}</Text>
             </Pressable>
-            <Text style={[styles.loginHint, { color: colors.textMuted }]}>
-              {t("dateSpots.signUpToShare")}
-            </Text>
-            <Pressable onPress={() => navigation.navigate("Login")} hitSlop={8}>
-              <Text style={styles.loginLink}>{t("dateSpots.haveAccount")}</Text>
-            </Pressable>
-            {/* Café owners visiting the app: the way in, without scrolling. */}
-            <Pressable onPress={() => Linking.openURL(`${SITE_URL}/partner`)} hitSlop={8}>
-              <Text style={styles.guestPartner}>{t("partners.link")}</Text>
-            </Pressable>
-          </View>
-        )}
+          ) : null}
+        </View>
 
         {error !== "" && (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
-        )}
-
-        {formOpen && hasToken && !editing && (
-          <AddSpotForm
-            onCancel={() => setFormOpen(false)}
-            onSaved={() => {
-              setFormOpen(false);
-              load();
-            }}
-          />
         )}
 
         {editing && hasToken && (
@@ -503,21 +488,41 @@ ${SITE_URL}/date-spots/${spot.id}`,
           />
         )}
 
+        {/* The gifts partner cafés and restaurants offer: first, and big. */}
         {promoSpots.length > 0 && !promoOnly ? (
-          <View style={styles.promoRow}>
-            <Text style={styles.promoRowTitle}>{t("offers.promoRow")}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.promoRowList}>
+          <View style={styles.gifts}>
+            <Text style={styles.giftsTitle}>{t("dateSpots.giftsTitle")}</Text>
+            <Text style={styles.giftsSubtitle}>{t("dateSpots.giftsSubtitle")}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.giftsList}>
               {promoSpots.map((spot) => (
-                <Pressable key={spot.id} style={styles.promoCard} onPress={() => openSpot(spot)}>
-                  <SpotBackdrop
-                    spot={spot}
-                    uri={IMG.card(spot.image_url)}
-                    style={styles.promoCardImage}
-                    emojiStyle={styles.noImageEmoji}
-                  />
-                  <View style={styles.promoCardBody}>
-                    <Text style={styles.promoCardName} numberOfLines={1}>{spot.name}</Text>
-                    <Text style={styles.promoCardOffer} numberOfLines={2}>🎁 {spot.offer.title}</Text>
+                <Pressable
+                  key={spot.id}
+                  style={({ pressed }) => [styles.giftCard, pressed && { opacity: 0.9 }]}
+                  onPress={() => openSpot(spot)}
+                >
+                  <View style={styles.giftMedia}>
+                    <SpotBackdrop
+                      spot={spot}
+                      uri={IMG.card(spot.image_url)}
+                      style={styles.giftImage}
+                      emojiStyle={styles.noImageEmoji}
+                    />
+                    <View style={styles.giftRibbon}>
+                      <Text style={styles.giftRibbonText}>{t("dateSpots.giftRibbon")}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.giftBody}>
+                    <Text style={styles.giftOffer} numberOfLines={2}>{spot.offer.title}</Text>
+                    <Text style={styles.giftVenue} numberOfLines={1}>{spot.name}</Text>
+                    <Text style={styles.giftPlace} numberOfLines={1}>{placeLine(spot)}</Text>
+                    <Text style={styles.giftTerms} numberOfLines={2}>{offerTerms(spot.offer, t)}</Text>
+                    {hasToken ? (
+                      <Pressable style={styles.giftInvite} onPress={() => setInviteSpot(spot)}>
+                        <Text style={styles.giftInviteText}>💌 {t("dateSpots.invite")}</Text>
+                      </Pressable>
+                    ) : (
+                      <Text style={styles.giftSee}>{t("dateSpots.giftSee")} →</Text>
+                    )}
                   </View>
                 </Pressable>
               ))}
@@ -525,13 +530,33 @@ ${SITE_URL}/date-spots/${spot.id}`,
           </View>
         ) : null}
 
+        <Text style={styles.sectionTitle}>{t("dateSpots.allSpots")}</Text>
+        {/* All spots / only those with a gift from a partner café. */}
+        <View style={styles.giftToggle}>
+          <Pressable
+            style={[styles.giftToggleBtn, !promoOnly && styles.giftToggleOn]}
+            onPress={() => setPromoOnly(false)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: !promoOnly }}
+          >
+            <Text style={[styles.giftToggleText, !promoOnly && styles.giftToggleTextOn]}>
+              {t("dateSpots.filterAllSpots")} · {spots.length}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.giftToggleBtn, promoOnly && styles.giftToggleGift]}
+            onPress={() => setPromoOnly(true)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: promoOnly }}
+          >
+            <Text style={[styles.giftToggleText, promoOnly && styles.giftToggleTextGift]}>
+              {t("dateSpots.filterGifts")} · {promoSpots.length}
+            </Text>
+          </Pressable>
+        </View>
+
         {/* Filter chips - each row is named so it's clear what it filters. */}
         <View style={styles.filterBar}>
-          {promoSpots.length > 0 || promoOnly ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-              <Chip label={t("offers.onlyPromos")} active={promoOnly} onPress={() => setPromoOnly((v) => !v)} small />
-            </ScrollView>
-          ) : null}
           <Text style={styles.filterLabel}>{t("dateSpots.country")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
             <Chip
@@ -599,16 +624,18 @@ ${SITE_URL}/date-spots/${spot.id}`,
               {t("dateSpots.emptyTitle")}
             </Text>
             <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-              {country || city || category || bestFor
-                ? t("dateSpots.emptyFiltered")
-                : t("dateSpots.emptyAll")}
+              {promoOnly
+                ? t("dateSpots.emptyGifts")
+                : country || city || category || bestFor
+                  ? t("dateSpots.emptyFiltered")
+                  : t("dateSpots.emptyAll")}
             </Text>
           </View>
         ) : (
           shownSpots.map((spot, i) => (
             <Pressable
               key={spot.id}
-              style={[styles.card, i === 0 && styles.featured]}
+              style={[styles.card, i === 0 && styles.featured, spot.offer && styles.cardGift]}
               onPress={() => openSpot(spot)}
             >
               <SpotBackdrop
@@ -622,8 +649,10 @@ ${SITE_URL}/date-spots/${spot.id}`,
                 style={styles.scrim}
               />
               {i === 0 ? (
-                <View style={styles.featuredFlag}>
-                  <Text style={styles.featuredFlagText}>★ {t("dateSpots.featured")}</Text>
+                <View style={[styles.featuredFlag, spot.offer && styles.featuredFlagGift]}>
+                  <Text style={[styles.featuredFlagText, spot.offer && styles.featuredFlagGiftText]}>
+                    {spot.offer ? t("dateSpots.giftRibbon") : `★ ${t("dateSpots.featured")}`}
+                  </Text>
                 </View>
               ) : null}
               <View style={styles.cardInfo}>
@@ -672,6 +701,30 @@ ${SITE_URL}/date-spots/${spot.id}`,
           <Pressable onPress={() => Linking.openURL(`${SITE_URL}/business`)} hitSlop={8}>
             <Text style={styles.partnerCardMore}>{t("business.homeMore")} →</Text>
           </Pressable>
+        </View>
+
+        {/* Members suggest places (an admin approves them): a discreet line at
+            the very bottom - the gifts come first. Admins add places here too. */}
+        <View style={styles.suggest}>
+          {suggestSent ? (
+            <Text style={styles.suggestThanks}>🌸 {t("dateSpots.suggestThanks")}</Text>
+          ) : formOpen && hasToken && !editing ? (
+            <AddSpotForm
+              isAdmin={isAdmin}
+              onCancel={() => setFormOpen(false)}
+              onSaved={(saved) => {
+                setFormOpen(false);
+                if (saved?.status === "pending") setSuggestSent(true);
+                else load();
+              }}
+            />
+          ) : (
+            <Pressable onPress={openSuggest} hitSlop={8}>
+              <Text style={styles.suggestLine}>
+                {t("dateSpots.suggestTitle")} <Text style={styles.suggestLink}>{t("dateSpots.suggestButton")} →</Text>
+              </Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
 
@@ -775,6 +828,17 @@ ${SITE_URL}/date-spots/${spot.id}`,
                 <Text style={[styles.detailAuthor, { color: colors.textMuted }]}>
                   {t("dateSpots.sharedBy", { name: selected.profile.first_name })}
                 </Text>
+              ) : null}
+              {selected ? (
+                <SpotEvents
+                  spotId={selected.id}
+                  t={t}
+                  language={i18n.language}
+                  onOpen={(eventId) => navigation.navigate("EventDetail", { id: eventId })}
+                  onCreate={() =>
+                    token ? navigation.navigate("EventForm", { spotId: selected.id }) : navigation.navigate("SignUp")
+                  }
+                />
               ) : null}
               {/* The café's staff: ask for a gift on this very spot (website form). */}
               {selected && !selected.offer ? (
@@ -885,6 +949,54 @@ ${SITE_URL}/date-spots/${spot.id}`,
 // a card ("Want to go to ... together?") - for a woman opening the chat, it's
 // a ready-made first message. An in-screen overlay rather than a <Modal>, for
 // the same Android scrolling reason as the detail view.
+// "Upcoming events here" in a spot's card, and a way to organise one there.
+function SpotEvents({ spotId, t, language, onOpen, onCreate }) {
+  const [events, setEvents] = useState([]);
+
+  useEffect(() => {
+    let alive = true;
+    fetch(`${BASE_URL}/events?spot_id=${spotId}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => alive && setEvents(Array.isArray(data) ? data : []))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [spotId]);
+
+  return (
+    <View style={styles.spotEvents}>
+      {events.length > 0 ? (
+        <>
+          <Text style={styles.spotEventsTitle}>{t("events.upcomingHere")}</Text>
+          {events.slice(0, 3).map((event) => {
+            const { day, month } = eventDay(event.starts_at, language);
+            return (
+              <Pressable key={event.id} style={styles.spotEvent} onPress={() => onOpen(event.id)}>
+                <View style={styles.spotEventDate}>
+                  <Text style={styles.spotEventDay}>{day}</Text>
+                  <Text style={styles.spotEventMonth}>{month}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.spotEventTitle} numberOfLines={1}>
+                    {KIND_EMOJI[event.kind]} {event.title}
+                  </Text>
+                  <Text style={styles.spotEventMeta} numberOfLines={1}>
+                    {eventWhen(event.starts_at, language)} · 🙋 {event.interested_count}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </>
+      ) : null}
+      <Pressable onPress={onCreate} hitSlop={8} accessibilityRole="button">
+        <Text style={styles.spotEventCreate}>📅 {t("events.eventsAtSpot")} →</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 function InvitePicker({ spot, token, bottomInset, onClose, onSent }) {
   const { t } = useTranslation();
   const [matches, setMatches] = useState(null); // null while loading
@@ -1012,7 +1124,7 @@ const GOOGLE_MAPS_LINK = /^https?:\/\/(www\.)?([a-z-]+\.)?(google\.[a-z.]+|goo\.
 // a vibe, done. City and country come from the profile; neighborhood and
 // "best for" wait behind "More details".
 // With `initial`, the same form edits that place (its author, or an admin).
-function AddSpotForm({ initial, onCancel, onSaved }) {
+function AddSpotForm({ initial, isAdmin = false, onCancel, onSaved }) {
   const { t } = useTranslation();
   const editing = Boolean(initial);
   const [mapUrl, setMapUrl] = useState(initial?.map_url || "");
@@ -1032,6 +1144,8 @@ function AddSpotForm({ initial, onCancel, onSaved }) {
   const [bestFor, setBestFor] = useState(initial?.best_for || []);
   const [photo, setPhoto] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  // Members: "I'd love this place to offer a gift to couples".
+  const [wantsGift, setWantsGift] = useState(false);
   const [error, setError] = useState("");
   // The name we filled in from the link, so a newer link can replace it -
   // but never a name the person typed themselves.
@@ -1157,6 +1271,7 @@ function AddSpotForm({ initial, onCancel, onSaved }) {
     if (category) body.append("category", category);
     if (bestFor.length > 0) body.append("best_for", bestFor.join(","));
     if (photo) body.append("image", photoPart());
+    if (!isAdmin && wantsGift) body.append("wants_gift", "true");
     return postJson(`${BASE_URL}/date_spots`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
@@ -1218,7 +1333,7 @@ function AddSpotForm({ initial, onCancel, onSaved }) {
   return (
     <View style={styles.form}>
       <Text style={styles.formTitle}>
-        {editing ? t("dateSpots.editTitle") : t("dateSpots.formTitle")}
+        {editing ? t("dateSpots.editTitle") : isAdmin ? t("dateSpots.addPlace") : t("dateSpots.suggestFormTitle")}
       </Text>
 
       {error !== "" && (
@@ -1341,6 +1456,20 @@ function AddSpotForm({ initial, onCancel, onSaved }) {
         </>
       ) : null}
 
+      {!editing && !isAdmin ? (
+        <Pressable
+          style={styles.giftWish}
+          onPress={() => setWantsGift((v) => !v)}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: wantsGift }}
+        >
+          <View style={[styles.checkbox, wantsGift && styles.checkboxOn]}>
+            {wantsGift ? <Text style={styles.checkboxTick}>✓</Text> : null}
+          </View>
+          <Text style={styles.giftWishText}>🎁 {t("dateSpots.wantsGift")}</Text>
+        </Pressable>
+      ) : null}
+
       <Text style={styles.safety}>{t("dateSpots.safety")}</Text>
 
       <View style={styles.formActions}>
@@ -1356,7 +1485,7 @@ function AddSpotForm({ initial, onCancel, onSaved }) {
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <Text style={styles.submitText}>
-              {editing ? t("dateSpots.saveChanges") : t("dateSpots.submit")}
+              {editing ? t("dateSpots.saveChanges") : isAdmin ? t("dateSpots.submit") : t("dateSpots.suggestSend")}
             </Text>
           )}
         </Pressable>
@@ -1527,6 +1656,110 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF4E5",
   },
   myPromosText: { color: "#6B3E00", fontWeight: "700", fontSize: 14 },
+  heroLinks: { alignItems: "center", gap: spacing.sm },
+  adminAddBtn: {
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderColor: "#E8CCD7",
+    backgroundColor: "#FFF6F9",
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+  },
+  adminAddText: { color: colors.primary, fontWeight: "700", fontSize: 13.5 },
+  // The gifts, first and big
+  gifts: {
+    marginTop: spacing.lg,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: "#FFF6E6",
+    borderWidth: 1,
+    borderColor: "#FFDCA3",
+  },
+  giftsTitle: { ...typography.h2, fontSize: 21, color: "#5C3A0A" },
+  giftsSubtitle: { fontSize: 13.5, lineHeight: 19, color: "#7A5520", marginTop: 4, marginBottom: spacing.md },
+  giftsList: { gap: 12, paddingRight: spacing.sm },
+  giftCard: {
+    width: 250,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    overflow: "hidden",
+    ...shadow.md,
+  },
+  giftMedia: { height: 140 },
+  giftImage: { width: "100%", height: "100%" },
+  giftRibbon: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    backgroundColor: "#FFB547",
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  giftRibbonText: { color: "#3D2300", fontSize: 12, fontWeight: "800" },
+  giftBody: { padding: 12, gap: 3 },
+  giftOffer: { fontFamily: "serif", fontSize: 18, fontWeight: "700", color: "#3D2300", lineHeight: 23 },
+  giftVenue: { fontSize: 14, fontWeight: "700", color: colors.text },
+  giftPlace: { fontSize: 13, color: colors.textSoft },
+  giftTerms: { fontSize: 12, lineHeight: 16, color: colors.textMuted, marginTop: 2 },
+  giftInvite: {
+    alignSelf: "flex-start",
+    marginTop: 10,
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  giftInviteText: { color: "#fff", fontWeight: "700", fontSize: 13.5 },
+  giftSee: { marginTop: 8, fontSize: 13.5, fontWeight: "700", color: colors.primaryDeep },
+  sectionTitle: { ...typography.h2, fontSize: 19, marginTop: spacing.lg },
+  giftToggle: {
+    flexDirection: "row",
+    alignSelf: "flex-start",
+    marginTop: spacing.sm,
+    padding: 3,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  giftToggleBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.pill },
+  giftToggleOn: { backgroundColor: colors.text },
+  giftToggleGift: { backgroundColor: "#FFB547" },
+  giftToggleText: { fontSize: 13.5, fontWeight: "700", color: colors.textSoft },
+  giftToggleTextOn: { color: "#fff" },
+  giftToggleTextGift: { color: "#3D2300" },
+  cardGift: { borderWidth: 3, borderColor: "#FFB547" },
+  featuredFlagGift: { backgroundColor: "#FFB547" },
+  featuredFlagGiftText: { color: "#3D2300" },
+  // "Know a great date spot? Suggest it"
+  suggest: { marginTop: spacing.md, marginBottom: spacing.lg, alignItems: "center" },
+  suggestLine: { fontSize: 13, color: colors.textMuted, textAlign: "center" },
+  suggestLink: { fontWeight: "700", color: colors.textSoft, textDecorationLine: "underline" },
+  suggestThanks: { fontSize: 15, fontWeight: "600", color: "#1F5C3D", textAlign: "center", lineHeight: 21 },
+  giftWish: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: spacing.md,
+    padding: 10,
+    borderRadius: radius.sm,
+    backgroundColor: "#FFF6E6",
+  },
+  giftWishText: { flex: 1, fontSize: 14, color: "#5C3A0A" },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.borderStrong,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surface,
+  },
+  checkboxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  checkboxTick: { color: "#fff", fontWeight: "800", fontSize: 13 },
   guestPartner: { color: "#6B3E00", fontWeight: "700", fontSize: 13.5, marginTop: 2 },
   partnerCard: {
     marginTop: spacing.lg,
@@ -1917,4 +2150,29 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   sheetRowText: { fontSize: 15, color: colors.text },
+  // Upcoming events at this spot (in the detail card).
+  spotEvents: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, gap: 8 },
+  spotEventsTitle: { fontWeight: "800", fontSize: 15, color: colors.text },
+  spotEvent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 8,
+    borderRadius: radius.md,
+    backgroundColor: colors.background,
+  },
+  spotEventDate: {
+    minWidth: 44,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    ...shadow.sm,
+  },
+  spotEventDay: { fontSize: 17, fontWeight: "800", color: colors.primaryDeep, lineHeight: 19 },
+  spotEventMonth: { fontSize: 9.5, fontWeight: "800", color: colors.textSoft },
+  spotEventTitle: { fontWeight: "700", fontSize: 14.5, color: colors.text },
+  spotEventMeta: { fontSize: 12.5, color: colors.textSoft },
+  spotEventCreate: { color: colors.primaryDeep, fontWeight: "700", fontSize: 14, marginTop: 4 },
 });

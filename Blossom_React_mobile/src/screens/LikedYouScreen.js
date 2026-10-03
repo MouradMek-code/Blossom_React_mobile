@@ -135,7 +135,13 @@ export default function LikedYouScreen() {
   return (
     <View style={styles.head}>
       <PageNav />
-      <Text style={styles.title}>{t("likesYou.title")}</Text>
+      {/* Opened from the banner at the top of Chats (or a "like" notification). */}
+      <View style={styles.titleRow}>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.back} accessibilityRole="button">
+          <Text style={styles.backText}>←</Text>
+        </Pressable>
+        <Text style={styles.title}>{t("likesYou.title")}</Text>
+      </View>
       {loadError ? <LoadError onRetry={fetchLikedBy} /> : null}
 
       {matchedProfile && (
@@ -197,7 +203,10 @@ export default function LikedYouScreen() {
 
 const styles = StyleSheet.create({
   head: { flex: 1, backgroundColor: colors.background },
-  title: { ...typography.h3, padding: spacing.md, paddingBottom: spacing.xs },
+  titleRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.sm, paddingTop: spacing.sm },
+  back: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  backText: { fontSize: 22, color: colors.text },
+  title: { ...typography.h3, paddingHorizontal: spacing.xs },
   container: { padding: spacing.sm },
   empty: { alignItems: "center", justifyContent: "center", padding: spacing.xl },
   emptyText: { ...typography.bodyMuted, fontSize: 15 },

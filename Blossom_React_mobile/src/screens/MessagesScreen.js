@@ -183,6 +183,10 @@ export default function MessagesScreen() {
   const newMatches = (items || []).filter((item) => !item.last_message);
   const conversations = (items || []).filter((item) => item.last_message);
 
+  // New likes, as the tab bar last counted them (it asks every 30 s; this
+  // screen re-renders with each inbox refresh).
+  const newLikes = peekCache("nav")?.likes || 0;
+
   return (
     <View style={styles.screen}>
       <PageNav />
@@ -199,6 +203,18 @@ export default function MessagesScreen() {
           <View style={styles.header}>
             <Text style={styles.title}>{t("messages.title")}</Text>
             <Text style={styles.subtitle}>{t("messages.subtitle")}</Text>
+            {/* "Likes you" lives here now (Events took its tab). */}
+            <Pressable
+              style={({ pressed }) => [styles.likesBanner, pressed && styles.rowPressed]}
+              onPress={() => navigation.navigate("LikedYou")}
+              accessibilityRole="button"
+            >
+              <Text style={styles.likesText}>{t("events.likesBanner")}</Text>
+              {newLikes > 0 ? (
+                <Text style={styles.likesNew}>{t("events.likesBannerNew", { count: newLikes })}</Text>
+              ) : null}
+              <Text style={styles.likesArrow}>›</Text>
+            </Pressable>
             {error !== "" ? <Text style={styles.error}>{error}</Text> : null}
             {items === null ? (
               <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
@@ -361,4 +377,29 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   emptyBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  likesBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 14,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primaryTint,
+    borderWidth: 1,
+    borderColor: colors.primarySoft,
+    ...shadow.sm,
+  },
+  likesText: { fontWeight: "800", fontSize: 15, color: colors.primaryDeep },
+  likesNew: {
+    paddingHorizontal: 9,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "800",
+    overflow: "hidden",
+  },
+  likesArrow: { marginLeft: "auto", fontSize: 24, color: colors.primaryDeep, lineHeight: 26 },
 });

@@ -6,6 +6,7 @@ import HowItWorks from "../components/HowItWorks";
 import FounderProjects from "../components/FounderProjects";
 import ForVenuesCard from "../components/ForVenuesCard";
 import DateGifts from "../components/DateGifts";
+import InstagramCard from "../components/InstagramCard";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -50,6 +51,8 @@ export default function HomeScreen() {
       <DateGifts />
       {/* Café and restaurant owners, before they even have an account. */}
       <ForVenuesCard style={styles.venues} />
+      {/* Instagram @blossomfordate */}
+      <InstagramCard style={styles.instagram} />
       <FounderProjects />
     </ScrollView>
   );
@@ -59,6 +62,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { flexGrow: 1 },
   venues: { marginHorizontal: 16, marginVertical: 24 },
+  instagram: { marginHorizontal: 16, marginBottom: 24 },
   hero: {
     width: "100%",
     overflow: "hidden",

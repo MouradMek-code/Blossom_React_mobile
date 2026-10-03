@@ -10,6 +10,7 @@ export const SITE_URL = "https://blossom-date.com";
 // so it works the same in locally built release bundles.
 export const EAS_PROJECT_ID = "47d54433-caae-4942-9ef3-9f804bfaa761";
 export const PRIVACY_POLICY_URL = `${SITE_URL}/privacy-policy`;
+export const INSTAGRAM_URL = "https://www.instagram.com/blossomfordate/";
 
 // Other projects by Blossom's founder, featured on the home screen.
 export const FINDREWARD_URL = "https://findreward.net";

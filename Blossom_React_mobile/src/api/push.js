@@ -91,7 +91,7 @@ export async function updatePushLanguage(authToken, language) {
   }
 }
 
-// Where tapping a notification should take you. Chats and likes live in the
+// Where tapping a notification should take you. Chats live in the
 // tab bar, which sits inside the root stack's "Main" screen - popTo goes back
 // down to it rather than stacking a second tab bar on whatever is open.
 export function openNotificationTarget(navigationRef, data = {}) {
@@ -101,13 +101,21 @@ export function openNotificationTarget(navigationRef, data = {}) {
   } else if (data.type === "match") {
     navigationRef.dispatch(StackActions.popTo("Main", { screen: "Messages" }));
   } else if (data.type === "like") {
-    navigationRef.dispatch(StackActions.popTo("Main", { screen: "LikedYou" }));
+    navigationRef.navigate("LikedYou");
+  } else if (data.type === "event" && data.eventId) {
+    // Someone's interested / commented / you matched through an event.
+    navigationRef.navigate("EventDetail", { id: Number(data.eventId) });
+  } else if (data.type === "event_report") {
+    navigationRef.navigate("Admin", { tab: "promos" });
   } else if (data.type === "voucher") {
     // "⏰ Your promotion ends in 5 h": straight to the code.
     navigationRef.navigate("Vouchers", { highlight: Number(data.voucherId) || undefined });
-  } else if (data.type === "partner_request" || data.type === "business_message") {
-    // "🏪 New partner request": straight to the requests, in Admin → Promos.
+  } else if (data.type === "partner_request" || data.type === "business_message" || data.type === "spot_suggestion") {
+    // "🏪 New partner request" / "📍 New place suggested": straight to them, in Admin → Promos.
     navigationRef.navigate("Admin", { tab: "promos" });
+  } else if (data.type === "spot" && data.spotId) {
+    // "🎉 Your place is now on Blossom": open it.
+    navigationRef.navigate("DateSpots", { spotId: Number(data.spotId) });
   } else if (data.type === "new_profile") {
     // Admins only: the member list, with the newcomer highlighted.
     navigationRef.navigate("Admin", { highlight: Number(data.profileId) || undefined });

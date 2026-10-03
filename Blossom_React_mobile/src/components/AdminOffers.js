@@ -12,13 +12,14 @@ import {
   StyleSheet,
 } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigation } from "@react-navigation/native";
 import { BASE_URL, SITE_URL } from "../api/config";
 import { postJson } from "../api/errors";
 import { getToken } from "../api/storage";
 import { formatBirthDate } from "../api/birthDate";
 import { formatDeadline, formatHours, formatTimeInput, localToIso } from "../api/offers";
 import { useAutoRefresh } from "../navigation/useAutoRefresh";
-import { BusinessMessages, PartnerRequests, PartnerVenues } from "./PartnerAdmin";
+import { BusinessMessages, EventReports, PartnerRequests, PartnerVenues, SpotSuggestions } from "./PartnerAdmin";
 import { colors, radius, spacing, shadow } from "../theme";
 
 const STATE_COLORS = {
@@ -40,6 +41,7 @@ async function send(path, method, body) {
 // Admin: venue promotions for couples - publish one on a date spot, follow
 // how many couples got it and used it, pause, add places, end it.
 export default function AdminOffers({ bottomInset = 0 }) {
+  const navigation = useNavigation();
   const { t, i18n } = useTranslation();
   const [offers, setOffers] = useState(null);
   const [error, setError] = useState("");
@@ -112,6 +114,9 @@ export default function AdminOffers({ bottomInset = 0 }) {
           setPartnerKey((k) => k + 1);
         }}
       />
+
+      <SpotSuggestions onChanged={load} />
+      <EventReports onOpenEvent={(id) => navigation.navigate("EventDetail", { id })} />
 
       {formOpen ? (
         <OfferForm

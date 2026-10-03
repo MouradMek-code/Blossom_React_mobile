@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, Linking, Share, StyleSheet } from "react-native";
+import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, Image, Linking, Share, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { BASE_URL } from "../api/config";
 import { postJson } from "../api/errors";
 import { getToken } from "../api/storage";
 import { formatDeadline, formatHours } from "../api/offers";
+import { IMG } from "../api/images";
 import { useAutoRefresh } from "../navigation/useAutoRefresh";
 import { colors, radius, spacing, shadow } from "../theme";
 
@@ -15,6 +16,190 @@ async function call(path, method = "GET", body) {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
   });
+}
+
+// Admin: events and comments members reported. Remove the event, delete the
+// comment, or "nothing to do" - each closes the report.
+export function EventReports({ onOpenEvent }) {
+  const { t, i18n } = useTranslation();
+  const [items, setItems] = useState(null);
+  const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState(null);
+
+  const load = useCallback(async () => {
+    const result = await call("/events/admin/reports");
+    if (result.ok) {
+      setItems(result.data);
+      setError("");
+    } else {
+      setError(result.message || t("partners.failed"));
+    }
+  }, [t]);
+
+  useAutoRefresh(load, { minIntervalMs: 15000 });
+
+  async function handle(report, action) {
+    setBusyId(report.id);
+    setError("");
+    let result = { ok: true };
+    if (action === "event") result = await call(`/events/${report.event.id}`, "DELETE");
+    else if (action === "comment") result = await call(`/events/comments/${report.comment.id}`, "DELETE");
+    // Already removed counts as done.
+    if (result.ok || result.resp?.status === 404) {
+      result = await call(`/events/admin/reports/${report.id}/handled`, "POST");
+    }
+    setBusyId(null);
+    if (!result.ok) {
+      setError(result.message || t("partners.failed"));
+      return;
+    }
+    load();
+  }
+
+  function confirmRemove(report) {
+    Alert.alert(t("events.adminRemove"), t("events.adminRemoveConfirm"), [
+      { text: t("offers.cancel"), style: "cancel" },
+      { text: t("events.adminRemove"), style: "destructive", onPress: () => handle(report, "event") },
+    ]);
+  }
+
+  if (items === null) return error ? <Text style={styles.error}>{error}</Text> : null;
+  return (
+    <View style={styles.block}>
+      <Text style={styles.blockTitle}>{t("events.reportsTitle")}</Text>
+      {error !== "" && <Text style={styles.error}>{error}</Text>}
+      {items.length === 0 ? (
+        <Text style={styles.muted}>{t("events.reportsEmpty")}</Text>
+      ) : (
+        items.map((report) => (
+          <View key={report.id} style={styles.card}>
+            {report.event ? (
+              <Pressable onPress={() => onOpenEvent?.(report.event.id)} hitSlop={6}>
+                <Text style={styles.title}>📅 {report.event.title}</Text>
+                <Text style={styles.line}>
+                  {report.event.city} · {t("events.organisedBy", { name: report.event.organizer || "?" })}
+                  {report.event.status !== "active" ? ` · ${report.event.status}` : ""}
+                </Text>
+              </Pressable>
+            ) : null}
+            {report.comment ? (
+              <Text style={styles.reportQuote}>
+                {report.comment.author || "?"}: {report.comment.text}
+                {report.comment.deleted ? ` (${t("events.deletedComment")})` : ""}
+              </Text>
+            ) : null}
+            {report.reason ? <Text style={styles.line}>“{report.reason}”</Text> : null}
+            <Text style={styles.muted}>
+              {t("events.reportBy", { name: report.reporter || "?", date: formatDeadline(report.created_at, i18n.language) })}
+            </Text>
+            <View style={styles.actions}>
+              {busyId === report.id ? <ActivityIndicator color={colors.primary} /> : null}
+              {report.comment && !report.comment.deleted ? (
+                <Pressable style={[styles.btn, styles.btnDanger]} onPress={() => handle(report, "comment")} disabled={busyId === report.id}>
+                  <Text style={styles.btnText}>{t("events.removeComment")}</Text>
+                </Pressable>
+              ) : report.event?.status === "active" ? (
+                <Pressable style={[styles.btn, styles.btnDanger]} onPress={() => confirmRemove(report)} disabled={busyId === report.id}>
+                  <Text style={styles.btnText}>{t("events.adminRemove")}</Text>
+                </Pressable>
+              ) : null}
+              <Pressable style={[styles.btn, styles.btnApprove]} onPress={() => handle(report, "done")} disabled={busyId === report.id}>
+                <Text style={styles.btnText}>{t("events.reportDone")}</Text>
+              </Pressable>
+            </View>
+          </View>
+        ))
+      )}
+    </View>
+  );
+}
+
+// Admin: places members suggested. Approve publishes one (the member gets a
+// "thank you"); refuse deletes it. "💡 Would love a gift here" = a venue worth
+// asking for a gift.
+export function SpotSuggestions({ onChanged }) {
+  const { t, i18n } = useTranslation();
+  const [items, setItems] = useState(null);
+  const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState(null);
+
+  const load = useCallback(async () => {
+    const result = await call("/date_spots/admin/suggestions");
+    if (result.ok) {
+      setItems(result.data);
+      setError("");
+    } else {
+      setError(result.message || t("partners.failed"));
+    }
+  }, [t]);
+
+  useAutoRefresh(load, { minIntervalMs: 15000 });
+
+  async function answer(spot, approve) {
+    setBusyId(spot.id);
+    const result = await call(`/date_spots/${spot.id}${approve ? "/approve" : ""}`, approve ? "POST" : "DELETE");
+    setBusyId(null);
+    if (!result.ok) {
+      setError(result.message || t("partners.failed"));
+      return;
+    }
+    load();
+    onChanged?.();
+  }
+
+  function confirmRefuse(spot) {
+    Alert.alert(t("partners.refuse"), t("partners.refuseSuggestionConfirm", { name: spot.name }), [
+      { text: t("offers.cancel"), style: "cancel" },
+      { text: t("partners.refuse"), style: "destructive", onPress: () => answer(spot, false) },
+    ]);
+  }
+
+  if (items === null) return error ? <Text style={styles.error}>{error}</Text> : null;
+  return (
+    <View style={styles.block}>
+      <Text style={styles.blockTitle}>{t("partners.suggestionsTitle")}</Text>
+      {error !== "" && <Text style={styles.error}>{error}</Text>}
+      {items.length === 0 ? (
+        <Text style={styles.muted}>{t("partners.suggestionsEmpty")}</Text>
+      ) : (
+        items.map((spot) => (
+          <View key={spot.id} style={styles.card}>
+            <View style={styles.suggestionTop}>
+              {spot.image_url ? <Image source={{ uri: IMG.thumb(spot.image_url) }} style={styles.suggestionPhoto} /> : null}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title}>{spot.name}</Text>
+                <Text style={styles.line}>
+                  📍 {[spot.neighborhood, spot.city, spot.country].filter(Boolean).join(", ")}
+                </Text>
+                <Text style={styles.muted}>
+                  {t("partners.suggestedBy", {
+                    name: spot.profile?.first_name || "?",
+                    date: formatDeadline(spot.created_at, i18n.language),
+                  })}
+                </Text>
+              </View>
+            </View>
+            {spot.wants_gift ? <Text style={styles.wantsGift}>{t("partners.wantsGiftAdmin")}</Text> : null}
+            {spot.description ? <Text style={styles.line}>{spot.description}</Text> : null}
+            {spot.map_url ? (
+              <Pressable onPress={() => Linking.openURL(spot.map_url)} hitSlop={6}>
+                <Text style={styles.link}>🗺️ Google Maps</Text>
+              </Pressable>
+            ) : null}
+            <View style={styles.actions}>
+              {busyId === spot.id ? <ActivityIndicator color={colors.primary} /> : null}
+              <Pressable style={[styles.btn, styles.btnApprove]} onPress={() => answer(spot, true)} disabled={busyId === spot.id}>
+                <Text style={styles.btnText}>{t("partners.approve")}</Text>
+              </Pressable>
+              <Pressable style={[styles.btn, styles.btnDanger]} onPress={() => confirmRefuse(spot)} disabled={busyId === spot.id}>
+                <Text style={styles.btnText}>{t("partners.refuse")}</Text>
+              </Pressable>
+            </View>
+          </View>
+        ))
+      )}
+    </View>
+  );
 }
 
 // Admin: "Partner with Blossom" requests - approve (after correcting if
@@ -304,6 +489,20 @@ export function BusinessMessages() {
 
 const styles = StyleSheet.create({
   block: { marginBottom: spacing.lg },
+  suggestionTop: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
+  suggestionPhoto: { width: 56, height: 56, borderRadius: radius.sm },
+  wantsGift: {
+    alignSelf: "flex-start",
+    marginTop: 8,
+    fontSize: 12.5,
+    fontWeight: "700",
+    color: "#6B3E00",
+    backgroundColor: "#FFF4E5",
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    overflow: "hidden",
+  },
   blockTitle: { fontSize: 16, fontWeight: "800", color: colors.text, marginBottom: spacing.sm },
   error: { color: colors.danger, fontSize: 13, marginVertical: 6 },
   muted: { fontSize: 13, color: colors.textMuted, marginTop: 3, lineHeight: 18 },
@@ -334,4 +533,14 @@ const styles = StyleSheet.create({
   btnText: { fontSize: 13, fontWeight: "700", color: colors.textSoft },
   venueRow: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   venueName: { fontSize: 14.5, fontWeight: "700", color: colors.text },
+  reportQuote: {
+    marginVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.danger,
+    backgroundColor: colors.background,
+    color: colors.text,
+    fontSize: 14,
+  },
 });

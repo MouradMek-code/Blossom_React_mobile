@@ -13,6 +13,9 @@ import FriendProfilesScreen from "../screens/FriendProfilesScreen";
 import VouchersScreen from "../screens/VouchersScreen";
 import LocationPickerScreen from "../screens/LocationPickerScreen";
 import NotFoundScreen from "../screens/NotFoundScreen";
+import LikedYouScreen from "../screens/LikedYouScreen";
+import EventDetailScreen from "../screens/EventDetailScreen";
+import EventFormScreen from "../screens/EventFormScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -40,6 +43,10 @@ export default function RootNavigator({ initialRouteName = "Home" }) {
       <Stack.Screen name="FriendProfiles" component={FriendProfilesScreen} />
       <Stack.Screen name="Vouchers" component={VouchersScreen} />
       <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
+      {/* "See who likes you", from the banner at the top of Chats. */}
+      <Stack.Screen name="LikedYou" component={LikedYouScreen} />
+      <Stack.Screen name="EventDetail" component={EventDetailScreen} />
+      <Stack.Screen name="EventForm" component={EventFormScreen} />
       <Stack.Screen name="NotFound" component={NotFoundScreen} />
     </Stack.Navigator>
   );
