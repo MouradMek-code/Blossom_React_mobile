@@ -207,7 +207,16 @@
     "offerGiftLink": "🎁 Offer a gift · Partner with Blossom",
     "filterAllSpots": "All spots",
     "filterGifts": "🎁 With a gift",
-    "emptyGifts": "No gifts in this selection yet."
+    "emptyGifts": "No gifts in this selection yet.",
+    "searchPlaceholder": "Search a place by name…",
+    "searchEmpty": "No place matches “{{query}}”. Try another name, or clear the filters.",
+    "clearSearch": "Clear the search",
+    "newBadge": "New",
+    "viewList": "List",
+    "viewMap": "Map",
+    "mapMissing": "Not on the map yet (no exact address): {{count}}. You'll find them in the list.",
+    "mapLoading": "Loading the map…",
+    "mapOffline": "The map couldn't load. Check your connection."
   },
   "founder": {
     "eyebrow": "From the founder",

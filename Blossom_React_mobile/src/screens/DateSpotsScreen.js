@@ -22,6 +22,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { KIND_EMOJI, eventDay, eventWhen } from "../api/events";
+import { isNewSpot, matchesName, orderSpots } from "../api/spotOrder";
+import { mapPoints } from "../api/spotMap";
+import SpotsMap from "../components/SpotsMap";
 import PageNav from "../components/PageNav";
 import LocationFields from "../components/LocationFields";
 import { readCache } from "../api/cache";
@@ -401,6 +404,15 @@ export default function DateSpotsScreen() {
   const pickerOptions =
     picker === "country" ? locations.map((l) => l.country) : citiesForCountry;
 
+  // Every city with spots (or only the chosen country's), A to Z. Picking a
+  // city picks its country too.
+  const cityChoices = useMemo(() => {
+    const list = country ? locations.filter((l) => l.country === country) : locations;
+    return list
+      .flatMap((l) => l.cities.map((name) => ({ name, country: l.country })))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [locations, country]);
+
   async function shareSpot(spot) {
     try {
       await Share.share({
@@ -414,8 +426,18 @@ ${SITE_URL}/date-spots/${spot.id}`,
 
   // Spots with a venue promotion for couples: their own row, and a filter.
   const [promoOnly, setPromoOnly] = useState(false);
+  const [query, setQuery] = useState("");
+  const [view, setView] = useState("list"); // "list" | "map"
+  // A finger on the map: the page holds still so the map can be dragged.
+  const [mapTouched, setMapTouched] = useState(false);
+  // Picked once per visit: the random part of the order stays put while the
+  // screen is open (refreshes, edits) and changes the next time it opens.
+  const [seed] = useState(() => Math.random());
+  const searching = query.trim() !== "";
   const promoSpots = spots.filter((s) => s.offer);
-  const shownSpots = promoOnly ? promoSpots : spots;
+  // Newest spots first, then a random order (see orderSpots).
+  const ordered = orderSpots(promoOnly ? promoSpots : spots, seed);
+  const shownSpots = searching ? ordered.filter((s) => matchesName(s, query)) : ordered;
 
   // Home's "See spots with gifts": navigate("DateSpots", { gifts: true })
   // opens the list with the gifts filter on.
@@ -444,7 +466,14 @@ ${SITE_URL}/date-spots/${spot.id}`,
     <View style={[styles.head, { backgroundColor: colors.background }]}>
       <PageNav />
 
-      <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll}>
+      {/* "handled": with the search keyboard open, tapping a spot opens it
+          straight away instead of only closing the keyboard. */}
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        scrollEnabled={!mapTouched}
+      >
         <Text style={styles.eyebrow}>{t("dateSpots.eyebrow")}</Text>
         <Text style={styles.title}>{t("dateSpots.title")}</Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
@@ -489,7 +518,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
         )}
 
         {/* The gifts partner cafés and restaurants offer: first, and big. */}
-        {promoSpots.length > 0 && !promoOnly ? (
+        {promoSpots.length > 0 && !promoOnly && !searching ? (
           <View style={styles.gifts}>
             <Text style={styles.giftsTitle}>{t("dateSpots.giftsTitle")}</Text>
             <Text style={styles.giftsSubtitle}>{t("dateSpots.giftsSubtitle")}</Text>
@@ -555,6 +584,39 @@ ${SITE_URL}/date-spots/${spot.id}`,
           </Pressable>
         </View>
 
+        <View style={styles.search}>
+          <Text style={styles.searchIcon}>🔎</Text>
+          <TextInput
+            style={styles.searchInput}
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t("dateSpots.searchPlaceholder")}
+            placeholderTextColor={colors.textMuted}
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+          {searching ? (
+            <Pressable onPress={() => setQuery("")} hitSlop={10} accessibilityLabel={t("dateSpots.clearSearch")}>
+              <Text style={styles.searchClear}>✕</Text>
+            </Pressable>
+          ) : null}
+        </View>
+        <View style={styles.viewSwitch}>
+          {[["list", "📋"], ["map", "🗺️"]].map(([value, icon]) => (
+            <Pressable
+              key={value}
+              style={[styles.viewBtn, view === value && styles.viewBtnOn]}
+              onPress={() => setView(value)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: view === value }}
+            >
+              <Text style={[styles.viewText, view === value && styles.viewTextOn]}>
+                {icon} {t(value === "list" ? "dateSpots.viewList" : "dateSpots.viewMap")}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
         {/* Filter chips - each row is named so it's clear what it filters. */}
         <View style={styles.filterBar}>
           <Text style={styles.filterLabel}>{t("dateSpots.country")}</Text>
@@ -574,13 +636,19 @@ ${SITE_URL}/date-spots/${spot.id}`,
             ))}
           </ScrollView>
 
-          {country && citiesForCountry.length > 0 ? (
+          {cityChoices.length > 0 ? (
             <>
               <Text style={styles.filterLabel}>{t("dateSpots.city")}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
                 <Chip label={t("dateSpots.allCities")} active={!city} onPress={() => setCity("")} small />
-                {citiesForCountry.map((c) => (
-                  <Chip key={c} label={`📍 ${c}`} active={city === c} onPress={() => setCity(c)} small />
+                {cityChoices.map((c) => (
+                  <Chip
+                    key={`${c.country}|${c.name}`}
+                    label={`📍 ${c.name}`}
+                    active={city === c.name}
+                    onPress={() => { setCountry(c.country); setCity(c.name); }}
+                    small
+                  />
                 ))}
               </ScrollView>
             </>
@@ -624,12 +692,23 @@ ${SITE_URL}/date-spots/${spot.id}`,
               {t("dateSpots.emptyTitle")}
             </Text>
             <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-              {promoOnly
+              {searching
+                ? t("dateSpots.searchEmpty", { query: query.trim() })
+                : promoOnly
                 ? t("dateSpots.emptyGifts")
                 : country || city || category || bestFor
                   ? t("dateSpots.emptyFiltered")
                   : t("dateSpots.emptyAll")}
             </Text>
+          </View>
+        ) : view === "map" ? (
+          <View style={styles.mapBlock}>
+            <SpotsMap spots={shownSpots} onOpen={openSpot} onTouch={setMapTouched} />
+            {shownSpots.length > mapPoints(shownSpots).length ? (
+              <Text style={styles.mapNote}>
+                {t("dateSpots.mapMissing", { count: shownSpots.length - mapPoints(shownSpots).length })}
+              </Text>
+            ) : null}
           </View>
         ) : (
           shownSpots.map((spot, i) => (
@@ -651,7 +730,11 @@ ${SITE_URL}/date-spots/${spot.id}`,
               {i === 0 ? (
                 <View style={[styles.featuredFlag, spot.offer && styles.featuredFlagGift]}>
                   <Text style={[styles.featuredFlagText, spot.offer && styles.featuredFlagGiftText]}>
-                    {spot.offer ? t("dateSpots.giftRibbon") : `★ ${t("dateSpots.featured")}`}
+                    {spot.offer
+                      ? t("dateSpots.giftRibbon")
+                      : isNewSpot(spot)
+                        ? `🆕 ${t("dateSpots.newBadge")}`
+                        : `★ ${t("dateSpots.featured")}`}
                   </Text>
                 </View>
               ) : null}
@@ -664,13 +747,20 @@ ${SITE_URL}/date-spots/${spot.id}`,
                     </Text>
                   </View>
                 ) : null}
-                {spot.category ? (
-                  <View style={styles.tag}>
-                    <Text style={styles.tagText}>
-                      {categoryLabel(spot.category, t)}
-                    </Text>
-                  </View>
-                ) : null}
+                <View style={styles.tagRow}>
+                  {i > 0 && isNewSpot(spot) ? (
+                    <View style={[styles.tag, styles.newTag]}>
+                      <Text style={styles.newTagText}>🆕 {t("dateSpots.newBadge")}</Text>
+                    </View>
+                  ) : null}
+                  {spot.category ? (
+                    <View style={styles.tag}>
+                      <Text style={styles.tagText}>
+                        {categoryLabel(spot.category, t)}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
                 <Text style={[styles.cardTitle, i === 0 && styles.featuredTitle]} numberOfLines={2}>
                   {spot.name}
                 </Text>
@@ -2175,4 +2265,39 @@ const styles = StyleSheet.create({
   spotEventTitle: { fontWeight: "700", fontSize: 14.5, color: colors.text },
   spotEventMeta: { fontSize: 12.5, color: colors.textSoft },
   spotEventCreate: { color: colors.primaryDeep, fontWeight: "700", fontSize: 14, marginTop: 4 },
+  // Search by name, above the filters.
+  search: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: spacing.md,
+    paddingHorizontal: 14,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  searchIcon: { fontSize: 14 },
+  searchInput: { flex: 1, paddingVertical: 11, fontSize: 15, color: colors.text },
+  searchClear: { fontSize: 16, color: colors.textSoft, paddingHorizontal: 4 },
+  tagRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  newTag: { backgroundColor: "#E8F6EE", borderColor: "#E8F6EE" },
+  newTagText: { color: "#1F6B45", fontSize: 11.5, fontWeight: "700" },
+  // List | Map, under the search.
+  viewSwitch: {
+    flexDirection: "row",
+    alignSelf: "flex-start",
+    marginTop: spacing.sm,
+    padding: 3,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  viewBtn: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: radius.pill },
+  viewBtnOn: { backgroundColor: colors.text },
+  viewText: { fontSize: 13.5, fontWeight: "700", color: colors.textSoft },
+  viewTextOn: { color: "#fff" },
+  mapBlock: { gap: 10, marginBottom: spacing.md },
+  mapNote: { fontSize: 13, color: colors.textMuted, lineHeight: 18 },
 });

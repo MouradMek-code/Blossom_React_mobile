@@ -207,7 +207,16 @@
     "offerGiftLink": "🎁 Offrir un cadeau · Devenir partenaire de Blossom",
     "filterAllSpots": "Tous les spots",
     "filterGifts": "🎁 Avec cadeau",
-    "emptyGifts": "Pas encore de cadeau dans cette sélection."
+    "emptyGifts": "Pas encore de cadeau dans cette sélection.",
+    "searchPlaceholder": "Rechercher un lieu par son nom…",
+    "searchEmpty": "Aucun lieu ne correspond à « {{query}} ». Essaie un autre nom, ou enlève les filtres.",
+    "clearSearch": "Effacer la recherche",
+    "newBadge": "Nouveau",
+    "viewList": "Liste",
+    "viewMap": "Carte",
+    "mapMissing": "Pas encore sur la carte (pas d'adresse exacte) : {{count}}. Tu les trouveras dans la liste.",
+    "mapLoading": "Chargement de la carte…",
+    "mapOffline": "La carte n'a pas pu se charger. Vérifie ta connexion."
   },
   "founder": {
     "eyebrow": "Du même fondateur",

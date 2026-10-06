@@ -207,7 +207,16 @@
     "offerGiftLink": "🎁 提供礼物 · 成为 Blossom 合作伙伴",
     "filterAllSpots": "全部地点",
     "filterGifts": "🎁 有礼物",
-    "emptyGifts": "这个筛选下还没有礼物。"
+    "emptyGifts": "这个筛选下还没有礼物。",
+    "searchPlaceholder": "按名称搜索地点…",
+    "searchEmpty": "没有与“{{query}}”匹配的地点。试试其他名称，或清除筛选条件。",
+    "clearSearch": "清除搜索",
+    "newBadge": "新",
+    "viewList": "列表",
+    "viewMap": "地图",
+    "mapMissing": "尚未显示在地图上（没有确切地址）：{{count}} 个。你可以在列表中找到它们。",
+    "mapLoading": "正在加载地图…",
+    "mapOffline": "地图无法加载。请检查你的网络连接。"
   },
   "founder": {
     "eyebrow": "来自创始人",
