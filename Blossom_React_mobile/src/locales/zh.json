@@ -216,7 +216,17 @@
     "viewMap": "地图",
     "mapMissing": "尚未显示在地图上（没有确切地址）：{{count}} 个。你可以在列表中找到它们。",
     "mapLoading": "正在加载地图…",
-    "mapOffline": "地图无法加载。请检查你的网络连接。"
+    "mapOffline": "地图无法加载。请检查你的网络连接。",
+    "whereTitle": "📍 这个地点在哪里？",
+    "whereHint": "地点本身所在的城市和国家，而不是你住的地方。",
+    "wherePrefilled": "我们已填入你的城市。如果地点在别处，请修改。",
+    "whereSummary": "将显示在 {{place}}",
+    "offerGiftShort": "你的店？送份礼物",
+    "save": "收藏",
+    "saved": "已收藏",
+    "savedTitle": "♡ 我收藏的地点",
+    "savedEmpty": "点击地点上的 ♡ 即可收藏到这里，然后一键邀请配对去那里。",
+    "savedSeeAll": "查看所有地点 →"
   },
   "founder": {
     "eyebrow": "来自创始人",
@@ -247,7 +257,12 @@
     "unmatchTitle": "取消与{{name}}的配对？",
     "unmatchMessage": "你们的对话将被删除，并且不会再在聊天里看到对方。",
     "unmatchFailed": "取消配对失败。请检查网络后重试。",
-    "options": "更多选项"
+    "options": "更多选项",
+    "circlesTitle": "喜欢与新配对",
+    "likesCircle": "喜欢你",
+    "circlesLikeBack": "回赞即可配对 💞",
+    "circlesEmpty": "有人喜欢你或配对成功时，会显示在这里。",
+    "heartLabel": "喜欢你的人"
   },
   "location": {
     "title": "你住在哪里？",
@@ -609,7 +624,9 @@
     "err_other_place": "这个优惠码属于另一家店。",
     "err_too_many": "此设备错误尝试次数过多，请稍后再试。",
     "err_used": "这个优惠码已被使用。",
-    "err_expired": "这个优惠码已过期。"
+    "err_expired": "这个优惠码已过期。",
+    "suggestSaved": "♡ 你收藏的地点",
+    "suggestAll": "所有地点"
   },
   "partners": {
     "link": "🏪 成为 Blossom 合作伙伴",
@@ -922,5 +939,18 @@
     "reportBy": "{{name}} 举报 · {{date}}",
     "removeComment": "删除评论",
     "reportDone": "无需处理"
+  },
+  "photoMode": {
+    "button": "拍照模式",
+    "hint": "截屏 📸 · 点击关闭",
+    "couplesGet": "通过 Blossom，情侣可获得",
+    "giftHow": "在 Blossom 上邀请你的配对来这里，然后在柜台出示你的代码。",
+    "perfectFor": "适合",
+    "views": "👀 {{count}} 人在 Blossom 上看过",
+    "tagline": "真实地点的约会灵感",
+    "venueTitle": "这是你的店吗？为情侣送上一份小礼物",
+    "venueTitleOther": "你的咖啡馆或餐厅也想加入？为情侣送上一份小礼物",
+    "venueIdeas": "免费甜点、饮品买一送一、两人85折…",
+    "venueCta": "从这里开始 →"
   }
 }

@@ -128,8 +128,10 @@ function SpotSuggester({ partner, onClose, onSent }) {
   const [sending, setSending] = useState(null);
   const [error, setError] = useState("");
 
+  // Logged in, the list says which spots I saved (♡): those come first.
   useEffect(() => {
-    fetch(`${BASE_URL}/date_spots`)
+    getToken()
+      .then((token) => fetch(`${BASE_URL}/date_spots`, { headers: { Authorization: `Bearer ${token}` } }))
       .then((r) => (r.ok ? r.json() : []))
       .then(setSpots)
       .catch(() => setSpots([]));
@@ -141,6 +143,35 @@ function SpotSuggester({ partner, onClose, onSent }) {
       .filter((s) => !q || `${s.name} ${s.city} ${s.neighborhood || ""}`.toLowerCase().includes(q))
       .sort((a, b) => Number(Boolean(b.offer)) - Number(Boolean(a.offer)));
   }, [spots, search]);
+  const savedShown = shown.filter((s) => s.saved);
+  const otherShown = shown.filter((s) => !s.saved);
+
+  function renderRow(spot) {
+    return (
+      <Pressable
+        key={spot.id}
+        style={({ pressed }) => [styles.suggestRow, pressed && { opacity: 0.7 }]}
+        onPress={() => suggest(spot)}
+        disabled={!!sending}
+      >
+        {spot.image_url ? (
+          <Image source={{ uri: IMG.thumb(spot.image_url) }} style={styles.suggestImage} />
+        ) : (
+          <View style={[styles.suggestImage, styles.inviteImageEmpty, { backgroundColor: colors.primarySoft }]}>
+            <Text>{categoryEmoji(spot.category)}</Text>
+          </View>
+        )}
+        <View style={{ flex: 1 }}>
+          <Text style={styles.suggestName} numberOfLines={1}>{spot.name}</Text>
+          <Text style={styles.suggestPlace} numberOfLines={1}>📍 {shortPlace(spot)}</Text>
+          {spot.offer ? (
+            <Text style={styles.suggestOffer} numberOfLines={1}>🎁 {spot.offer.title}</Text>
+          ) : null}
+        </View>
+        {sending === spot.id ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.suggestSend}>💌</Text>}
+      </Pressable>
+    );
+  }
 
   async function suggest(spot) {
     if (sending) return;
@@ -183,30 +214,12 @@ function SpotSuggester({ partner, onClose, onSent }) {
           <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} />
         ) : (
           <ScrollView keyboardShouldPersistTaps="handled" style={{ maxHeight: 380 }}>
-            {shown.map((spot) => (
-              <Pressable
-                key={spot.id}
-                style={({ pressed }) => [styles.suggestRow, pressed && { opacity: 0.7 }]}
-                onPress={() => suggest(spot)}
-                disabled={!!sending}
-              >
-                {spot.image_url ? (
-                  <Image source={{ uri: IMG.thumb(spot.image_url) }} style={styles.suggestImage} />
-                ) : (
-                  <View style={[styles.suggestImage, styles.inviteImageEmpty, { backgroundColor: colors.primarySoft }]}>
-                    <Text>{categoryEmoji(spot.category)}</Text>
-                  </View>
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.suggestName} numberOfLines={1}>{spot.name}</Text>
-                  <Text style={styles.suggestPlace} numberOfLines={1}>📍 {shortPlace(spot)}</Text>
-                  {spot.offer ? (
-                    <Text style={styles.suggestOffer} numberOfLines={1}>🎁 {spot.offer.title}</Text>
-                  ) : null}
-                </View>
-                {sending === spot.id ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.suggestSend}>💌</Text>}
-              </Pressable>
-            ))}
+            {savedShown.length > 0 ? <Text style={styles.suggestGroup}>{t("offers.suggestSaved")}</Text> : null}
+            {savedShown.map(renderRow)}
+            {savedShown.length > 0 && otherShown.length > 0 ? (
+              <Text style={styles.suggestGroup}>{t("offers.suggestAll")}</Text>
+            ) : null}
+            {otherShown.map(renderRow)}
           </ScrollView>
         )}
       </View>
@@ -820,4 +833,14 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.primarySoft,
   },
   eventBannerText: { color: colors.primaryDeep, fontWeight: "700", fontSize: 13 },
+  // "♡ Your saved places" / "All places" in the spot picker.
+  suggestGroup: {
+    marginTop: spacing.sm,
+    marginBottom: 4,
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    color: colors.primary,
+  },
 });

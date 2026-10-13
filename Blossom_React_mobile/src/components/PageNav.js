@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { View, Text, Image, Pressable, StyleSheet } from "react-native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import Logo from "./Logo";
 import { getToken, peekToken } from "../api/storage";
+import { peekCache, subscribeCache } from "../api/cache";
 import { goToTab } from "../navigation/goToTab";
 import { changeLanguage } from "../i18n";
 import { useTheme } from "../context/ThemeContext";
@@ -19,9 +20,10 @@ const LANGUAGES = [
 
 // The bar at the top of every screen.
 //
-// Once you're logged in it's only the logo (tapping it goes to Browse) plus
-// whatever the screen puts on its right: moving around is the tab bar's job
-// now, and language, logout and the account live in Settings.
+// Once you're logged in it's only the logo (tapping it goes to Browse), the
+// ❤️ of the people who like you (with the new ones), plus whatever the screen
+// puts on its right: moving around is the tab bar's job, and language,
+// logout and the account live in Settings.
 //
 // Logged out it carries the links a visitor needs plus the language switcher.
 // `minimal` - used while a profile is being created - shows the logo and the
@@ -32,8 +34,13 @@ export default function PageNav({ variant = "light", minimal = false, right = nu
   const [activeLang, setActiveLang] = useState(i18n.language?.slice(0, 2) || "en");
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const route = useRoute();
   // From memory first (instant), then confirmed against storage.
   const [token, setTokenState] = useState(() => peekToken());
+  // New likes, as the tab bar counts them (it refreshes every 30 s).
+  const [newLikes, setNewLikes] = useState(() => peekCache("nav")?.likes || 0);
+
+  useEffect(() => subscribeCache("nav", (nav) => setNewLikes(nav?.likes || 0)), []);
 
   useEffect(() => {
     let alive = true;
@@ -69,7 +76,25 @@ export default function PageNav({ variant = "light", minimal = false, right = nu
           size={40}
           onPress={loggedIn && !minimal ? () => goToTab(navigation, "Profiles") : undefined}
         />
-        {right}
+        <View style={styles.rightRow}>
+          {loggedIn && !minimal && route.name !== "LikedYou" ? (
+            <Pressable
+              onPress={() => navigation.navigate("LikedYou")}
+              style={({ pressed }) => [styles.heartBtn, pressed && { opacity: 0.75 }]}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={t("messages.heartLabel")}
+            >
+              <Image source={require("../../assets/images/tabs/likes.png")} style={styles.heartIcon} />
+              {newLikes > 0 ? (
+                <View style={styles.heartBadge}>
+                  <Text style={styles.heartBadgeText}>{newLikes > 9 ? "9+" : newLikes}</Text>
+                </View>
+              ) : null}
+            </Pressable>
+          ) : null}
+          {right}
+        </View>
       </View>
 
       {showLinks || minimal ? (
@@ -225,4 +250,29 @@ headLight: {
   langBtnTextActive: {
     color: "#fff",
   },
+  rightRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  heartBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.primarySoft,
+  },
+  heartIcon: { width: 21, height: 21, tintColor: colors.primary },
+  heartBadge: {
+    position: "absolute",
+    top: -3,
+    right: -5,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ff2d55",
+    borderWidth: 2,
+    borderColor: colors.surface,
+  },
+  heartBadgeText: { color: "#fff", fontSize: 10, fontWeight: "800" },
 });

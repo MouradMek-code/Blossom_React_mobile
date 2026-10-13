@@ -216,7 +216,17 @@
     "viewMap": "Map",
     "mapMissing": "Not on the map yet (no exact address): {{count}}. You'll find them in the list.",
     "mapLoading": "Loading the map…",
-    "mapOffline": "The map couldn't load. Check your connection."
+    "mapOffline": "The map couldn't load. Check your connection.",
+    "whereTitle": "📍 Where is this place?",
+    "whereHint": "The city and country of the place itself, not where you live.",
+    "wherePrefilled": "We filled in your city. Change it if the place is somewhere else.",
+    "whereSummary": "It will be listed in {{place}}",
+    "offerGiftShort": "Your place? Offer a gift",
+    "save": "Save",
+    "saved": "Saved",
+    "savedTitle": "♡ My saved places",
+    "savedEmpty": "Tap ♡ on a place to keep it here, then invite a match there in one tap.",
+    "savedSeeAll": "See all places →"
   },
   "founder": {
     "eyebrow": "From the founder",
@@ -247,7 +257,12 @@
     "unmatchTitle": "Unmatch {{name}}?",
     "unmatchMessage": "Your conversation will be deleted and you won't see each other in your chats any more.",
     "unmatchFailed": "Couldn't unmatch. Check your connection and try again.",
-    "options": "More options"
+    "options": "More options",
+    "circlesTitle": "Likes & new matches",
+    "likesCircle": "Likes you",
+    "circlesLikeBack": "Like them back to match 💞",
+    "circlesEmpty": "When someone likes you or you match, they'll appear here.",
+    "heartLabel": "People who like you"
   },
   "location": {
     "title": "Where do you live?",
@@ -609,7 +624,9 @@
     "err_other_place": "This code is for another place.",
     "err_too_many": "Too many wrong tries from this device. Please wait a little and try again.",
     "err_used": "This code was already used.",
-    "err_expired": "This code has expired."
+    "err_expired": "This code has expired.",
+    "suggestSaved": "♡ Your saved places",
+    "suggestAll": "All places"
   },
   "partners": {
     "link": "🏪 Partner with Blossom",
@@ -922,5 +939,18 @@
     "reportBy": "Reported by {{name}} · {{date}}",
     "removeComment": "Delete the comment",
     "reportDone": "Nothing to do"
+  },
+  "photoMode": {
+    "button": "Photo mode",
+    "hint": "Take a screenshot 📸 · tap to close",
+    "couplesGet": "With Blossom, couples get",
+    "giftHow": "Invite your match here on Blossom, then show your code at the counter.",
+    "perfectFor": "Perfect for",
+    "views": "👀 {{count}} people looked at it on Blossom",
+    "tagline": "Date ideas in real places",
+    "venueTitle": "Is this your place? Offer couples a treat",
+    "venueTitleOther": "Your café or restaurant too? Offer couples a treat",
+    "venueIdeas": "A free dessert, 2 drinks for 1, -15% for two…",
+    "venueCta": "Start here →"
   }
 }

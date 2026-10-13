@@ -8,6 +8,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const PREFIX = "cache:";
 const memory = new Map();
+const listeners = new Map(); // key -> Set of callbacks
+
+// Called with the new value each time `key` is written - e.g. the heart in
+// the top bar follows "nav" (the tab bar's counts).
+export function subscribeCache(key, callback) {
+  if (!listeners.has(key)) listeners.set(key, new Set());
+  listeners.get(key).add(callback);
+  return () => listeners.get(key)?.delete(callback);
+}
 
 // Synchronous, memory only - for a screen's initial state.
 export function peekCache(key) {
@@ -31,6 +40,7 @@ export async function readCache(key) {
 export function writeCache(key, value) {
   memory.set(key, value);
   AsyncStorage.setItem(PREFIX + key, JSON.stringify(value)).catch(() => {});
+  listeners.get(key)?.forEach((callback) => callback(value));
 }
 
 export async function clearCache() {

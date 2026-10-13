@@ -4,6 +4,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import PageNav from "../components/PageNav";
 import ProfileView from "../components/ProfileView";
+import SavedSpots from "../components/SavedSpots";
 import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
 import { postJson } from "../api/errors";
@@ -213,6 +214,7 @@ export default function ProfileScreen() {
         uploadingPhoto={uploadingPhoto}
         onOpenSettings={() => navigation.navigate("Settings")}
         onChangeConnection={handleChangeConnection}
+        savedSection={<SavedSpots />}
       />
     </View>
   );

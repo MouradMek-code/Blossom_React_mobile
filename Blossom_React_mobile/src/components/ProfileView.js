@@ -41,6 +41,8 @@ export default function ProfileView({
   onOpenSettings,
   // Only on your own profile: switch between dating, language exchange, both.
   onChangeConnection,
+  // Only on your own profile: "♡ My saved places".
+  savedSection = null,
 }) {
   const { t } = useTranslation();
   const [editingBio, setEditingBio] = useState(false);
@@ -181,6 +183,8 @@ export default function ProfileView({
           )}
         </View>
       )}
+
+      {savedSection}
 
       {/* Your own profile: dating, language exchange or both - one tap. */}
       {editable && onChangeConnection ? (

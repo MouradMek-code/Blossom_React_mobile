@@ -91,6 +91,11 @@ export default function LikedYouScreen() {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       }).catch(() => {});
+      // Seen now: the ❤️ in the top bar and the circle in Chats drop their "new".
+      const nav = peekCache("nav");
+      if (nav?.likes) writeCache("nav", { ...nav, likes: 0 });
+      const summary = peekCache("likesSummary");
+      if (summary?.new) writeCache("likesSummary", { ...summary, new: 0 });
     } catch (err) {
       // No internet / server trouble: stay logged in. With the saved list on
       // screen just keep it; otherwise offer a retry.

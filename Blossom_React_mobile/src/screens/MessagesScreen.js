@@ -35,6 +35,8 @@ export default function MessagesScreen() {
   const [items, setItems] = useState(() => peekCache("inbox"));
   const [error, setError] = useState("");
   const [openingId, setOpeningId] = useState(null);
+  // The "Likes you" circle: how many, how many new, a few photos to blur.
+  const [likes, setLikes] = useState(() => peekCache("likesSummary") || { total: 0, new: 0, photos: [] });
 
   // One refresh at a time: on a slow connection a request can outlast the
   // polling interval, and stacked requests only slow the server down more.
@@ -54,12 +56,19 @@ export default function MessagesScreen() {
         const saved = await readCache("inbox");
         if (saved) setItems((cur) => cur || saved);
       }
-      const resp = await fetch(`${BASE_URL}/messages/inbox`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const headers = { Authorization: `Bearer ${token}` };
+      const [resp, likesResp] = await Promise.all([
+        fetch(`${BASE_URL}/messages/inbox`, { headers }),
+        fetch(`${BASE_URL}/likes/profile_likes/summary`, { headers }).catch(() => null),
+      ]);
       if (resp.status === 401) {
         await endSessionAndGoToLogin(navigation);
         return;
+      }
+      if (likesResp?.ok) {
+        const summary = await likesResp.json();
+        setLikes(summary);
+        writeCache("likesSummary", summary);
       }
       if (!resp.ok) throw new Error(`inbox failed with ${resp.status}`);
       const data = await resp.json();
@@ -183,10 +192,6 @@ export default function MessagesScreen() {
   const newMatches = (items || []).filter((item) => !item.last_message);
   const conversations = (items || []).filter((item) => item.last_message);
 
-  // New likes, as the tab bar last counted them (it asks every 30 s; this
-  // screen re-renders with each inbox refresh).
-  const newLikes = peekCache("nav")?.likes || 0;
-
   return (
     <View style={styles.screen}>
       <PageNav />
@@ -203,32 +208,57 @@ export default function MessagesScreen() {
           <View style={styles.header}>
             <Text style={styles.title}>{t("messages.title")}</Text>
             <Text style={styles.subtitle}>{t("messages.subtitle")}</Text>
-            {/* "Likes you" lives here now (Events took its tab). */}
-            <Pressable
-              style={({ pressed }) => [styles.likesBanner, pressed && styles.rowPressed]}
-              onPress={() => navigation.navigate("LikedYou")}
-              accessibilityRole="button"
-            >
-              <Text style={styles.likesText}>{t("events.likesBanner")}</Text>
-              {newLikes > 0 ? (
-                <Text style={styles.likesNew}>{t("events.likesBannerNew", { count: newLikes })}</Text>
-              ) : null}
-              <Text style={styles.likesArrow}>›</Text>
-            </Pressable>
             {error !== "" ? <Text style={styles.error}>{error}</Text> : null}
             {items === null ? (
               <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
             ) : null}
 
-            {newMatches.length > 0 ? (
-              <View style={styles.matchesBlock}>
-                <Text style={styles.sectionTitle}>{t("messages.newMatches")}</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.matchesRow}
+            {/* Likes and new matches, always on top: the "Likes you" circle
+                first (their photo blurred - tap to see who), then the faces
+                of new matches nobody has written to yet. */}
+            <View style={styles.matchesBlock}>
+              <Text style={styles.sectionTitle}>{t("messages.circlesTitle")}</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.matchesRow}
+              >
+                <Pressable
+                  style={({ pressed }) => [styles.matchItem, pressed && { opacity: 0.7 }]}
+                  onPress={() => navigation.navigate("LikedYou")}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("messages.heartLabel")}
                 >
-                  {newMatches.map((item) => (
+                  <View>
+                    <View style={[styles.likesCircle, likes.total > 0 && styles.likesCircleOn]}>
+                      {likes.photos?.[0] ? (
+                        <Image
+                          source={{ uri: IMG.thumb(likes.photos[0]) }}
+                          style={styles.likesBlur}
+                          blurRadius={14}
+                        />
+                      ) : null}
+                      <Text style={styles.likesHeart}>❤️</Text>
+                    </View>
+                    {likes.total > 0 ? (
+                      <View style={styles.likesCount}>
+                        <Text style={styles.likesCountText}>{likes.total > 99 ? "99+" : likes.total}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  <Text style={styles.matchName} numberOfLines={1}>{t("messages.likesCircle")}</Text>
+                  {likes.new > 0 ? (
+                    <Text style={styles.likesNewLabel} numberOfLines={1}>
+                      {t("events.likesBannerNew", { count: likes.new })}
+                    </Text>
+                  ) : null}
+                </Pressable>
+                {newMatches.length === 0 && items !== null ? (
+                  <Text style={styles.rowHint}>
+                    {likes.total > 0 ? t("messages.circlesLikeBack") : t("messages.circlesEmpty")}
+                  </Text>
+                ) : null}
+                {newMatches.map((item) => (
                     <Pressable
                       key={item.profile.id}
                       style={({ pressed }) => [styles.matchItem, pressed && { opacity: 0.7 }]}
@@ -261,9 +291,8 @@ export default function MessagesScreen() {
                       )}
                     </Pressable>
                   ))}
-                </ScrollView>
-              </View>
-            ) : null}
+              </ScrollView>
+            </View>
           </View>
         }
         ListEmptyComponent={
@@ -377,29 +406,38 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   emptyBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  likesBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 14,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primaryTint,
-    borderWidth: 1,
-    borderColor: colors.primarySoft,
-    ...shadow.sm,
-  },
-  likesText: { fontWeight: "800", fontSize: 15, color: colors.primaryDeep },
-  likesNew: {
-    paddingHorizontal: 9,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primary,
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "800",
+  // The "Likes you" circle: gold ring when someone likes you, dashed when
+  // nobody does yet; the count sits outside the round clip.
+  likesCircle: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
     overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.primarySoft,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: colors.borderStrong,
   },
-  likesArrow: { marginLeft: "auto", fontSize: 24, color: colors.primaryDeep, lineHeight: 26 },
+  likesCircleOn: { borderWidth: 3, borderStyle: "solid", borderColor: "#E0A43A" },
+  likesBlur: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" },
+  likesHeart: { fontSize: 24, textShadowColor: "rgba(0,0,0,0.3)", textShadowRadius: 3 },
+  likesCount: {
+    position: "absolute",
+    right: -4,
+    bottom: -2,
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 5,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.primary,
+    borderWidth: 2,
+    borderColor: colors.background,
+  },
+  likesCountText: { color: "#fff", fontSize: 11, fontWeight: "800" },
+  likesNewLabel: { fontSize: 10.5, fontWeight: "700", color: colors.primary, maxWidth: 66 },
+  rowHint: { alignSelf: "center", maxWidth: 220, color: colors.textMuted, fontSize: 13, lineHeight: 18 },
 });

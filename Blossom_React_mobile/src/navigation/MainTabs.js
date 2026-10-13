@@ -104,9 +104,9 @@ export default function MainTabs() {
         options={{
           title: t("tabs.chats"),
           tabBarIcon: tabIcon("Messages"),
-          // Unread chats, new matches and new likes ("See who likes you" is
-          // a banner at the top of Chats) all live on this tab.
-          tabBarBadge: badgeValue(badges.messages + badges.matches + badges.likes),
+          // Unread chats and new matches. New likes are on the ❤️ in the top
+          // bar (and the first circle of Chats).
+          tabBarBadge: badgeValue(badges.messages + badges.matches),
         }}
       />
       <Tab.Screen

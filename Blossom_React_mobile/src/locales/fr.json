@@ -216,7 +216,17 @@
     "viewMap": "Carte",
     "mapMissing": "Pas encore sur la carte (pas d'adresse exacte) : {{count}}. Tu les trouveras dans la liste.",
     "mapLoading": "Chargement de la carte…",
-    "mapOffline": "La carte n'a pas pu se charger. Vérifie ta connexion."
+    "mapOffline": "La carte n'a pas pu se charger. Vérifie ta connexion.",
+    "whereTitle": "📍 Où se trouve ce lieu ?",
+    "whereHint": "La ville et le pays du lieu lui-même, pas là où tu habites.",
+    "wherePrefilled": "On a mis ta ville. Change-la si le lieu est ailleurs.",
+    "whereSummary": "Il sera affiché à {{place}}",
+    "offerGiftShort": "Ton lieu ? Offre un cadeau",
+    "save": "Enregistrer",
+    "saved": "Enregistré",
+    "savedTitle": "♡ Mes lieux enregistrés",
+    "savedEmpty": "Touche ♡ sur un lieu pour le garder ici, puis invite un match en un geste.",
+    "savedSeeAll": "Voir tous les lieux →"
   },
   "founder": {
     "eyebrow": "Du même fondateur",
@@ -247,7 +257,12 @@
     "unmatchTitle": "Annuler le match avec {{name}} ?",
     "unmatchMessage": "Votre conversation sera supprimée et vous ne vous verrez plus dans vos messages.",
     "unmatchFailed": "Impossible d'annuler le match. Vérifiez votre connexion et réessayez.",
-    "options": "Plus d'options"
+    "options": "Plus d'options",
+    "circlesTitle": "Likes & nouveaux matchs",
+    "likesCircle": "Likes reçus",
+    "circlesLikeBack": "Like en retour pour matcher 💞",
+    "circlesEmpty": "Quand quelqu'un te like ou que vous matchez, ça apparaît ici.",
+    "heartLabel": "Les personnes qui t'ont liké"
   },
   "location": {
     "title": "Où habitez-vous ?",
@@ -609,7 +624,9 @@
     "err_other_place": "Ce code est pour un autre établissement.",
     "err_too_many": "Trop d'essais incorrects depuis cet appareil. Patientez un peu et réessayez.",
     "err_used": "Ce code a déjà été utilisé.",
-    "err_expired": "Ce code a expiré."
+    "err_expired": "Ce code a expiré.",
+    "suggestSaved": "♡ Tes lieux enregistrés",
+    "suggestAll": "Tous les lieux"
   },
   "partners": {
     "link": "🏪 Devenir partenaire de Blossom",
@@ -922,5 +939,18 @@
     "reportBy": "Signalé par {{name}} · {{date}}",
     "removeComment": "Supprimer le commentaire",
     "reportDone": "Rien à faire"
+  },
+  "photoMode": {
+    "button": "Mode photo",
+    "hint": "Fais une capture d'écran 📸 · touche pour fermer",
+    "couplesGet": "Avec Blossom, les couples reçoivent",
+    "giftHow": "Invite ton match ici sur Blossom, puis montre ton code au comptoir.",
+    "perfectFor": "Idéal pour",
+    "views": "👀 {{count}} personnes l'ont regardé sur Blossom",
+    "tagline": "Des idées de dates dans de vrais lieux",
+    "venueTitle": "C'est ton établissement ? Offre un petit cadeau aux couples",
+    "venueTitleOther": "Ton café ou ton resto aussi ? Offre un petit cadeau aux couples",
+    "venueIdeas": "Un dessert offert, 2 boissons pour 1, -15 % pour deux…",
+    "venueCta": "C'est par ici →"
   }
 }

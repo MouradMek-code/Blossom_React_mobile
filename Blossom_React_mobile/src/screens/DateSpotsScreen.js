@@ -25,6 +25,7 @@ import { KIND_EMOJI, eventDay, eventWhen } from "../api/events";
 import { isNewSpot, matchesName, orderSpots } from "../api/spotOrder";
 import { mapPoints } from "../api/spotMap";
 import SpotsMap from "../components/SpotsMap";
+import SpotPhotoMode from "../components/SpotPhotoMode";
 import PageNav from "../components/PageNav";
 import LocationFields from "../components/LocationFields";
 import { readCache } from "../api/cache";
@@ -199,6 +200,10 @@ export default function DateSpotsScreen() {
   const [category, setCategory] = useState("");
   const [bestFor, setBestFor] = useState("");
   const [inviteSpot, setInviteSpot] = useState(null);
+  // ♡ The spots I saved (the list says so when I'm logged in).
+  const [savedIds, setSavedIds] = useState(() => new Set());
+  // "📸 Photo mode": the spot as a clean poster, for a screenshot.
+  const [photoSpot, setPhotoSpot] = useState(null);
   const [editing, setEditing] = useState(null); // the spot being edited
   const [suggestSent, setSuggestSent] = useState(false);
   const [myProfileId, setMyProfileId] = useState(null);
@@ -351,12 +356,16 @@ export default function DateSpotsScreen() {
     if (bestFor) params.push(`best_for=${encodeURIComponent(bestFor)}`);
     const qs = params.length ? `?${params.join("&")}` : "";
     try {
+      const tk = await getToken();
+      const auth = tk && tk !== "null" ? { Authorization: `Bearer ${tk}` } : {};
       const [spotsResp, locResp] = await Promise.all([
-        fetch(`${BASE_URL}/date_spots${qs}`),
+        fetch(`${BASE_URL}/date_spots${qs}`, { headers: auth }),
         fetch(`${BASE_URL}/date_spots/locations`),
       ]);
       if (silent && !spotsResp.ok) return;
-      setSpots(spotsResp.ok ? await spotsResp.json() : []);
+      const list = spotsResp.ok ? await spotsResp.json() : [];
+      setSpots(list);
+      setSavedIds(new Set(list.filter((s) => s.saved).map((s) => s.id)));
       setLocations(locResp.ok ? await locResp.json() : []);
     } catch {
       if (!silent) setError(NETWORK_ERROR);
@@ -368,6 +377,31 @@ export default function DateSpotsScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // ♡ / ♥ - straight away on screen, undone if the server says no.
+  async function toggleSave(spot) {
+    if (!hasToken) {
+      navigation.navigate("SignUp");
+      return;
+    }
+    const was = savedIds.has(spot.id);
+    const flip = (add) => (cur) => {
+      const next = new Set(cur);
+      if (add) next.add(spot.id);
+      else next.delete(spot.id);
+      return next;
+    };
+    setSavedIds(flip(!was));
+    const tk = await getToken();
+    const result = await postJson(`${BASE_URL}/date_spots/${spot.id}/save`, {
+      method: was ? "DELETE" : "POST",
+      headers: { Authorization: `Bearer ${tk}` },
+    });
+    if (!result.ok) {
+      setSavedIds(flip(was));
+      setError(result.message);
+    }
+  }
 
   // The Spots tab stays alive all session: pick up places shared since, when
   // the user comes back to it or to the app.
@@ -539,6 +573,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
                     <View style={styles.giftRibbon}>
                       <Text style={styles.giftRibbonText}>{t("dateSpots.giftRibbon")}</Text>
                     </View>
+                    <SaveHeart saved={savedIds.has(spot.id)} onToggle={() => toggleSave(spot)} t={t} />
                   </View>
                   <View style={styles.giftBody}>
                     <Text style={styles.giftOffer} numberOfLines={2}>{spot.offer.title}</Text>
@@ -727,6 +762,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
                 colors={["transparent", "rgba(20,14,12,0.35)", "rgba(20,14,12,0.9)"]}
                 style={styles.scrim}
               />
+              <SaveHeart saved={savedIds.has(spot.id)} onToggle={() => toggleSave(spot)} t={t} />
               {i === 0 ? (
                 <View style={[styles.featuredFlag, spot.offer && styles.featuredFlagGift]}>
                   <Text style={[styles.featuredFlagText, spot.offer && styles.featuredFlagGiftText]}>
@@ -881,6 +917,49 @@ ${SITE_URL}/date-spots/${spot.id}`,
               ) : null}
               <Text style={styles.detailTitle}>{selected?.name}</Text>
               <Text style={styles.detailPlace}>📍 {fullPlace(selected)}</Text>
+              {/* Right away, no scrolling: organise something here, or (for
+                  the café's staff) offer couples a gift here. */}
+              {selected ? (
+                <View style={styles.quickRow}>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.quickBtn,
+                      savedIds.has(selected.id) && styles.quickSaveOn,
+                      pressed && { opacity: 0.75 },
+                    ]}
+                    onPress={() => toggleSave(selected)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: savedIds.has(selected.id) }}
+                  >
+                    <Text
+                      style={[styles.quickText, savedIds.has(selected.id) && styles.quickSaveOnText]}
+                      numberOfLines={1}
+                    >
+                      {savedIds.has(selected.id) ? `♥ ${t("dateSpots.saved")}` : `♡ ${t("dateSpots.save")}`}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [styles.quickBtn, pressed && { opacity: 0.75 }]}
+                    onPress={() =>
+                      token ? navigation.navigate("EventForm", { spotId: selected.id }) : navigation.navigate("SignUp")
+                    }
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.quickText} numberOfLines={1}>📅 {t("events.eventsAtSpot")}</Text>
+                  </Pressable>
+                  {!selected.offer ? (
+                    <Pressable
+                      style={({ pressed }) => [styles.quickBtn, styles.quickGift, pressed && { opacity: 0.75 }]}
+                      onPress={() => Linking.openURL(`${SITE_URL}/partner?spot=${selected.id}`)}
+                      accessibilityRole="button"
+                    >
+                      <Text style={[styles.quickText, styles.quickGiftText]} numberOfLines={1}>
+                        🎁 {t("dateSpots.offerGiftShort")}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
               <SpotStats spot={selected} t={t} style={styles.detailStats} />
               {canEdit(selected) ? (
                 <View style={styles.manageRow}>
@@ -925,19 +1004,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
                   t={t}
                   language={i18n.language}
                   onOpen={(eventId) => navigation.navigate("EventDetail", { id: eventId })}
-                  onCreate={() =>
-                    token ? navigation.navigate("EventForm", { spotId: selected.id }) : navigation.navigate("SignUp")
-                  }
                 />
-              ) : null}
-              {/* The café's staff: ask for a gift on this very spot (website form). */}
-              {selected && !selected.offer ? (
-                <Pressable
-                  onPress={() => Linking.openURL(`${SITE_URL}/partner?spot=${selected.id}`)}
-                  hitSlop={8}
-                >
-                  <Text style={styles.venueLink}>🏪 {t("partners.spotLink")} →</Text>
-                </Pressable>
               ) : null}
             </View>
           </ScrollView>
@@ -993,8 +1060,19 @@ ${SITE_URL}/date-spots/${spot.id}`,
           >
             <Text style={styles.detailCloseText}>✕</Text>
           </Pressable>
+          {/* On the photo, opposite the ✕: the screenshot-ready poster. */}
+          <Pressable
+            style={[styles.photoModeBtn, { top: insets.top + 12 }]}
+            onPress={() => setPhotoSpot(selected)}
+            hitSlop={8}
+            accessibilityRole="button"
+          >
+            <Text style={styles.photoModeText}>📸 {t("photoMode.button")}</Text>
+          </Pressable>
         </Animated.View>
       ) : null}
+
+      {photoSpot ? <SpotPhotoMode spot={photoSpot} onClose={() => setPhotoSpot(null)} /> : null}
 
       {inviteSpot ? (
         <InvitePicker
@@ -1039,8 +1117,24 @@ ${SITE_URL}/date-spots/${spot.id}`,
 // a card ("Want to go to ... together?") - for a woman opening the chat, it's
 // a ready-made first message. An in-screen overlay rather than a <Modal>, for
 // the same Android scrolling reason as the detail view.
-// "Upcoming events here" in a spot's card, and a way to organise one there.
-function SpotEvents({ spotId, t, language, onOpen, onCreate }) {
+// ♡ / ♥ in a card's corner. Its own tap: it never opens the card.
+function SaveHeart({ saved, onToggle, t }) {
+  return (
+    <Pressable
+      onPress={onToggle}
+      hitSlop={8}
+      style={({ pressed }) => [styles.saveHeart, pressed && { transform: [{ scale: 0.9 }] }]}
+      accessibilityRole="button"
+      accessibilityState={{ selected: saved }}
+      accessibilityLabel={saved ? t("dateSpots.saved") : t("dateSpots.save")}
+    >
+      <Text style={[styles.saveHeartText, saved && styles.saveHeartTextOn]}>{saved ? "♥" : "♡"}</Text>
+    </Pressable>
+  );
+}
+
+// "Upcoming events here" in a spot's card (creating one is at the top).
+function SpotEvents({ spotId, t, language, onOpen }) {
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
@@ -1054,6 +1148,7 @@ function SpotEvents({ spotId, t, language, onOpen, onCreate }) {
     };
   }, [spotId]);
 
+  if (events.length === 0) return null;
   return (
     <View style={styles.spotEvents}>
       {events.length > 0 ? (
@@ -1080,9 +1175,6 @@ function SpotEvents({ spotId, t, language, onOpen, onCreate }) {
           })}
         </>
       ) : null}
-      <Pressable onPress={onCreate} hitSlop={8} accessibilityRole="button">
-        <Text style={styles.spotEventCreate}>📅 {t("events.eventsAtSpot")} →</Text>
-      </Pressable>
     </View>
   );
 }
@@ -1224,7 +1316,11 @@ function AddSpotForm({ initial, isAdmin = false, onCancel, onSaved }) {
     country: initial?.country || "",
     city: initial?.city || "",
   });
-  const [editingPlace, setEditingPlace] = useState(false);
+  // Filled in from the person's profile (not chosen): say so, so a café in
+  // another city doesn't end up listed in theirs.
+  const [placeFromProfile, setPlaceFromProfile] = useState(false);
+  const placeTouched = useRef(false);
+  const [placeMissing, setPlaceMissing] = useState(false);
   const [category, setCategory] = useState(initial?.category || "");
   const [description, setDescription] = useState(initial?.description || "");
   const [showDetails, setShowDetails] = useState(
@@ -1265,8 +1361,9 @@ function AddSpotForm({ initial, isAdmin = false, onCancel, onSaved }) {
           profile = null;
         }
       }
-      if (alive && profile?.country) {
-        setPlace((cur) => (cur.country ? cur : { country: profile.country, city: profile.city || "" }));
+      if (alive && profile?.country && !placeTouched.current) {
+        setPlace({ country: profile.country, city: profile.city || "" });
+        setPlaceFromProfile(true);
       }
     })();
     return () => {
@@ -1408,7 +1505,10 @@ function AddSpotForm({ initial, isAdmin = false, onCancel, onSaved }) {
       return setError(t("dateSpots.errMapUrl"));
     }
     if (!name.trim()) return setError(t("dateSpots.errName"));
-    if (!place.city.trim() || !place.country.trim()) return setError(t("dateSpots.errPlace"));
+    if (!place.city.trim() || !place.country.trim()) {
+      setPlaceMissing(true);
+      return setError(t("dateSpots.errPlace"));
+    }
 
     setSubmitting(true);
     const token = await getToken();
@@ -1468,7 +1568,28 @@ function AddSpotForm({ initial, isAdmin = false, onCancel, onSaved }) {
         placeholderTextColor={colors.textMuted}
       />
 
-      {/* 3. Vibe - one tap. */}
+      {/* 3. Where - its own city and country, always in view. */}
+      <View style={[styles.where, placeMissing && styles.whereMissing]}>
+        <Text style={styles.whereTitle}>
+          {t("dateSpots.whereTitle")} <Text style={styles.req}>*</Text>
+        </Text>
+        <Text style={styles.hint}>{t("dateSpots.whereHint")}</Text>
+        <LocationFields
+          country={place.country}
+          city={place.city}
+          onChange={(next) => {
+            placeTouched.current = true;
+            setPlace(next);
+            setPlaceFromProfile(false);
+            if (next.city && next.country) setPlaceMissing(false);
+          }}
+        />
+        {placeFromProfile ? (
+          <Text style={styles.wherePrefilled}>ℹ️ {t("dateSpots.wherePrefilled")}</Text>
+        ) : null}
+      </View>
+
+      {/* 4. Vibe - one tap. */}
       <Text style={styles.label}>{t("dateSpots.category")}</Text>
       <View style={styles.pickRow}>
         {CATEGORIES.map((c) => (
@@ -1481,21 +1602,6 @@ function AddSpotForm({ initial, isAdmin = false, onCancel, onSaved }) {
           />
         ))}
       </View>
-
-      {/* Where: their own city, changeable. */}
-      <View style={styles.placeRow}>
-        <Text style={styles.placeText} numberOfLines={1}>
-          📍 {[place.city, place.country].filter(Boolean).join(", ") || t("location.notSet")}
-        </Text>
-        <Pressable onPress={() => setEditingPlace((open) => !open)} hitSlop={8}>
-          <Text style={styles.placeChange}>
-            {editingPlace ? t("dateSpots.close") : t("location.change")}
-          </Text>
-        </Pressable>
-      </View>
-      {editingPlace ? (
-        <LocationFields country={place.country} city={place.city} onChange={setPlace} />
-      ) : null}
 
       <Pressable style={styles.photoBtn} onPress={pickPhoto}>
         <Text style={styles.photoBtnText}>
@@ -1561,6 +1667,13 @@ function AddSpotForm({ initial, isAdmin = false, onCancel, onSaved }) {
       ) : null}
 
       <Text style={styles.safety}>{t("dateSpots.safety")}</Text>
+
+      {/* A last look at where it goes, right by the button. */}
+      {place.city && place.country ? (
+        <Text style={styles.whereSummary}>
+          📍 {t("dateSpots.whereSummary", { place: `${place.city}, ${place.country}` })}
+        </Text>
+      ) : null}
 
       <View style={styles.formActions}>
         <Pressable style={styles.cancelBtn} onPress={onCancel}>
@@ -1921,7 +2034,6 @@ const styles = StyleSheet.create({
   manageRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   deleteBtn: { borderColor: "#F2C4C0", backgroundColor: "#FDECEA" },
   deleteBtnText: { color: colors.danger },
-  venueLink: { marginTop: spacing.lg, fontSize: 14, fontWeight: "700", color: colors.primaryDeep },
   detailTag: {
     alignSelf: "flex-start",
     backgroundColor: colors.primarySoft,
@@ -2031,19 +2143,19 @@ const styles = StyleSheet.create({
   hint: { ...typography.bodyMuted, fontSize: 12.5, lineHeight: 18, marginBottom: spacing.xs },
   linkStatusRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
   linkStatus: { ...typography.bodyMuted, fontSize: 12.5, marginTop: 6 },
-  placeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.sm,
+  // The place's city and country: its own framed section, never collapsed.
+  where: {
     marginTop: spacing.md,
-    paddingVertical: 10,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surfaceMuted,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.primarySoft,
+    backgroundColor: colors.primaryTint,
   },
-  placeText: { flex: 1, fontSize: 14.5, color: colors.text },
-  placeChange: { color: colors.primary, fontWeight: "700", fontSize: 13.5 },
+  whereMissing: { borderColor: colors.danger, backgroundColor: "#FDF1EF" },
+  whereTitle: { fontSize: 15.5, fontWeight: "800", color: colors.text },
+  wherePrefilled: { marginTop: 10, fontSize: 12.5, color: colors.primaryDeep, lineHeight: 18 },
+  whereSummary: { marginTop: spacing.sm, fontSize: 14, fontWeight: "700", color: colors.text, textAlign: "right" },
   detailsToggle: { marginTop: spacing.md, paddingVertical: 4 },
   detailsToggleText: { color: colors.primary, fontWeight: "700", fontSize: 14 },
   photoBtn: {
@@ -2264,7 +2376,6 @@ const styles = StyleSheet.create({
   spotEventMonth: { fontSize: 9.5, fontWeight: "800", color: colors.textSoft },
   spotEventTitle: { fontWeight: "700", fontSize: 14.5, color: colors.text },
   spotEventMeta: { fontSize: 12.5, color: colors.textSoft },
-  spotEventCreate: { color: colors.primaryDeep, fontWeight: "700", fontSize: 14, marginTop: 4 },
   // Search by name, above the filters.
   search: {
     flexDirection: "row",
@@ -2300,4 +2411,47 @@ const styles = StyleSheet.create({
   viewTextOn: { color: "#fff" },
   mapBlock: { gap: 10, marginBottom: spacing.md },
   mapNote: { fontSize: 13, color: colors.textMuted, lineHeight: 18 },
+  photoModeBtn: {
+    position: "absolute",
+    left: 18,
+    height: 38,
+    paddingHorizontal: 14,
+    borderRadius: 19,
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.92)",
+    ...shadow.sm,
+  },
+  photoModeText: { color: colors.text, fontWeight: "700", fontSize: 13.5 },
+  // The two actions under a spot's name: create an event, offer a gift.
+  quickRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10, marginBottom: 2 },
+  quickBtn: {
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryTint,
+    maxWidth: "100%",
+  },
+  quickText: { color: colors.primaryDeep, fontWeight: "700", fontSize: 13.5 },
+  quickGift: { borderColor: "#F0A020", backgroundColor: "#FFF4E0" },
+  quickGiftText: { color: "#6B3E00" },
+  // ♡ in the top-right corner of a spot's card.
+  saveHeart: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.92)",
+    zIndex: 3,
+    ...shadow.sm,
+  },
+  saveHeartText: { fontSize: 20, lineHeight: 23, color: colors.textSoft },
+  saveHeartTextOn: { color: colors.primary },
+  quickSaveOn: { backgroundColor: colors.primary },
+  quickSaveOnText: { color: "#fff" },
 });
