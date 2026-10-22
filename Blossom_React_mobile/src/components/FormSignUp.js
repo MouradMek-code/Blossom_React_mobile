@@ -6,6 +6,7 @@ import { setToken, saveSignupDraft, clearSignupDraft } from "../api/storage";
 import { postJson } from "../api/errors";
 import { ageFromIso, birthDateToIso, formatBirthDate, isoToBirthDate } from "../api/birthDate";
 import { colors, radius, spacing, shadow, typography } from "../theme";
+import VenueNotice from "./VenueNotice";
 
 export default function FormSignUp({ setRegistered, error, setError, verify, setVerified, prefill }) {
   const { t, i18n } = useTranslation();
@@ -71,6 +72,8 @@ export default function FormSignUp({ setRegistered, error, setError, verify, set
         <View>
           <Text style={styles.eyebrow}>{t("signup.eyebrow")}</Text>
           <Text style={styles.title}>{t("signup.title")}</Text>
+          {/* Sign-up is for dating; venues need no account. */}
+          <VenueNotice />
 
           {error !== "" && (
             <View style={styles.errorBox}>

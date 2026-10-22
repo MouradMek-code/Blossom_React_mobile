@@ -23,6 +23,7 @@ import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { KIND_EMOJI, eventDay, eventWhen } from "../api/events";
 import { isNewSpot, matchesName, orderSpots } from "../api/spotOrder";
+import { buildCollections, proofParts } from "../api/spotCollections";
 import { mapPoints } from "../api/spotMap";
 import SpotsMap from "../components/SpotsMap";
 import SpotPhotoMode from "../components/SpotPhotoMode";
@@ -202,6 +203,8 @@ export default function DateSpotsScreen() {
   const [inviteSpot, setInviteSpot] = useState(null);
   // ♡ The spots I saved (the list says so when I'm logged in).
   const [savedIds, setSavedIds] = useState(() => new Set());
+  // ⭐ Spot of the week (null when there's none).
+  const [spotOfWeek, setSpotOfWeek] = useState(null);
   // "📸 Photo mode": the spot as a clean poster, for a screenshot.
   const [photoSpot, setPhotoSpot] = useState(null);
   const [editing, setEditing] = useState(null); // the spot being edited
@@ -378,6 +381,20 @@ export default function DateSpotsScreen() {
     load();
   }, [load]);
 
+  const loadSpotOfWeek = useCallback(async () => {
+    const tk = await getToken();
+    const result = await postJson(`${BASE_URL}/date_spots/featured`, {
+      headers: tk && tk !== "null" ? { Authorization: `Bearer ${tk}` } : {},
+    });
+    const data = result.ok ? result.data : null;
+    setSpotOfWeek(data && data.spot ? data : null);
+    if (data?.spot?.saved) setSavedIds((cur) => new Set(cur).add(data.spot.id));
+  }, []);
+
+  useEffect(() => {
+    loadSpotOfWeek();
+  }, [loadSpotOfWeek]);
+
   // ♡ / ♥ - straight away on screen, undone if the server says no.
   async function toggleSave(spot) {
     if (!hasToken) {
@@ -430,22 +447,16 @@ export default function DateSpotsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linkedSpotId, spots, loading]);
 
-  const citiesForCountry = useMemo(() => {
-    const entry = locations.find((l) => l.country === country);
-    return entry ? entry.cities : [];
-  }, [locations, country]);
 
-  const pickerOptions =
-    picker === "country" ? locations.map((l) => l.country) : citiesForCountry;
-
-  // Every city with spots (or only the chosen country's), A to Z. Picking a
-  // city picks its country too.
-  const cityChoices = useMemo(() => {
-    const list = country ? locations.filter((l) => l.country === country) : locations;
-    return list
-      .flatMap((l) => l.cities.map((name) => ({ name, country: l.country })))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [locations, country]);
+  // Every city with spots, A to Z. Picking a city picks its country too.
+  const cityChoices = useMemo(
+    () =>
+      locations
+        .flatMap((l) => l.cities.map((name) => ({ name, country: l.country })))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [locations],
+  );
+  const pickerOptions = picker === "country" ? locations.map((l) => l.country) : cityChoices.map((c) => c.name);
 
   async function shareSpot(spot) {
     try {
@@ -472,6 +483,12 @@ ${SITE_URL}/date-spots/${spot.id}`,
   // Newest spots first, then a random order (see orderSpots).
   const ordered = orderSpots(promoOnly ? promoSpots : spots, seed);
   const shownSpots = searching ? ordered.filter((s) => matchesName(s, query)) : ordered;
+  // No search or vibe chosen: the page's "home" - gifts, then themed rows.
+  const browsing = !searching && !category && !bestFor && !promoOnly;
+  const collections = browsing ? buildCollections(ordered) : [];
+  // Country and "best for" live in a sheet behind ⚙️, so the places come first.
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const panelCount = (country && !city ? 1 : 0) + (bestFor ? 1 : 0);
 
   // Home's "See spots with gifts": navigate("DateSpots", { gifts: true })
   // opens the list with the gifts filter on.
@@ -491,9 +508,20 @@ ${SITE_URL}/date-spots/${spot.id}`,
       setCountry(value);
       setCity("");
     } else {
+      const found = cityChoices.find((c) => c.name === value);
+      if (found) setCountry(found.country);
       setCity(value);
     }
     setPicker(null);
+  }
+
+  function clearFilters() {
+    setCountry("");
+    setCity("");
+    setCategory("");
+    setBestFor("");
+    setPromoOnly(false);
+    setQuery("");
   }
 
   return (
@@ -551,8 +579,104 @@ ${SITE_URL}/date-spots/${spot.id}`,
           />
         )}
 
+        {/* ⭐ Spot of the week, first and big. */}
+        {spotOfWeek && browsing ? (
+          <SpotOfWeek
+            data={spotOfWeek}
+            t={t}
+            saved={savedIds.has(spotOfWeek.spot.id)}
+            onOpen={() => openSpot(spotOfWeek.spot)}
+            onToggleSave={() => toggleSave(spotOfWeek.spot)}
+          />
+        ) : null}
+
+        {/* One slim bar: city, search, more filters, list / map. */}
+        <View style={styles.toolbar}>
+          <Pressable
+            style={[styles.toolPill, city && styles.toolPillOn]}
+            onPress={() => setPicker("city")}
+            accessibilityRole="button"
+            accessibilityLabel={t("dateSpots.city")}
+          >
+            <Text style={[styles.toolPillText, city && styles.toolPillTextOn]} numberOfLines={1}>
+              📍 {city || t("dateSpots.allCities")} ▾
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.toolPill, panelCount > 0 && styles.toolPillOn]}
+            onPress={() => setFiltersOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={t("dateSpots.moreFilters")}
+          >
+            <Text style={[styles.toolPillText, panelCount > 0 && styles.toolPillTextOn]}>
+              ⚙️{panelCount > 0 ? ` ${panelCount}` : ""}
+            </Text>
+          </Pressable>
+          <View style={styles.viewSwitchSmall}>
+            {[["list", "📋"], ["map", "🗺️"]].map(([value, icon]) => (
+              <Pressable
+                key={value}
+                style={[styles.viewBtnSmall, view === value && styles.viewBtnOn]}
+                onPress={() => setView(value)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: view === value }}
+                accessibilityLabel={t(value === "list" ? "dateSpots.viewList" : "dateSpots.viewMap")}
+              >
+                <Text style={styles.viewIcon}>{icon}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+        <View style={[styles.search, styles.searchInBar]}>
+          <Text style={styles.searchIcon}>🔎</Text>
+          <TextInput
+            style={styles.searchInput}
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t("dateSpots.searchPlaceholder")}
+            placeholderTextColor={colors.textMuted}
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+          {searching ? (
+            <Pressable onPress={() => setQuery("")} hitSlop={10} accessibilityLabel={t("dateSpots.clearSearch")}>
+              <Text style={styles.searchClear}>✕</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        {/* The vibes: one row that scrolls sideways. */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
+          <Chip
+            label={t("dateSpots.allCategories")}
+            active={!category && !promoOnly}
+            onPress={() => {
+              setCategory("");
+              setPromoOnly(false);
+            }}
+            small
+          />
+          {promoSpots.length > 0 || promoOnly ? (
+            <Chip
+              label={`${t("dateSpots.filterGifts")} · ${promoSpots.length}`}
+              active={promoOnly}
+              onPress={() => setPromoOnly((on) => !on)}
+              small
+            />
+          ) : null}
+          {CATEGORIES.map((c) => (
+            <Chip
+              key={c}
+              label={`${categoryEmoji(c)} ${categoryLabel(c, t)}`}
+              active={category === c}
+              onPress={() => setCategory(category === c ? "" : c)}
+              small
+            />
+          ))}
+        </ScrollView>
+
         {/* The gifts partner cafés and restaurants offer: first, and big. */}
-        {promoSpots.length > 0 && !promoOnly && !searching ? (
+        {promoSpots.length > 0 && browsing ? (
           <View style={styles.gifts}>
             <Text style={styles.giftsTitle}>{t("dateSpots.giftsTitle")}</Text>
             <Text style={styles.giftsSubtitle}>{t("dateSpots.giftsSubtitle")}</Text>
@@ -580,6 +704,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
                     <Text style={styles.giftVenue} numberOfLines={1}>{spot.name}</Text>
                     <Text style={styles.giftPlace} numberOfLines={1}>{placeLine(spot)}</Text>
                     <Text style={styles.giftTerms} numberOfLines={2}>{offerTerms(spot.offer, t)}</Text>
+                    <ProofLine spot={spot} t={t} style={styles.giftProof} />
                     {hasToken ? (
                       <Pressable style={styles.giftInvite} onPress={() => setInviteSpot(spot)}>
                         <Text style={styles.giftInviteText}>💌 {t("dateSpots.invite")}</Text>
@@ -594,129 +719,45 @@ ${SITE_URL}/date-spots/${spot.id}`,
           </View>
         ) : null}
 
-        <Text style={styles.sectionTitle}>{t("dateSpots.allSpots")}</Text>
-        {/* All spots / only those with a gift from a partner café. */}
-        <View style={styles.giftToggle}>
-          <Pressable
-            style={[styles.giftToggleBtn, !promoOnly && styles.giftToggleOn]}
-            onPress={() => setPromoOnly(false)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: !promoOnly }}
-          >
-            <Text style={[styles.giftToggleText, !promoOnly && styles.giftToggleTextOn]}>
-              {t("dateSpots.filterAllSpots")} · {spots.length}
-            </Text>
-          </Pressable>
-          <Pressable
-            style={[styles.giftToggleBtn, promoOnly && styles.giftToggleGift]}
-            onPress={() => setPromoOnly(true)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: promoOnly }}
-          >
-            <Text style={[styles.giftToggleText, promoOnly && styles.giftToggleTextGift]}>
-              {t("dateSpots.filterGifts")} · {promoSpots.length}
-            </Text>
-          </Pressable>
-        </View>
+        {/* Themed rows, Netflix-style. */}
+        {view === "list" && !loading
+          ? collections.map((c) => (
+              <View key={c.key} style={styles.collection}>
+                <Text style={styles.collectionTitle}>
+                  {c.emoji} {t(`dateSpots.col_${c.key}`)}
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.collectionRow}>
+                  {c.spots.map((spot) => (
+                    <Pressable
+                      key={spot.id}
+                      style={({ pressed }) => [styles.miniCard, pressed && { opacity: 0.9 }]}
+                      onPress={() => openSpot(spot)}
+                    >
+                      <SpotBackdrop spot={spot} uri={IMG.card(spot.image_url)} style={styles.miniImage} emojiStyle={styles.noImageEmoji} />
+                      <LinearGradient
+                        colors={["transparent", "rgba(20,14,12,0.85)"]}
+                        locations={[0.35, 1]}
+                        style={StyleSheet.absoluteFill}
+                      />
+                      <SaveHeart saved={savedIds.has(spot.id)} onToggle={() => toggleSave(spot)} t={t} />
+                      <View style={styles.miniInfo}>
+                        {spot.offer ? (
+                          <Text style={styles.miniGift} numberOfLines={1}>🎁 {spot.offer.title}</Text>
+                        ) : null}
+                        <Text style={styles.miniName} numberOfLines={2}>{spot.name}</Text>
+                        <Text style={styles.miniPlace} numberOfLines={1}>{placeLine(spot)}</Text>
+                        <ProofLine spot={spot} t={t} style={styles.miniProof} />
+                      </View>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            ))
+          : null}
 
-        <View style={styles.search}>
-          <Text style={styles.searchIcon}>🔎</Text>
-          <TextInput
-            style={styles.searchInput}
-            value={query}
-            onChangeText={setQuery}
-            placeholder={t("dateSpots.searchPlaceholder")}
-            placeholderTextColor={colors.textMuted}
-            returnKeyType="search"
-            autoCorrect={false}
-          />
-          {searching ? (
-            <Pressable onPress={() => setQuery("")} hitSlop={10} accessibilityLabel={t("dateSpots.clearSearch")}>
-              <Text style={styles.searchClear}>✕</Text>
-            </Pressable>
-          ) : null}
-        </View>
-        <View style={styles.viewSwitch}>
-          {[["list", "📋"], ["map", "🗺️"]].map(([value, icon]) => (
-            <Pressable
-              key={value}
-              style={[styles.viewBtn, view === value && styles.viewBtnOn]}
-              onPress={() => setView(value)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: view === value }}
-            >
-              <Text style={[styles.viewText, view === value && styles.viewTextOn]}>
-                {icon} {t(value === "list" ? "dateSpots.viewList" : "dateSpots.viewMap")}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {/* Filter chips - each row is named so it's clear what it filters. */}
-        <View style={styles.filterBar}>
-          <Text style={styles.filterLabel}>{t("dateSpots.country")}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-            <Chip
-              label={`🌍 ${t("dateSpots.allCountries")}`}
-              active={!country}
-              onPress={() => { setCountry(""); setCity(""); }}
-            />
-            {locations.map((l) => (
-              <Chip
-                key={l.country}
-                label={l.country}
-                active={country === l.country}
-                onPress={() => { setCountry(l.country); setCity(""); }}
-              />
-            ))}
-          </ScrollView>
-
-          {cityChoices.length > 0 ? (
-            <>
-              <Text style={styles.filterLabel}>{t("dateSpots.city")}</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-                <Chip label={t("dateSpots.allCities")} active={!city} onPress={() => setCity("")} small />
-                {cityChoices.map((c) => (
-                  <Chip
-                    key={`${c.country}|${c.name}`}
-                    label={`📍 ${c.name}`}
-                    active={city === c.name}
-                    onPress={() => { setCountry(c.country); setCity(c.name); }}
-                    small
-                  />
-                ))}
-              </ScrollView>
-            </>
-          ) : null}
-
-          <Text style={styles.filterLabel}>{t("dateSpots.category")}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-            <Chip label={t("dateSpots.allCategories")} active={!category} onPress={() => setCategory("")} small />
-            {CATEGORIES.map((c) => (
-              <Chip
-                key={c}
-                label={categoryLabel(c, t)}
-                active={category === c}
-                onPress={() => setCategory(category === c ? "" : c)}
-                small
-              />
-            ))}
-          </ScrollView>
-
-          {/* Tap a chip again to clear it. */}
-          <Text style={styles.filterLabel}>{t("dateSpots.bestFor")}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-            {BEST_FOR.map((b) => (
-              <Chip
-                key={b}
-                label={bestForLabel(b, t)}
-                active={bestFor === b}
-                onPress={() => setBestFor(bestFor === b ? "" : b)}
-                small
-              />
-            ))}
-          </ScrollView>
-        </View>
+        <Text style={styles.sectionTitle}>
+          {t("dateSpots.allSpots")} · {shownSpots.length}
+        </Text>
 
         {loading ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
@@ -804,6 +845,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
                   {placeLine(spot)}
                 </Text>
                 <SpotStats spot={spot} t={t} style={styles.overlayStats} />
+                <ProofLine spot={spot} t={t} style={styles.overlayProof} />
                 {i === 0 ? (
                   <Text style={styles.featuredText} numberOfLines={2}>
                     {spot.description}
@@ -891,6 +933,15 @@ ${SITE_URL}/date-spots/${spot.id}`,
               emojiStyle={styles.noImageEmojiFeatured}
             />
             {isAdmin && selected ? (
+              <FeatureBox
+                key={selected.id}
+                spot={selected}
+                isFeatured={Boolean(spotOfWeek?.picked && spotOfWeek.spot.id === selected.id)}
+                t={t}
+                onChanged={loadSpotOfWeek}
+              />
+            ) : null}
+            {isAdmin && selected ? (
               <AdminStatsEditor
                 spot={selected}
                 token={token}
@@ -961,6 +1012,15 @@ ${SITE_URL}/date-spots/${spot.id}`,
                 </View>
               ) : null}
               <SpotStats spot={selected} t={t} style={styles.detailStats} />
+              {selected && proofParts(selected).length > 0 ? (
+                <View style={styles.detailProof}>
+                  {proofParts(selected).map(([icon, key, count]) => (
+                    <Text key={key} style={styles.detailProofText}>
+                      {icon} {t(`dateSpots.${key}`)}: <Text style={styles.detailProofCount}>{count}</Text>
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
               {canEdit(selected) ? (
                 <View style={styles.manageRow}>
                   <Pressable
@@ -1089,6 +1149,54 @@ ${SITE_URL}/date-spots/${spot.id}`,
       ) : null}
 
       {/* Filter picker sheet */}
+      <Modal visible={filtersOpen} transparent animationType="fade" onRequestClose={() => setFiltersOpen(false)}>
+        <Pressable style={styles.sheetOverlay} onPress={() => setFiltersOpen(false)}>
+          <Pressable style={[styles.sheet, styles.filterSheet]} onPress={() => {}}>
+            <Text style={styles.filterSheetTitle}>⚙️ {t("dateSpots.moreFilters")}</Text>
+            <Text style={styles.filterLabel}>{t("dateSpots.country")}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+              <Chip
+                label={`🌍 ${t("dateSpots.allCountries")}`}
+                active={!country}
+                onPress={() => { setCountry(""); setCity(""); }}
+                small
+              />
+              {locations.map((l) => (
+                <Chip
+                  key={l.country}
+                  label={l.country}
+                  active={country === l.country}
+                  onPress={() => { setCountry(l.country); setCity(""); }}
+                  small
+                />
+              ))}
+            </ScrollView>
+            <Text style={styles.filterLabel}>{t("dateSpots.bestFor")}</Text>
+            <View style={styles.filterWrap}>
+              {BEST_FOR.map((b) => (
+                <Chip
+                  key={b}
+                  label={bestForLabel(b, t)}
+                  active={bestFor === b}
+                  onPress={() => setBestFor(bestFor === b ? "" : b)}
+                  small
+                />
+              ))}
+            </View>
+            <View style={styles.filterActions}>
+              {country || city || category || bestFor || promoOnly || searching ? (
+                <Pressable onPress={clearFilters} hitSlop={8}>
+                  <Text style={styles.clearFiltersText}>✕ {t("dateSpots.clearFilters")}</Text>
+                </Pressable>
+              ) : <View />}
+              <Pressable style={styles.filterDone} onPress={() => setFiltersOpen(false)}>
+                <Text style={styles.filterDoneText}>{t("dateSpots.close")}</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <Modal visible={!!picker} transparent animationType="fade" onRequestClose={() => setPicker(null)}>
         <Pressable style={styles.sheetOverlay} onPress={() => setPicker(null)}>
           <View style={styles.sheet}>
@@ -1117,6 +1225,102 @@ ${SITE_URL}/date-spots/${spot.id}`,
 // a card ("Want to go to ... together?") - for a woman opening the chat, it's
 // a ready-made first message. An in-screen overlay rather than a <Modal>, for
 // the same Android scrolling reason as the detail view.
+// "♥ 3 · 📅 2 · 💞 5": saves, upcoming events, couples who used the gift.
+function ProofLine({ spot, t, style }) {
+  const parts = proofParts(spot);
+  if (parts.length === 0) return null;
+  return (
+    <Text
+      style={[styles.proof, style]}
+      accessibilityLabel={parts.map(([, key, count]) => `${t(`dateSpots.${key}`)}: ${count}`).join(", ")}
+    >
+      {parts.map(([icon, , count]) => `${icon} ${count}`).join("   ")}
+    </Text>
+  );
+}
+
+// ⭐ Spot of the week: an admin's pick (with their words), or else the most
+// saved place this week. The whole card opens the place.
+function SpotOfWeek({ data, t, saved, onOpen, onToggleSave }) {
+  const { spot, note, picked } = data;
+  const text = picked ? (note ? `“${note}”` : spot.description) : t("dateSpots.spotOfWeekAuto");
+  return (
+    <Pressable style={({ pressed }) => [styles.sotw, pressed && { opacity: 0.92 }]} onPress={onOpen}>
+      <View style={styles.sotwMedia}>
+        <SpotBackdrop spot={spot} uri={IMG.full(spot.image_url)} style={styles.sotwImage} emojiStyle={styles.noImageEmojiFeatured} />
+        <View style={styles.sotwLabel}>
+          <Text style={styles.sotwLabelText}>{t("dateSpots.spotOfWeek")}</Text>
+        </View>
+        <SaveHeart saved={saved} onToggle={onToggleSave} t={t} />
+      </View>
+      <View style={styles.sotwBody}>
+        <Text style={styles.sotwName} numberOfLines={2}>{spot.name}</Text>
+        <Text style={styles.sotwPlace} numberOfLines={1}>{placeLine(spot)}</Text>
+        {spot.offer ? (
+          <Text style={styles.sotwGift} numberOfLines={1}>🎁 {spot.offer.title}</Text>
+        ) : null}
+        {text ? <Text style={styles.sotwNote} numberOfLines={3}>{text}</Text> : null}
+        <ProofLine spot={spot} t={t} style={styles.sotwProof} />
+        <Text style={styles.sotwCta}>{t("dateSpots.spotOfWeekSee")}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+// Admin: make the open spot the spot of the week (with a note), or stop it.
+function FeatureBox({ spot, isFeatured, t, onChanged }) {
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function send(remove) {
+    setBusy(true);
+    setMessage("");
+    const tk = await getToken();
+    const result = await postJson(`${BASE_URL}/date_spots/${spot.id}/feature`, {
+      method: remove ? "DELETE" : "POST",
+      headers: { Authorization: `Bearer ${tk}`, "Content-Type": "application/json" },
+      body: remove ? undefined : JSON.stringify({ note: note.trim() || null }),
+    });
+    setBusy(false);
+    if (!result.ok) {
+      setMessage(result.message);
+      return;
+    }
+    setMessage(remove ? "" : t("dateSpots.featureDone"));
+    setNote("");
+    onChanged();
+  }
+
+  return (
+    <View style={styles.featureBox}>
+      <Text style={styles.featureTitle}>{t("dateSpots.featureTitle")}</Text>
+      {isFeatured ? (
+        <Pressable style={[styles.featureBtn, styles.featureBtnOutline]} onPress={() => send(true)} disabled={busy}>
+          <Text style={styles.featureBtnText}>{t("dateSpots.featureRemove")}</Text>
+        </Pressable>
+      ) : (
+        <>
+          <TextInput
+            style={styles.featureInput}
+            value={note}
+            onChangeText={setNote}
+            placeholder={t("dateSpots.featureNotePlaceholder")}
+            placeholderTextColor={colors.textMuted}
+            maxLength={300}
+          />
+          <Pressable style={styles.featureBtn} onPress={() => send(false)} disabled={busy}>
+            {busy ? <ActivityIndicator size="small" color="#3D2300" /> : (
+              <Text style={styles.featureBtnText}>{t("dateSpots.featurePick")}</Text>
+            )}
+          </Pressable>
+        </>
+      )}
+      {message ? <Text style={styles.featureMessage}>{message}</Text> : null}
+    </View>
+  );
+}
+
 // ♡ / ♥ in a card's corner. Its own tap: it never opens the card.
 function SaveHeart({ saved, onToggle, t }) {
   return (
@@ -2454,4 +2658,139 @@ const styles = StyleSheet.create({
   saveHeartTextOn: { color: colors.primary },
   quickSaveOn: { backgroundColor: colors.primary },
   quickSaveOnText: { color: "#fff" },
+  // ⭐ Spot of the week.
+  sotw: {
+    marginTop: spacing.md,
+    borderRadius: radius.lg,
+    overflow: "hidden",
+    backgroundColor: colors.surface,
+    ...shadow.md,
+  },
+  sotwMedia: { height: 210 },
+  sotwImage: { width: "100%", height: "100%" },
+  sotwLabel: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    backgroundColor: "#FFF4E0",
+  },
+  sotwLabelText: { color: "#8A5A10", fontWeight: "800", fontSize: 12.5 },
+  sotwBody: { padding: spacing.md, gap: 4 },
+  sotwName: { fontFamily: "serif", fontSize: 24, fontWeight: "700", color: colors.text },
+  sotwPlace: { fontSize: 14, fontWeight: "600", color: colors.textSoft },
+  sotwGift: {
+    alignSelf: "flex-start",
+    marginTop: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    backgroundColor: "#FFB547",
+    color: "#3D2300",
+    fontSize: 12.5,
+    fontWeight: "800",
+    overflow: "hidden",
+  },
+  sotwNote: { marginTop: 4, fontFamily: "serif", fontStyle: "italic", fontSize: 15, lineHeight: 21, color: colors.text },
+  sotwProof: { color: colors.textSoft, marginTop: 4 },
+  sotwCta: { marginTop: 6, color: colors.primary, fontWeight: "800", fontSize: 14 },
+
+  // The slim bar: city, filters, list / map; search under it.
+  toolbar: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: spacing.lg },
+  toolPill: {
+    flexShrink: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  toolPillOn: { borderColor: colors.primary, backgroundColor: colors.primaryTint },
+  toolPillText: { fontSize: 14, fontWeight: "700", color: colors.textSoft },
+  toolPillTextOn: { color: colors.primaryDeep },
+  viewSwitchSmall: {
+    flexDirection: "row",
+    marginLeft: "auto",
+    padding: 3,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  viewBtnSmall: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill },
+  viewIcon: { fontSize: 15 },
+  searchInBar: { marginTop: spacing.sm },
+  categoryRow: { gap: 8, paddingVertical: spacing.sm, paddingRight: spacing.md },
+
+  // Themed rows.
+  collection: { marginTop: spacing.lg },
+  collectionTitle: { fontFamily: "serif", fontSize: 19, fontWeight: "700", color: colors.text, marginBottom: spacing.sm },
+  collectionRow: { gap: 12, paddingRight: spacing.md },
+  miniCard: { width: 160, height: 210, borderRadius: radius.lg, overflow: "hidden", backgroundColor: colors.surfaceMuted },
+  miniImage: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" },
+  miniInfo: { position: "absolute", left: 10, right: 10, bottom: 10, gap: 2 },
+  miniGift: {
+    alignSelf: "flex-start",
+    maxWidth: "100%",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    marginBottom: 2,
+    borderRadius: radius.pill,
+    backgroundColor: "#FFB547",
+    color: "#3D2300",
+    fontSize: 10.5,
+    fontWeight: "800",
+    overflow: "hidden",
+  },
+  miniName: { color: "#fff", fontWeight: "800", fontSize: 15, lineHeight: 19 },
+  miniPlace: { color: "rgba(255,255,255,0.9)", fontSize: 11.5 },
+  miniProof: { color: "#fff", fontSize: 11.5 },
+
+  // Social proof.
+  proof: { fontSize: 12.5, fontWeight: "700", marginTop: 4 },
+  overlayProof: { color: "#fff" },
+  giftProof: { color: colors.textSoft },
+  detailProof: { flexDirection: "row", flexWrap: "wrap", columnGap: 14, rowGap: 4, marginTop: 8 },
+  detailProofText: { fontSize: 13.5, color: colors.textSoft },
+  detailProofCount: { fontWeight: "800", color: colors.text },
+
+  // The filters sheet.
+  filterSheet: { padding: spacing.lg, paddingBottom: spacing.xl, gap: 6 },
+  filterSheetTitle: { fontSize: 18, fontWeight: "800", color: colors.text, marginBottom: 4 },
+  filterWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  filterActions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: spacing.md },
+  clearFiltersText: { color: colors.danger, fontWeight: "700", fontSize: 14 },
+  filterDone: { paddingHorizontal: 22, paddingVertical: 11, borderRadius: radius.pill, backgroundColor: colors.primary },
+  filterDoneText: { color: "#fff", fontWeight: "800", fontSize: 14.5 },
+
+  // Admin: spot of the week.
+  featureBox: {
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    padding: 12,
+    gap: 8,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderColor: "#F0A020",
+    backgroundColor: "#FFF8EC",
+  },
+  featureTitle: { fontWeight: "800", fontSize: 14, color: "#6B3E00" },
+  featureInput: {
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+    color: colors.text,
+    fontSize: 14,
+  },
+  featureBtn: { alignItems: "center", paddingVertical: 10, borderRadius: radius.pill, backgroundColor: "#F0A020" },
+  featureBtnOutline: { backgroundColor: "transparent", borderWidth: 1.5, borderColor: "#F0A020" },
+  featureBtnText: { color: "#3D2300", fontWeight: "800", fontSize: 14 },
+  featureMessage: { color: "#6B3E00", fontWeight: "700", fontSize: 13 },
 });

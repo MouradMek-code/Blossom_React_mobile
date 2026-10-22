@@ -13,6 +13,7 @@ export default function ForVenuesCard({ style }) {
       <Text style={styles.icon}>🏪</Text>
       <Text style={styles.title}>{t("business.homeTitle")}</Text>
       <Text style={styles.text}>{t("business.homeText")}</Text>
+      <Text style={styles.noAccount}>✅ {t("business.noAccountShort")}</Text>
       <Pressable
         style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
         onPress={() => Linking.openURL(`${SITE_URL}/partner`)}
@@ -48,4 +49,16 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: "#fff", fontWeight: "800", fontSize: 15 },
   more: { marginTop: spacing.sm, color: colors.primaryDeep, fontWeight: "700", fontSize: 13.5 },
+  // "✅ No account needed" - venues never sign up.
+  noAccount: {
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    backgroundColor: "#E8F6EE",
+    color: "#1F6B45",
+    fontSize: 13,
+    fontWeight: "800",
+    overflow: "hidden",
+  },
 });

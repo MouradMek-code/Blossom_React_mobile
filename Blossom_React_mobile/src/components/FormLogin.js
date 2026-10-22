@@ -7,6 +7,7 @@ import { setProfileId, setToken } from "../api/storage";
 import { clearCache } from "../api/cache";
 import { postJson, NETWORK_ERROR } from "../api/errors";
 import { colors, radius, spacing, shadow, typography } from "../theme";
+import VenueNotice from "./VenueNotice";
 
 export default function FormLogin() {
   const { t } = useTranslation();
@@ -80,6 +81,8 @@ export default function FormLogin() {
     <View style={styles.container}>
       <Text style={styles.eyebrow}>{t("login.eyebrow")}</Text>
       <Text style={styles.title}>{t("login.title")}</Text>
+      {/* Log-in is for members; venues need no account. */}
+      <VenueNotice />
 
       {error !== "" && (
         <View style={styles.errorBox}>

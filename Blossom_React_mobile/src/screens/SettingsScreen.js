@@ -49,6 +49,8 @@ export default function SettingsScreen() {
   const [savingLocation, setSavingLocation] = useState(false);
   const [locationError, setLocationError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  // Deleting takes two deliberate taps: open the box, then the red button.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   // From the tab bar's last check; confirmed below.
   const [isAdmin, setIsAdmin] = useState(() => Boolean(peekCache("nav")?.is_admin));
 
@@ -147,13 +149,6 @@ export default function SettingsScreen() {
     await clearSession();
     // Fresh history, so Back can't return to the logged-out account's screens.
     navigation.reset({ index: 0, routes: [{ name: "Home" }] });
-  }
-
-  function confirmDeleteAccount() {
-    Alert.alert(t("settings.deleteTitle"), t("settings.deleteMessage"), [
-      { text: t("settings.cancel"), style: "cancel" },
-      { text: t("settings.delete"), style: "destructive", onPress: deleteAccount },
-    ]);
   }
 
   async function deleteAccount() {
@@ -270,6 +265,8 @@ export default function SettingsScreen() {
 
         {/* Cafés and restaurants: the business pages on the website. */}
         <Section title={t("business.settingsSection")}>
+          {/* Venues never need a Blossom account. */}
+          <Text style={styles.businessNote}>{t("business.noAccount")}</Text>
           <LinkRow label={t("business.settingsPartner")} url={`${SITE_URL}/partner`} />
           <LinkRow label={t("business.settingsCheck")} url={`${SITE_URL}/venue`} />
           <LinkRow label={t("business.settingsLost")} url={`${SITE_URL}/business#lost-link`} />
@@ -284,27 +281,56 @@ export default function SettingsScreen() {
 
         <Section title={t("settings.account")}>
           <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            style={({ pressed }) => [styles.row, styles.rowLast, pressed && styles.rowPressed]}
             onPress={confirmLogout}
             accessibilityRole="button"
           >
             <Text style={styles.rowLabel}>{t("settings.logout")}</Text>
             <Text style={styles.chevron}>›</Text>
           </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.row, styles.rowLast, pressed && styles.rowPressed]}
-            onPress={confirmDeleteAccount}
-            disabled={deleting}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.rowLabel, styles.danger]}>{t("settings.deleteAccount")}</Text>
-            {deleting ? (
-              <ActivityIndicator size="small" color={colors.danger} />
-            ) : (
-              <Text style={[styles.chevron, styles.danger]}>›</Text>
-            )}
-          </Pressable>
         </Section>
+
+        {/* Apart from "Log out", so a slip of the finger can't delete an
+            account: its own section, and two deliberate taps. */}
+        <View style={styles.deleteZone}>
+          <Text style={styles.sectionTitle}>{t("settings.deleteAccount")}</Text>
+          <View style={[styles.card, styles.deleteCard]}>
+            <Text style={styles.deleteText}>{t("settings.deleteMessage")}</Text>
+            {!confirmingDelete ? (
+              <Pressable
+                style={({ pressed }) => [styles.deleteOpen, pressed && { opacity: 0.7 }]}
+                onPress={() => setConfirmingDelete(true)}
+                accessibilityRole="button"
+              >
+                <Text style={styles.deleteOpenText}>{t("settings.deleteButton")}</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.deleteConfirm}>
+                <Text style={styles.deleteConfirmTitle}>{t("settings.deleteTitle")}</Text>
+                <Pressable
+                  style={({ pressed }) => [styles.deleteYes, (pressed || deleting) && { opacity: 0.75 }]}
+                  onPress={deleteAccount}
+                  disabled={deleting}
+                  accessibilityRole="button"
+                >
+                  {deleting ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.deleteYesText}>{t("settings.deleteYes")}</Text>
+                  )}
+                </Pressable>
+                <Pressable
+                  style={styles.deleteCancel}
+                  onPress={() => setConfirmingDelete(false)}
+                  disabled={deleting}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.deleteCancelText}>{t("settings.cancel")}</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </View>
 
         <Text style={styles.footnote}>
           {t("settings.footnote", { year: new Date().getFullYear() })}
@@ -405,4 +431,38 @@ const styles = StyleSheet.create({
   },
   outlineBtnText: { color: colors.primary, fontWeight: "700", fontSize: 13 },
   footnote: { ...typography.bodyMuted, fontSize: 12, textAlign: "center", marginTop: spacing.sm },
+  // "Delete account": its own section, well below "Log out".
+  deleteZone: { marginTop: spacing.xl, marginBottom: spacing.lg },
+  deleteCard: { padding: spacing.md, borderWidth: 1, borderColor: "#F3B7B0" },
+  deleteText: { fontSize: 13.5, lineHeight: 19, color: colors.textSoft },
+  deleteOpen: {
+    alignSelf: "flex-start",
+    marginTop: spacing.md,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.danger,
+  },
+  deleteOpenText: { color: colors.danger, fontWeight: "700", fontSize: 14 },
+  deleteConfirm: { marginTop: spacing.md, gap: spacing.sm },
+  deleteConfirmTitle: { fontSize: 15, fontWeight: "800", color: colors.text },
+  deleteYes: {
+    alignItems: "center",
+    paddingVertical: 13,
+    borderRadius: radius.pill,
+    backgroundColor: colors.danger,
+  },
+  deleteYesText: { color: "#fff", fontWeight: "800", fontSize: 14.5 },
+  deleteCancel: { alignItems: "center", paddingVertical: 10 },
+  deleteCancelText: { color: colors.textSoft, fontWeight: "700", fontSize: 14.5 },
+  businessNote: {
+    paddingVertical: 10,
+    fontSize: 13,
+    lineHeight: 19,
+    color: "#1F6B45",
+    fontWeight: "600",
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
 });

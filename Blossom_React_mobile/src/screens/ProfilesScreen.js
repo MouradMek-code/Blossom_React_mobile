@@ -27,6 +27,8 @@ const FILTERS_KEY = "blossom_filters";
 // matching the web app (whose sessionStorage naturally resets each session).
 const FILTERS_VERSION_KEY = "blossom_filters_version";
 const FILTERS_VERSION = "2";
+// Seen once: the "swipe right / left, scroll down" tip.
+const SWIPE_HINT_KEY = "blossom_swipe_hint_seen";
 // How old the deck can get before coming back to Browse (or to the app)
 // loads the latest people.
 const REFRESH_AFTER_MS = 30000;
@@ -63,6 +65,21 @@ export default function ProfilesScreen() {
   // One seed per mount: the deck order is random each visit but stays put
   // while the user swipes through it.
   const [deckSeed] = useState(() => Math.random());
+  // No more heart / cross buttons: the first time, say how it works.
+  const [showHint, setShowHint] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(SWIPE_HINT_KEY)
+      .then((seen) => {
+        if (!seen) setShowHint(true);
+      })
+      .catch(() => {});
+  }, []);
+
+  function closeHint() {
+    setShowHint(false);
+    AsyncStorage.setItem(SWIPE_HINT_KEY, "1").catch(() => {});
+  }
 
   // The refresh runs from app and screen events, long after the render that
   // created it - it reads the current deck through these.
@@ -254,17 +271,21 @@ export default function ProfilesScreen() {
     );
   }
 
+  const filtersButton = (
+    <Pressable
+      style={[styles.filterButton, { borderColor: colors.primary, backgroundColor: colors.surface }]}
+      onPress={openFilters}
+      accessibilityRole="button"
+    >
+      <Text style={[styles.filterButtonText, { color: colors.primary }]}>
+        ⚙️ {t("browse.filters")}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+      </Text>
+    </Pressable>
+  );
+
   return (
     <View style={[styles.head, { backgroundColor: colors.background }]}>
-      <PageNav />
-
-      <View style={styles.toolbar}>
-        <Pressable style={[styles.filterButton, { borderColor: colors.primary, backgroundColor: colors.surface }]} onPress={openFilters}>
-          <Text style={[styles.filterButtonText, { color: colors.primary }]}>
-            ⚙️ {t("browse.filters")}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-          </Text>
-        </Pressable>
-      </View>
+      <PageNav right={filtersButton} />
 
       {loadError ? (
         <LoadError
@@ -299,7 +320,7 @@ export default function ProfilesScreen() {
         </View>
       )}
 
-      <View style={styles.deck}>
+      <View style={[styles.deck, { marginBottom: bottomInset + spacing.sm }]}>
         {remaining.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>
@@ -333,45 +354,33 @@ export default function ProfilesScreen() {
                 isTop={i === 0}
                 onSwipeRight={() => handleSwipeRight(profile)}
                 onSwipeLeft={() => handleSwipeLeft(profile)}
-                onViewDetails={
-                  i === 0
-                    ? () => navigation.navigate("ProfileDetails", { id: profile.id })
-                    : undefined
-                }
+                // Report / block live on the full profile page.
+                onOpenProfile={() => navigation.navigate("ProfileDetails", { id: profile.id })}
               />
             ))
             .reverse()
         )}
       </View>
 
-      {remaining.length > 0 && (
-        <View style={[styles.actions, { paddingBottom: bottomInset + spacing.md }]}>
-          <Pressable
-            style={[styles.actionButton, styles.nopeButton, { backgroundColor: colors.surface }]}
-            onPress={() => handleSwipeLeft(remaining[0])}
-          >
-            <Text style={styles.nopeButtonText}>✕</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.actionButton, styles.likeButton, { backgroundColor: colors.surface }]}
-            onPress={() => handleSwipeRight(remaining[0])}
-          >
-            <Text style={styles.actionButtonText}>❤️</Text>
-          </Pressable>
-        </View>
-      )}
+      {showHint && remaining.length > 0 ? (
+        <Pressable style={styles.hintOverlay} onPress={closeHint} accessibilityRole="button">
+          <View style={styles.hintCard}>
+            <Text style={styles.hintTitle}>{t("browse.hintTitle")}</Text>
+            <Text style={styles.hintLine}>👉 {t("browse.hintRight")}</Text>
+            <Text style={styles.hintLine}>👈 {t("browse.hintLeft")}</Text>
+            <Text style={styles.hintLine}>👇 {t("browse.hintDown")}</Text>
+            <View style={styles.hintButton}>
+              <Text style={styles.hintButtonText}>{t("browse.hintOk")}</Text>
+            </View>
+          </View>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   head: { flex: 1 },
-  toolbar: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-  },
   filterButton: {
     borderWidth: 1.5,
     borderColor: colors.primary,
@@ -381,9 +390,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   filterButtonText: { color: colors.primary, fontWeight: "700", fontSize: 13 },
+  // The card takes all the room there is.
   deck: {
     flex: 1,
-    margin: spacing.md,
+    marginHorizontal: 10,
+    marginTop: spacing.sm,
   },
   empty: {
     flex: 1,
@@ -418,24 +429,34 @@ const styles = StyleSheet.create({
     ...shadow.md,
   },
   refreshButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  actions: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: spacing.lg,
-    paddingBottom: spacing.lg,
-  },
-  actionButton: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+  // The one-time "how it works".
+  hintOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(20,14,12,0.6)",
     alignItems: "center",
     justifyContent: "center",
-    ...shadow.md,
+    padding: spacing.lg,
+    zIndex: 20,
   },
-  nopeButton: { borderWidth: 1.5, borderColor: colors.danger },
-  likeButton: { borderWidth: 1.5, borderColor: colors.success },
-  actionButtonText: { fontSize: 24, color: colors.text },
-  nopeButtonText: { fontSize: 24, color: colors.danger, fontWeight: "700" },
+  hintCard: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    backgroundColor: colors.surface,
+    gap: 12,
+    ...shadow.lg,
+  },
+  hintTitle: { ...typography.h2, fontSize: 22, textAlign: "center", marginBottom: 4 },
+  hintLine: { fontSize: 16, lineHeight: 22, color: colors.text, fontWeight: "600" },
+  hintButton: {
+    marginTop: spacing.sm,
+    alignItems: "center",
+    paddingVertical: 13,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+  },
+  hintButtonText: { color: "#fff", fontWeight: "800", fontSize: 15.5 },
   matchOverlay: {
     position: "absolute",
     top: 0,

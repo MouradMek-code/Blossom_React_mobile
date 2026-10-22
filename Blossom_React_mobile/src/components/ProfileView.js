@@ -12,9 +12,15 @@ import {
   Dimensions,
 } from "react-native";
 import { useTranslation } from "react-i18next";
+import { LinearGradient } from "expo-linear-gradient";
 import { IMG } from "../api/images";
 import { CONNECTION_EMOJI, CONNECTION_TYPES, connectionLabel, connectionOf } from "../api/connection";
 import { colors, radius, spacing, shadow, typography } from "../theme";
+
+// The top photo: portrait (4:5), like the photos people take of themselves,
+// so faces aren't cut off - but never taller than most of the screen.
+const SCREEN = Dimensions.get("window");
+const HERO_HEIGHT = Math.round(Math.min(SCREEN.width * 1.25, SCREEN.height * 0.66));
 
 // Height is stored as a string that already includes the unit (e.g. "170 cm"),
 // so strip any trailing "cm" before re-adding exactly one to avoid "170 cm cm".
@@ -86,10 +92,26 @@ export default function ProfileView({
 
       {/* HERO COVER PHOTO */}
       {coverPhoto && (
-        <View style={styles.heroWrap}>
+        <Pressable
+          style={styles.heroWrap}
+          onPress={() => setLightboxPhoto(profile.photos[0].image_url)}
+          accessibilityRole="imagebutton"
+          accessibilityLabel={profile.first_name}
+        >
           <Image source={{ uri: coverPhoto }} style={styles.heroCover} />
-          <View style={styles.heroGradient} />
-          <View style={styles.heroInfo}>
+          {/* Dark at the bottom so the name and badges read on any photo. */}
+          <LinearGradient
+            colors={["rgba(20,14,12,0.28)", "transparent", "transparent", "rgba(20,14,12,0.55)", "rgba(20,14,12,0.92)"]}
+            locations={[0, 0.18, 0.45, 0.72, 1]}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+          {profile.photos.length > 1 ? (
+            <View style={styles.heroCount} pointerEvents="none">
+              <Text style={styles.heroCountText}>📷 {profile.photos.length}</Text>
+            </View>
+          ) : null}
+          <View style={styles.heroInfo} pointerEvents="none">
             <Text style={styles.heroName}>
               {profile.first_name}
               <Text style={styles.heroAge}>, {profile.age}</Text>
@@ -109,7 +131,7 @@ export default function ProfileView({
               ) : null}
             </View>
           </View>
-        </View>
+        </Pressable>
       )}
 
       {/* Fallback header (no photo) */}
@@ -252,7 +274,7 @@ export default function ProfileView({
                     accessibilityRole="button"
                     accessibilityLabel={t("photos.remove")}
                   >
-                    <Text style={styles.deletePhotoButtonText}>✕</Text>
+                    <Text style={styles.deletePhotoButtonText}>🗑</Text>
                   </Pressable>
                 )}
               </Pressable>
@@ -394,31 +416,46 @@ const styles = StyleSheet.create({
   container: { paddingBottom: 120 },
 
   /* Hero */
-  heroWrap: { position: "relative", height: 340 },
+  heroWrap: { position: "relative", height: HERO_HEIGHT, backgroundColor: "#2A2420" },
   heroCover: { width: "100%", height: "100%", resizeMode: "cover" },
-  heroGradient: {
+  heroCount: {
     position: "absolute",
-    bottom: 0, left: 0, right: 0, height: "65%",
-    backgroundColor: "transparent",
-    // Simulated gradient via opacity layers
+    top: 14,
+    right: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: "rgba(20,14,12,0.6)",
   },
+  heroCountText: { color: "#fff", fontSize: 12.5, fontWeight: "700" },
   heroInfo: {
     position: "absolute",
-    bottom: 20, left: 20, right: 20,
+    bottom: 22, left: 20, right: 20,
   },
-  heroName: { fontFamily: "serif", fontSize: 32, fontWeight: "700", letterSpacing: -0.5, color: "#fff", textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 10 },
-  heroAge: { fontSize: 22, fontWeight: "400", color: "rgba(255,255,255,0.9)" },
-  heroBadges: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
+  heroName: {
+    fontFamily: "serif",
+    fontSize: 36,
+    fontWeight: "700",
+    letterSpacing: -0.5,
+    color: "#fff",
+    textShadowColor: "rgba(0,0,0,0.6)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 12,
+  },
+  heroAge: { fontSize: 26, fontWeight: "400", color: "#fff" },
+  heroBadges: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
+  // Dark glass: readable on a white wall or a blue sky alike.
   heroBadge: {
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(20,14,12,0.55)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.35)",
+    borderColor: "rgba(255,255,255,0.28)",
     borderRadius: 999,
     paddingHorizontal: 12,
-    paddingVertical: 5,
-    fontSize: 12,
-    fontWeight: "600",
+    paddingVertical: 6,
+    fontSize: 13.5,
+    fontWeight: "700",
     color: "#fff",
+    overflow: "hidden",
   },
 
   /* Fallback hero */
@@ -444,7 +481,7 @@ const styles = StyleSheet.create({
   },
 
   /* Dating / language exchange / both (own profile) */
-  heroConnection: { backgroundColor: "rgba(193,70,107,0.85)", borderColor: "rgba(255,255,255,0.5)" },
+  heroConnection: { backgroundColor: colors.primary, borderColor: "rgba(255,255,255,0.55)" },
   connectionRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: 12 },
   connectionRowPressed: { opacity: 0.7 },
   connectionEmoji: { fontSize: 24, width: 40, textAlign: "center" },
@@ -497,30 +534,38 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   unmatchButton: {
+    flexGrow: 1,
+    alignItems: "center",
     borderWidth: 1.5,
     borderColor: colors.primary,
     backgroundColor: colors.primaryTint,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     borderRadius: radius.pill,
   },
-  unmatchButtonText: { color: colors.primaryDeep, fontWeight: "700", fontSize: 13 },
+  unmatchButtonText: { color: colors.primaryDeep, fontWeight: "700", fontSize: 14 },
   reportButton: {
+    flexGrow: 1,
+    alignItems: "center",
     borderWidth: 1.5,
-    borderColor: "#ddd",
-    paddingHorizontal: 16,
-    paddingVertical: 9,
+    borderColor: colors.borderStrong,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     borderRadius: radius.pill,
     backgroundColor: colors.surface,
   },
-  reportButtonText: { color: "#888", fontWeight: "600", fontSize: 13 },
+  reportButtonText: { color: colors.textSoft, fontWeight: "700", fontSize: 14 },
   blockButton: {
-    backgroundColor: "#fee2e2",
-    paddingHorizontal: 16,
-    paddingVertical: 9,
+    flexGrow: 1,
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#F3B7B0",
+    backgroundColor: "#FDF1EF",
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     borderRadius: radius.pill,
   },
-  blockButtonText: { color: "#dc2626", fontWeight: "700", fontSize: 13 },
+  blockButtonText: { color: colors.danger, fontWeight: "700", fontSize: 14 },
 
   /* Cards */
   card: {
@@ -532,19 +577,20 @@ const styles = StyleSheet.create({
     ...shadow.sm,
   },
   cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.sm },
-  cardTitle: { fontSize: 11, fontWeight: "700", color: colors.primary, textTransform: "uppercase", letterSpacing: 0.8 },
+  cardTitle: { fontSize: 13, fontWeight: "800", color: colors.primaryDeep, textTransform: "uppercase", letterSpacing: 0.9 },
 
   /* Photos */
   photosGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   photoWrap: { position: "relative", width: "48%", aspectRatio: 1 },
   photo: { width: "100%", height: "100%", borderRadius: radius.md, resizeMode: "cover" },
   deletePhotoButton: {
-    position: "absolute", top: 6, right: 6,
-    width: 26, height: 26, borderRadius: 13,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    position: "absolute", top: 8, right: 8,
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: "rgba(255,255,255,0.95)",
     alignItems: "center", justifyContent: "center",
+    ...shadow.sm,
   },
-  deletePhotoButtonText: { color: "#fff", fontSize: 12, fontWeight: "700" },
+  deletePhotoButtonText: { fontSize: 15 },
 
   /* Bio */
   bioInput: {
@@ -553,7 +599,7 @@ const styles = StyleSheet.create({
     color: colors.text, ...typography.body,
   },
   bioActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
-  bio: { ...typography.body, lineHeight: 22 },
+  bio: { ...typography.body, fontSize: 16, lineHeight: 24 },
   bodyMuted: { ...typography.bodyMuted },
 
   /* Buttons */
@@ -563,17 +609,18 @@ const styles = StyleSheet.create({
   actionButtonOutlineText: { color: colors.primary, fontWeight: "700", fontSize: 13 },
 
   /* Facts */
-  fact: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10 },
+  fact: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12, paddingVertical: 12 },
   factDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
-  factLabel: { color: colors.textMuted, fontSize: 13 },
-  factValue: { fontWeight: "700", color: colors.text, fontSize: 13, flexShrink: 1, textAlign: "right", maxWidth: "55%" },
+  factLabel: { color: colors.textSoft, fontSize: 14.5 },
+  factValue: { fontWeight: "700", color: colors.text, fontSize: 14.5, flexShrink: 1, textAlign: "right", maxWidth: "58%" },
 
   /* Tags */
   tags: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   tag: {
-    backgroundColor: colors.primarySoft, color: colors.primaryDark,
-    fontSize: 13, fontWeight: "600",
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft, color: colors.primaryDeep,
+    fontSize: 14, fontWeight: "700",
+    paddingHorizontal: 13, paddingVertical: 7, borderRadius: radius.pill,
+    overflow: "hidden",
   },
   learningTag: {
     backgroundColor: "#ede9fe", color: "#6d28d9", borderWidth: 1, borderColor: "#c4b5fd",
