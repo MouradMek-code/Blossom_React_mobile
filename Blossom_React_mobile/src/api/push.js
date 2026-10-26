@@ -107,6 +107,9 @@ export function openNotificationTarget(navigationRef, data = {}) {
     navigationRef.navigate("EventDetail", { id: Number(data.eventId) });
   } else if (data.type === "event_report") {
     navigationRef.navigate("Admin", { tab: "promos" });
+  } else if (data.type === "profile_report") {
+    // "🚩 Sara reported Tom: ..." - straight to the reports.
+    navigationRef.navigate("Admin", { tab: "reports" });
   } else if (data.type === "voucher") {
     // "⏰ Your promotion ends in 5 h": straight to the code.
     navigationRef.navigate("Vouchers", { highlight: Number(data.voucherId) || undefined });

@@ -1005,5 +1005,21 @@
     "venueTitleOther": "Ton café ou ton resto aussi ? Offre un petit cadeau aux couples",
     "venueIdeas": "Un dessert offert, 2 boissons pour 1, -15 % pour deux…",
     "venueCta": "C'est par ici →"
+  },
+  "profileReports": {
+    "tab": "Signalements",
+    "title": "🚩 Signalements",
+    "empty": "Aucun signalement à traiter. 👍",
+    "reportedBy": "Signalé par {{name}}",
+    "times": "Signalements sur cette personne : {{count}}",
+    "deleted": "compte supprimé",
+    "seeProfile": "Voir le profil",
+    "deleteAccount": "Supprimer le compte",
+    "deleteConfirm": "Supprimer le compte de {{name}} et toutes ses données ? C'est définitif.",
+    "deleteFailed": "Impossible de supprimer le compte.",
+    "done": "Traité",
+    "showAll": "Afficher aussi les traités",
+    "hideHandled": "Masquer les traités",
+    "handled": "Traité"
   }
 }

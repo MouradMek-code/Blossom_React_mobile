@@ -1005,5 +1005,21 @@
     "venueTitleOther": "你的咖啡馆或餐厅也想加入？为情侣送上一份小礼物",
     "venueIdeas": "免费甜点、饮品买一送一、两人85折…",
     "venueCta": "从这里开始 →"
+  },
+  "profileReports": {
+    "tab": "举报",
+    "title": "🚩 举报",
+    "empty": "没有待处理的举报。👍",
+    "reportedBy": "举报人：{{name}}",
+    "times": "此人被举报次数：{{count}}",
+    "deleted": "账户已删除",
+    "seeProfile": "查看资料",
+    "deleteAccount": "删除账户",
+    "deleteConfirm": "删除 {{name}} 的账户及其所有数据？此操作无法撤销。",
+    "deleteFailed": "无法删除该账户。",
+    "done": "已处理",
+    "showAll": "同时显示已处理的",
+    "hideHandled": "隐藏已处理的",
+    "handled": "已处理"
   }
 }

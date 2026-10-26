@@ -1005,5 +1005,21 @@
     "venueTitleOther": "Your café or restaurant too? Offer couples a treat",
     "venueIdeas": "A free dessert, 2 drinks for 1, -15% for two…",
     "venueCta": "Start here →"
+  },
+  "profileReports": {
+    "tab": "Reports",
+    "title": "🚩 Reports",
+    "empty": "No reports to look at. 👍",
+    "reportedBy": "Reported by {{name}}",
+    "times": "Reports about this person: {{count}}",
+    "deleted": "account deleted",
+    "seeProfile": "See profile",
+    "deleteAccount": "Delete the account",
+    "deleteConfirm": "Delete {{name}}'s account and all their data? This can't be undone.",
+    "deleteFailed": "Couldn't delete the account.",
+    "done": "Done",
+    "showAll": "Show handled ones too",
+    "hideHandled": "Hide handled ones",
+    "handled": "Handled"
   }
 }

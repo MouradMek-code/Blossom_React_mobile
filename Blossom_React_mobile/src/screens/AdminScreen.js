@@ -19,6 +19,7 @@ import * as Notifications from "expo-notifications";
 import PageNav from "../components/PageNav";
 import AdminDashboard from "../components/AdminDashboard";
 import AdminOffers from "../components/AdminOffers";
+import AdminReports from "../components/AdminReports";
 import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
 import { getToken } from "../api/storage";
@@ -288,6 +289,7 @@ export default function AdminScreen() {
           ["dashboard", t("dashboard.dashboardLink")],
           ["members", t("dashboard.membersLink")],
           ["promos", t("offers.tab")],
+          ["reports", `🚩 ${t("profileReports.tab")}`],
         ].map(([key, label]) => (
           <Pressable
             key={key}
@@ -305,6 +307,11 @@ export default function AdminScreen() {
         <AdminDashboard bottomInset={bottomInset} />
       ) : tab === "promos" ? (
         <AdminOffers bottomInset={bottomInset} />
+      ) : tab === "reports" ? (
+        <AdminReports
+          bottomInset={bottomInset}
+          onDeleted={(userId) => setUsers((cur) => (cur ? cur.filter((u) => u.id !== userId) : cur))}
+        />
       ) : users === null ? (
         loadError ? (
           <LoadError onRetry={load} />
