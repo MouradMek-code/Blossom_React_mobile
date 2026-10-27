@@ -248,7 +248,13 @@
     "col_fun": "Fun & games",
     "col_firstDate": "Perfect for a first date",
     "col_romantic": "Romantic spots",
-    "col_free": "Free date ideas"
+    "col_free": "Free date ideas",
+    "morePhotos": "More photos (optional)",
+    "morePhotosHint": "Up to 6 more. On the place's card they take turns, every 2 seconds.",
+    "removePhoto": "Remove this photo",
+    "removePhotoConfirm": "Remove this photo?",
+    "tooManyPhotos": "Up to 6 more photos per place.",
+    "addPhotos": "Add photos"
   },
   "founder": {
     "eyebrow": "From the founder",
@@ -308,7 +314,16 @@
     "save": "Save",
     "saving": "Saving…",
     "cancel": "Cancel",
-    "notSet": "Location not set"
+    "notSet": "Location not set",
+    "autoTitle": "📍 Keep your city up to date?",
+    "autoText": "Blossom can use your approximate location (never your exact position) to update the city on your profile when you move, so you meet people where you are. You can turn it off any time in Settings.",
+    "autoAllow": "Allow",
+    "autoNotNow": "Not now",
+    "autoSetting": "📍 Update my city automatically",
+    "autoSettingHint": "From your approximate location, when you open the app.",
+    "autoDenied": "Location is turned off for Blossom in your phone's settings.",
+    "removedTitle": "Blossom isn't available here yet",
+    "removedText": "Blossom isn't available in your country yet, so your profile has been removed. We hope to welcome you soon. 🌸"
   },
   "common": {
     "loadError": "Couldn't connect. Check your internet connection and try again.",

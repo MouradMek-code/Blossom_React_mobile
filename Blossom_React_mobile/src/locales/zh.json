@@ -248,7 +248,13 @@
     "col_fun": "娱乐与游戏",
     "col_firstDate": "最适合初次约会",
     "col_romantic": "浪漫地点",
-    "col_free": "免费约会点子"
+    "col_free": "免费约会点子",
+    "morePhotos": "更多照片（可选）",
+    "morePhotosHint": "最多再加 6 张。在地点卡片上每 2 秒轮流显示。",
+    "removePhoto": "删除这张照片",
+    "removePhotoConfirm": "删除这张照片？",
+    "tooManyPhotos": "每个地点最多再加 6 张照片。",
+    "addPhotos": "添加照片"
   },
   "founder": {
     "eyebrow": "来自创始人",
@@ -308,7 +314,16 @@
     "save": "保存",
     "saving": "保存中…",
     "cancel": "取消",
-    "notSet": "未设置位置"
+    "notSet": "未设置位置",
+    "autoTitle": "📍 自动更新你的城市？",
+    "autoText": "Blossom 可以使用你的大致位置（绝不使用精确位置），在你移动时更新资料中的城市，让你认识身边的人。你可以随时在设置中关闭。",
+    "autoAllow": "允许",
+    "autoNotNow": "暂不",
+    "autoSetting": "📍 自动更新我的城市",
+    "autoSettingHint": "打开应用时，根据你的大致位置更新。",
+    "autoDenied": "手机设置中已关闭 Blossom 的定位权限。",
+    "removedTitle": "Blossom 暂未在此地区开放",
+    "removedText": "Blossom 暂未在你所在的国家开放，因此你的资料已被删除。希望很快能欢迎你。🌸"
   },
   "common": {
     "loadError": "无法连接。请检查网络连接后重试。",

@@ -14,6 +14,7 @@ import {
   StyleSheet,
   BackHandler,
   Animated,
+  AccessibilityInfo,
   Alert,
 } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -34,6 +35,7 @@ import { useBottomInset } from "../navigation/useBottomInset";
 import { useAutoRefresh } from "../navigation/useAutoRefresh";
 import { BASE_URL, SITE_URL } from "../api/config";
 import { getToken, setProfileId } from "../api/storage";
+import { pickPhotos, shrink } from "../api/photoUpload";
 import { IMG } from "../api/images";
 import { offerTerms } from "../api/offers";
 import { friendlyError, NETWORK_ERROR, postJson } from "../api/errors";
@@ -73,6 +75,11 @@ function SpotStats({ spot, t, style }) {
 // intentional.
 function SpotBackdrop({ spot, uri, style, emojiStyle }) {
   if (spot?.image_url) {
+    if ((spot.photos || []).length > 1) {
+      // Same size as the main photo asked for (card or full).
+      const size = uri === IMG.full(spot.image_url) ? IMG.full : IMG.card;
+      return <RotatingPhotos urls={spot.photos.slice(0, MAX_ROTATING).map(size)} style={style} />;
+    }
     return <Image source={{ uri }} style={style} />;
   }
   return (
@@ -84,6 +91,56 @@ function SpotBackdrop({ spot, uri, style, emojiStyle }) {
     >
       <Text style={emojiStyle}>{categoryEmoji(spot?.category)}</Text>
     </LinearGradient>
+  );
+}
+
+const ROTATE_MS = 2000;
+const MAX_ROTATING = 7;
+const MAX_MORE_PHOTOS = 6;
+
+// A place with several photos: they take turns every 2 seconds, the next one
+// fading in over the last. Each card starts at its own moment, so they don't
+// all change together; nothing moves for people who turned animations off.
+function RotatingPhotos({ urls, style }) {
+  const [index, setIndex] = useState(0);
+  const fade = useRef(new Animated.Value(1)).current;
+  const count = urls.length;
+  const first = urls[0];
+
+  useEffect(() => {
+    urls.forEach((url) => Image.prefetch(url).catch(() => {}));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [first, count]);
+
+  useEffect(() => {
+    let alive = true;
+    let timer;
+    let start;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .catch(() => false)
+      .then((reduced) => {
+        if (!alive || reduced || count < 2) return;
+        start = setTimeout(() => {
+          timer = setInterval(() => {
+            fade.setValue(0);
+            setIndex((i) => (i + 1) % count);
+            Animated.timing(fade, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+          }, ROTATE_MS);
+        }, Math.random() * ROTATE_MS);
+      });
+    return () => {
+      alive = false;
+      clearTimeout(start);
+      clearInterval(timer);
+    };
+  }, [count, fade]);
+
+  const previous = urls[(index - 1 + count) % count];
+  return (
+    <View style={[style, { overflow: "hidden" }]}>
+      <Image source={{ uri: previous }} style={StyleSheet.absoluteFill} />
+      <Animated.Image source={{ uri: urls[index % count] }} style={[StyleSheet.absoluteFill, { opacity: fade }]} />
+    </View>
   );
 }
 
@@ -1533,6 +1590,9 @@ function AddSpotForm({ initial, isAdmin = false, onCancel, onSaved }) {
   const [neighborhood, setNeighborhood] = useState(initial?.neighborhood || "");
   const [bestFor, setBestFor] = useState(initial?.best_for || []);
   const [photo, setPhoto] = useState(null);
+  // More photos: the ones already saved (editing) and the ones just picked.
+  const [gallery, setGallery] = useState(initial?.gallery || []);
+  const [morePhotos, setMorePhotos] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   // Members: "I'd love this place to offer a gift to couples".
   const [wantsGift, setWantsGift] = useState(false);
@@ -1643,6 +1703,56 @@ function AddSpotForm({ initial, isAdmin = false, onCancel, onSaved }) {
     if (!result.canceled) setPhoto(result.assets[0]);
   }
 
+  // Up to 6 besides the main one (the ones already there count).
+  async function pickMore() {
+    const room = MAX_MORE_PHOTOS - gallery.length - morePhotos.length;
+    if (room <= 0) return setError(t("dateSpots.tooManyPhotos"));
+    const assets = await pickPhotos({ max: room });
+    if (!assets.length) return undefined;
+    const shrunk = await Promise.all(assets.map((asset) => shrink(asset)));
+    setMorePhotos((cur) => [...cur, ...shrunk]);
+    return undefined;
+  }
+
+  function removeSaved(saved) {
+    Alert.alert(t("dateSpots.removePhoto"), t("dateSpots.removePhotoConfirm"), [
+      { text: t("dateSpots.cancel"), style: "cancel" },
+      {
+        text: t("dateSpots.removePhoto"),
+        style: "destructive",
+        onPress: async () => {
+          const token = await getToken();
+          const result = await postJson(`${BASE_URL}/date_spots/${initial.id}/photos/${saved.id}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (result.ok) setGallery(result.data.gallery || []);
+          else setError(result.message);
+        },
+      },
+    ]);
+  }
+
+  // After saving: the extra photos, one by one. Returns the place as it ends up.
+  async function uploadMore(token, spotId, saved) {
+    let latest = saved;
+    for (const extra of morePhotos) {
+      const body = new FormData();
+      body.append("image", extra);
+      const result = await postJson(`${BASE_URL}/date_spots/${spotId}/photos`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      });
+      if (!result.ok) {
+        setError(result.message);
+        break;
+      }
+      latest = result.data;
+    }
+    return latest;
+  }
+
   function photoPart() {
     return {
       uri: photo.uri,
@@ -1717,9 +1827,13 @@ function AddSpotForm({ initial, isAdmin = false, onCancel, onSaved }) {
     setSubmitting(true);
     const token = await getToken();
     const result = editing ? await saveEdit(token) : await create(token);
+    if (!result.ok) {
+      setSubmitting(false);
+      return setError(result.message);
+    }
+    const saved = morePhotos.length > 0 ? await uploadMore(token, result.data.id, result.data) : result.data;
     setSubmitting(false);
-    if (!result.ok) return setError(result.message);
-    onSaved(result.data);
+    onSaved(saved);
   }
 
   const shownPhoto = photo ? photo.uri : editing && initial.image_url ? IMG.card(initial.image_url) : null;
@@ -1813,6 +1927,41 @@ function AddSpotForm({ initial, isAdmin = false, onCancel, onSaved }) {
         </Text>
       </Pressable>
       {shownPhoto ? <Image source={{ uri: shownPhoto }} style={styles.preview} /> : null}
+
+      {/* Up to 6 more: they take turns on the place's card. */}
+      <Pressable
+        style={[styles.photoBtn, gallery.length + morePhotos.length >= MAX_MORE_PHOTOS && { opacity: 0.5 }]}
+        onPress={pickMore}
+        disabled={gallery.length + morePhotos.length >= MAX_MORE_PHOTOS}
+      >
+        <Text style={styles.photoBtnText}>🖼️ {t("dateSpots.morePhotos")}</Text>
+      </Pressable>
+      <Text style={styles.hint}>{t("dateSpots.morePhotosHint")}</Text>
+      {gallery.length > 0 || morePhotos.length > 0 ? (
+        <View style={styles.thumbs}>
+          {gallery.map((saved) => (
+            <View key={saved.id} style={styles.thumb}>
+              <Image source={{ uri: IMG.thumb(saved.image_url) }} style={styles.thumbImage} />
+              <Pressable style={styles.thumbRemove} onPress={() => removeSaved(saved)} hitSlop={8} accessibilityLabel={t("dateSpots.removePhoto")}>
+                <Text style={styles.thumbRemoveText}>✕</Text>
+              </Pressable>
+            </View>
+          ))}
+          {morePhotos.map((extra, i) => (
+            <View key={extra.uri} style={styles.thumb}>
+              <Image source={{ uri: extra.uri }} style={styles.thumbImage} />
+              <Pressable
+                style={styles.thumbRemove}
+                onPress={() => setMorePhotos((cur) => cur.filter((_, j) => j !== i))}
+                hitSlop={8}
+                accessibilityLabel={t("dateSpots.removePhoto")}
+              >
+                <Text style={styles.thumbRemoveText}>✕</Text>
+              </Pressable>
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       <Text style={styles.label}>{t("dateSpots.whyOptional")}</Text>
       <TextInput
@@ -2793,4 +2942,20 @@ const styles = StyleSheet.create({
   featureBtnOutline: { backgroundColor: "transparent", borderWidth: 1.5, borderColor: "#F0A020" },
   featureBtnText: { color: "#3D2300", fontWeight: "800", fontSize: 14 },
   featureMessage: { color: "#6B3E00", fontWeight: "700", fontSize: 13 },
+  // The form's "more photos" thumbnails.
+  thumbs: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: spacing.sm },
+  thumb: { width: 70, height: 70 },
+  thumbImage: { width: "100%", height: "100%", borderRadius: 10 },
+  thumbRemove: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2A2420",
+  },
+  thumbRemoveText: { color: "#fff", fontSize: 11, fontWeight: "800" },
 });

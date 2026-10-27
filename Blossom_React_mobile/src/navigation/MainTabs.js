@@ -8,6 +8,7 @@ import DateSpotsScreen from "../screens/DateSpotsScreen";
 import MessagesScreen from "../screens/MessagesScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import { useNavBadges } from "./useNavBadges";
+import { useAutoLocation } from "./useAutoLocation";
 import { colors } from "../theme";
 
 const Tab = createBottomTabNavigator();
@@ -45,6 +46,8 @@ function badgeValue(count) {
 export default function MainTabs() {
   const { t } = useTranslation();
   const { badges, markSeen } = useNavBadges();
+  // The profile's city follows the phone (with permission) - see useAutoLocation.
+  useAutoLocation();
   const insets = useSafeAreaInsets();
   // Room under the labels for the phone's navigation buttons. A floor of 10
   // in case a phone reports no inset, so the labels never sit on the edge.

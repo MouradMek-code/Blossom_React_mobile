@@ -21,7 +21,6 @@
       "softwareKeyboardLayoutMode": "pan",
       "googleServicesFile": "./google-services.json",
       "blockedPermissions": [
-        "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
@@ -50,6 +49,14 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#C1466B"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Blossom uses your approximate location to keep the city on your profile up to date.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": false
         }
       ]
     ],

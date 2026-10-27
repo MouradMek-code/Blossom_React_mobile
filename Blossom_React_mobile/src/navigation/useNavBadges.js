@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { AppState } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { BASE_URL } from "../api/config";
 import { peekCache, writeCache } from "../api/cache";
 import { clearSession, getToken } from "../api/storage";
@@ -28,6 +28,7 @@ export function useNavBadges() {
     matches: cached?.matches || 0,
   }));
   const loadingRef = useRef(false);
+  const navigation = useNavigation();
 
   const refresh = useCallback(async () => {
     if (loadingRef.current) return;
@@ -45,6 +46,13 @@ export function useNavBadges() {
       // An old backend reads "badges" as a user id (422) or doesn't know it.
       const nav = resp.ok ? await resp.json() : await legacyBadges(headers);
       writeCache("nav", nav);
+      // A profile with no photo yet (sign-up stopped at the photo step, e.g.
+      // the app was closed there): back to that step - nobody sees it in
+      // Browse until it has one.
+      if (nav.has_profile && nav.has_photo === false && !nav.is_admin) {
+        navigation.reset({ index: 0, routes: [{ name: "SignUp" }] });
+        return;
+      }
       setBadges({
         likes: nav.likes || 0,
         messages: nav.messages || 0,
@@ -55,7 +63,7 @@ export function useNavBadges() {
     } finally {
       loadingRef.current = false;
     }
-  }, []);
+  }, [navigation]);
 
   // Opening the tab that shows them counts as seen: drop the number now
   // rather than a refresh later, since the screen is telling the server too.

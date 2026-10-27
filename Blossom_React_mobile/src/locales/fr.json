@@ -248,7 +248,13 @@
     "col_fun": "Jeux & fun",
     "col_firstDate": "Parfaits pour un premier date",
     "col_romantic": "Lieux romantiques",
-    "col_free": "Idées de dates gratuites"
+    "col_free": "Idées de dates gratuites",
+    "morePhotos": "Plus de photos (facultatif)",
+    "morePhotosHint": "Jusqu'à 6 de plus. Sur la carte du lieu, elles défilent toutes les 2 secondes.",
+    "removePhoto": "Retirer cette photo",
+    "removePhotoConfirm": "Retirer cette photo ?",
+    "tooManyPhotos": "Jusqu'à 6 photos de plus par lieu.",
+    "addPhotos": "Ajouter des photos"
   },
   "founder": {
     "eyebrow": "Du même fondateur",
@@ -308,7 +314,16 @@
     "save": "Enregistrer",
     "saving": "Enregistrement…",
     "cancel": "Annuler",
-    "notSet": "Localisation non renseignée"
+    "notSet": "Localisation non renseignée",
+    "autoTitle": "📍 Garder ta ville à jour ?",
+    "autoText": "Blossom peut utiliser ta position approximative (jamais ta position exacte) pour mettre à jour la ville de ton profil quand tu bouges, pour rencontrer des gens là où tu es. Tu peux le désactiver à tout moment dans les Réglages.",
+    "autoAllow": "Autoriser",
+    "autoNotNow": "Pas maintenant",
+    "autoSetting": "📍 Mettre ma ville à jour automatiquement",
+    "autoSettingHint": "D'après ta position approximative, quand tu ouvres l'app.",
+    "autoDenied": "La localisation est désactivée pour Blossom dans les réglages de ton téléphone.",
+    "removedTitle": "Blossom n'est pas encore disponible ici",
+    "removedText": "Blossom n'est pas encore disponible dans ton pays, ton profil a donc été supprimé. On espère t'accueillir bientôt. 🌸"
   },
   "common": {
     "loadError": "Connexion impossible. Vérifiez votre connexion internet et réessayez.",

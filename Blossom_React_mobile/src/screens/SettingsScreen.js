@@ -8,6 +8,7 @@ import {
   Alert,
   Linking,
   StyleSheet,
+  Switch,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
@@ -21,6 +22,7 @@ import { unregisterPushNotifications, updatePushLanguage } from "../api/push";
 import { clearSession, getToken } from "../api/storage";
 import { peekCache, readCache, writeCache } from "../api/cache";
 import { useBottomInset } from "../navigation/useBottomInset";
+import { askPermission, getAutoLocation, setAutoLocation, syncLocation } from "../api/autoLocation";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 const LANGUAGES = [
@@ -45,6 +47,39 @@ export default function SettingsScreen() {
   const [language, setLanguage] = useState(i18n.language?.slice(0, 2) || "en");
   const [profile, setProfile] = useState(() => peekCache("ownProfile"));
   const [editingLocation, setEditingLocation] = useState(false);
+  // "📍 Update my city automatically" (see api/autoLocation.js).
+  const [autoLocation, setAutoLocationState] = useState(false);
+  const [autoLocationNote, setAutoLocationNote] = useState("");
+
+  useEffect(() => {
+    getAutoLocation().then((value) => setAutoLocationState(value === "on"));
+  }, []);
+
+  async function toggleAutoLocation(on) {
+    setAutoLocationNote("");
+    if (!on) {
+      setAutoLocationState(false);
+      await setAutoLocation(false);
+      return;
+    }
+    const granted = await askPermission();
+    setAutoLocationState(granted);
+    await setAutoLocation(granted);
+    if (!granted) {
+      setAutoLocationNote(t("location.autoDenied"));
+      return;
+    }
+    const result = await syncLocation({ force: true });
+    if (result?.removed) {
+      await clearSession();
+      Alert.alert(t("location.removedTitle"), t("location.removedText"));
+      navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+      return;
+    }
+    if (result?.updated) {
+      setProfile((cur) => (cur ? { ...cur, city: result.city, country: result.country } : cur));
+    }
+  }
   const [locationDraft, setLocationDraft] = useState({ country: "", city: "" });
   const [savingLocation, setSavingLocation] = useState(false);
   const [locationError, setLocationError] = useState("");
@@ -253,7 +288,7 @@ export default function SettingsScreen() {
             </View>
           ) : (
             <Pressable
-              style={({ pressed }) => [styles.row, styles.rowLast, pressed && styles.rowPressed]}
+              style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
               onPress={startEditingLocation}
               accessibilityRole="button"
             >
@@ -261,6 +296,18 @@ export default function SettingsScreen() {
               <Text style={styles.rowAction}>{t("location.change")}</Text>
             </Pressable>
           )}
+          <View style={[styles.row, styles.rowLast, styles.autoRow]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowLabel}>{t("location.autoSetting")}</Text>
+              <Text style={styles.autoHint}>{autoLocationNote || t("location.autoSettingHint")}</Text>
+            </View>
+            <Switch
+              value={autoLocation}
+              onValueChange={toggleAutoLocation}
+              trackColor={{ true: colors.primary }}
+              accessibilityLabel={t("location.autoSetting")}
+            />
+          </View>
         </Section>
 
         {/* Cafés and restaurants: the business pages on the website. */}
@@ -465,4 +512,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  autoRow: { gap: spacing.md },
+  autoHint: { fontSize: 12.5, color: colors.textMuted, marginTop: 2, lineHeight: 17 },
 });
