@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { ImageBackground, View, ScrollView, KeyboardAvoidingView, Platform, Text, Pressable, StyleSheet } from "react-native";
+import {
+  Alert,
+  ImageBackground,
+  View,
+  KeyboardAvoidingView,
+  Platform,
+  Text,
+  Pressable,
+  StyleSheet,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -12,7 +21,8 @@ import StartProfile from "../components/StartProfile";
 import MultiImageUpload from "../components/MultiImageUpload";
 import Localisation from "../components/Localisation";
 import { BASE_URL } from "../api/config";
-import { getToken, setProfileId, getSignupDraft, clearSignupDraft } from "../api/storage";
+import { clearSession, getToken, setProfileId, getSignupDraft, clearSignupDraft } from "../api/storage";
+import { askPermission, deviceTimezone, setAutoLocation, syncLocation } from "../api/autoLocation";
 
 export default function SignUpScreen() {
   const { t } = useTranslation();
@@ -167,10 +177,43 @@ export default function SignUpScreen() {
         country: answer?.country,
         // Dating, language exchange or both (the default).
         connection_type: answer?.connection_type || "both",
+        // India's time zone means the account is removed (server).
+        timezone: deviceTimezone(),
       }),
     });
+    // From a country Blossom isn't open to: the server removed the account.
+    if (resp.status === 403) return false;
     const data = await resp.json();
     await setProfileId(data.id);
+    return true;
+  }
+
+  async function endRemoved() {
+    await clearSession();
+    Alert.alert(t("location.removedTitle"), t("location.removedText"));
+    navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+  }
+
+  // Right after the profile is made (over the photo step): where the phone
+  // really is, with permission - in India the account is removed. Asked here
+  // once, so the tabs don't ask again (useAutoLocation).
+  async function checkWhereThePhoneIs() {
+    const allow = await new Promise((resolve) => {
+      Alert.alert(
+        t("location.autoTitle"),
+        t("location.autoText"),
+        [
+          { text: t("location.autoNotNow"), style: "cancel", onPress: () => resolve(false) },
+          { text: t("location.autoAllow"), onPress: () => resolve(true) },
+        ],
+        { cancelable: false },
+      );
+    });
+    const granted = allow && (await askPermission());
+    await setAutoLocation(granted);
+    if (!granted) return;
+    const result = await syncLocation({ force: true });
+    if (result?.removed) await endRemoved();
   }
 
   useEffect(() => {
@@ -178,12 +221,16 @@ export default function SignUpScreen() {
       if (!questionEnded) return;
       const token = await getToken();
       if (!token || token === "null") return;
-      await createProfile(token);
+      if (!(await createProfile(token))) {
+        await endRemoved();
+        return;
+      }
       setPhoto(true);
       setQuestionEnded(false);
       clearSignupDraft();
       createLanguage(token);
       createLearningLanguage(token);
+      checkWhereThePhoneIs();
     }
     submit();
   }, [questionEnded]);

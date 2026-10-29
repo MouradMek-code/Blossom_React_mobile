@@ -24,7 +24,8 @@ import {
 import { useAutoRefresh } from "../navigation/useAutoRefresh";
 import { colors, radius, spacing, shadow } from "../theme";
 
-const PERIODS = [7, 30, 90];
+// One week only: tracking is deleted every Monday (db_analytics.delete_old_tracking).
+const PERIODS = [7];
 
 // Series colours (validated for colour-blind separation): members = rose,
 // visitors without a profile = blue; one-series charts use deep plum. Text
@@ -40,7 +41,7 @@ const TRACK = "#F5EEEA";
 // profile. Numbers from GET /analytics/dashboard.
 export default function AdminDashboard({ bottomInset = 0 }) {
   const { t, i18n } = useTranslation();
-  const [days, setDays] = useState(30);
+  const [days, setDays] = useState(7);
   const [data, setData] = useState(() => peekCache("dashboard30"));
   const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);

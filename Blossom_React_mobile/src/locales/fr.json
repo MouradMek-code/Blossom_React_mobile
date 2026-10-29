@@ -448,7 +448,9 @@
     "deleteConfirm": "Supprimer",
     "cancel": "Annuler",
     "deleteFailed": "Impossible de supprimer la photo. Réessayez.",
-    "notImage": "Choisissez une photo (JPG, PNG, HEIC…)."
+    "notImage": "Choisissez une photo (JPG, PNG, HEIC…).",
+    "keepTwoTitle": "Gardez au moins 2 photos",
+    "keepTwo": "Gardez au moins 2 photos sur votre profil. Pour changer celle-ci, ajoutez d'abord une nouvelle photo, puis supprimez-la."
   },
   "admin": {
     "section": "Admin",
@@ -1036,5 +1038,25 @@
     "showAll": "Afficher aussi les traités",
     "hideHandled": "Masquer les traités",
     "handled": "Traité"
+  },
+  "pause": {
+    "title": "Faire une pause",
+    "hint": "Votre profil n'apparaît plus dans Explorer. Vos matchs, discussions et photos restent.",
+    "on": "Vous êtes en pause : personne ne vous voit dans Explorer. Désactivez pour revenir.",
+    "failed": "Impossible de modifier ceci. Vérifiez votre connexion et réessayez."
+  },
+  "deleteAccount": {
+    "title": "Supprimer le compte",
+    "intro": "Avant de partir, peut-être que l'une de ces options suffit :",
+    "breakTitle": "☕ Faire plutôt une pause",
+    "breakText": "Masquez votre profil dans Explorer. Vos matchs, discussions et photos restent, et vous revenez d'un geste dans les Paramètres.",
+    "breakButton": "Masquer mon profil",
+    "breakDone": "✓ Votre profil est masqué. Revenez quand vous voulez dans Paramètres → Faire une pause.",
+    "logoutTitle": "👋 Vous partez juste un moment ?",
+    "logoutText": "Déconnectez-vous : tout reste comme avant pour votre retour.",
+    "logoutButton": "Me déconnecter plutôt",
+    "foreverTitle": "Supprimer mon compte définitivement",
+    "typeLabel": "Pour confirmer, tapez {{word}} ci-dessous :",
+    "word": "SUPPRIMER"
   }
 }

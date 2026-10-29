@@ -20,7 +20,7 @@ import { tidyCity } from "../api/geo";
 import { changeLanguage } from "../i18n";
 import { unregisterPushNotifications, updatePushLanguage } from "../api/push";
 import { clearSession, getToken } from "../api/storage";
-import { peekCache, readCache, writeCache } from "../api/cache";
+import { peekCache, readCache, subscribeCache, writeCache } from "../api/cache";
 import { useBottomInset } from "../navigation/useBottomInset";
 import { askPermission, getAutoLocation, setAutoLocation, syncLocation } from "../api/autoLocation";
 import { colors, radius, spacing, shadow, typography } from "../theme";
@@ -32,12 +32,14 @@ const LANGUAGES = [
   { code: "ar", label: "العربية" },
 ];
 
+// ?lang= : the policy opens in the app's language (the website has all four).
 const PRIVACY_URL = "https://blossom-date.com/privacy-policy";
 const TERMS_URL = "https://blossom-date.com/terms";
-const SUPPORT_EMAIL = "mailto:mourad.meknioui@gmail.com";
+const SUPPORT_EMAIL = "mailto:creativeproductslocal@gmail.com";
 
 // Everything about the account rather than about dating: language, where you
-// live, the legal pages, logging out and deleting the account. Reached from
+// live, the legal pages, a break, logging out - and, through a small link at
+// the very bottom, deleting the account (DeleteAccountScreen). Reached from
 // the gear on your own profile, so "Log out" is never one stray tap away.
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
@@ -83,9 +85,7 @@ export default function SettingsScreen() {
   const [locationDraft, setLocationDraft] = useState({ country: "", city: "" });
   const [savingLocation, setSavingLocation] = useState(false);
   const [locationError, setLocationError] = useState("");
-  const [deleting, setDeleting] = useState(false);
-  // Deleting takes two deliberate taps: open the box, then the red button.
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [savingPause, setSavingPause] = useState(false);
   // From the tab bar's last check; confirmed below.
   const [isAdmin, setIsAdmin] = useState(() => Boolean(peekCache("nav")?.is_admin));
 
@@ -107,6 +107,9 @@ export default function SettingsScreen() {
       alive = false;
     };
   }, []);
+
+  // A break taken on the Delete account screen shows here on the way back.
+  useEffect(() => subscribeCache("ownProfile", (data) => data && setProfile(data)), []);
 
   // The saved profile shows the current city at once; the refresh keeps it
   // right if it was changed elsewhere.
@@ -186,21 +189,22 @@ export default function SettingsScreen() {
     navigation.reset({ index: 0, routes: [{ name: "Home" }] });
   }
 
-  async function deleteAccount() {
-    setDeleting(true);
-    try {
-      const token = await getToken();
-      const resp = await fetch(`${BASE_URL}/user/me`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!resp.ok) throw new Error(`delete failed with ${resp.status}`);
-      await clearSession();
-      navigation.reset({ index: 0, routes: [{ name: "Home" }] });
-    } catch {
-      setDeleting(false);
-      Alert.alert(t("settings.deleteFailed"));
+  // "Take a break": hidden from Browse; matches and chats stay.
+  async function togglePause(on) {
+    setSavingPause(true);
+    const result = await postJson(`${BASE_URL}/profile/pause`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${await getToken()}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ paused: on }),
+    });
+    setSavingPause(false);
+    if (!result.ok) {
+      Alert.alert(t("pause.failed"));
+      return;
     }
+    const next = { ...profile, paused: Boolean(result.data?.paused) };
+    setProfile(next);
+    writeCache("ownProfile", next);
   }
 
   const place = [profile?.city, profile?.country].filter(Boolean).join(", ");
@@ -321,12 +325,27 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title={t("settings.about")}>
-          <LinkRow label={t("settings.privacy")} url={PRIVACY_URL} />
+          <LinkRow label={t("settings.privacy")} url={`${PRIVACY_URL}?lang=${language}`} />
           <LinkRow label={t("settings.terms")} url={TERMS_URL} />
           <LinkRow label={t("settings.support")} url={SUPPORT_EMAIL} last />
         </Section>
 
         <Section title={t("settings.account")}>
+          {profile ? (
+            <View style={[styles.row, styles.autoRow]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowLabel}>☕ {t("pause.title")}</Text>
+                <Text style={styles.autoHint}>{t(profile.paused ? "pause.on" : "pause.hint")}</Text>
+              </View>
+              <Switch
+                value={Boolean(profile.paused)}
+                onValueChange={togglePause}
+                disabled={savingPause}
+                trackColor={{ true: colors.primary }}
+                accessibilityLabel={t("pause.title")}
+              />
+            </View>
+          ) : null}
           <Pressable
             style={({ pressed }) => [styles.row, styles.rowLast, pressed && styles.rowPressed]}
             onPress={confirmLogout}
@@ -337,51 +356,21 @@ export default function SettingsScreen() {
           </Pressable>
         </Section>
 
-        {/* Apart from "Log out", so a slip of the finger can't delete an
-            account: its own section, and two deliberate taps. */}
-        <View style={styles.deleteZone}>
-          <Text style={styles.sectionTitle}>{t("settings.deleteAccount")}</Text>
-          <View style={[styles.card, styles.deleteCard]}>
-            <Text style={styles.deleteText}>{t("settings.deleteMessage")}</Text>
-            {!confirmingDelete ? (
-              <Pressable
-                style={({ pressed }) => [styles.deleteOpen, pressed && { opacity: 0.7 }]}
-                onPress={() => setConfirmingDelete(true)}
-                accessibilityRole="button"
-              >
-                <Text style={styles.deleteOpenText}>{t("settings.deleteButton")}</Text>
-              </Pressable>
-            ) : (
-              <View style={styles.deleteConfirm}>
-                <Text style={styles.deleteConfirmTitle}>{t("settings.deleteTitle")}</Text>
-                <Pressable
-                  style={({ pressed }) => [styles.deleteYes, (pressed || deleting) && { opacity: 0.75 }]}
-                  onPress={deleteAccount}
-                  disabled={deleting}
-                  accessibilityRole="button"
-                >
-                  {deleting ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text style={styles.deleteYesText}>{t("settings.deleteYes")}</Text>
-                  )}
-                </Pressable>
-                <Pressable
-                  style={styles.deleteCancel}
-                  onPress={() => setConfirmingDelete(false)}
-                  disabled={deleting}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.deleteCancelText}>{t("settings.cancel")}</Text>
-                </Pressable>
-              </View>
-            )}
-          </View>
-        </View>
-
         <Text style={styles.footnote}>
           {t("settings.footnote", { year: new Date().getFullYear() })}
         </Text>
+
+        {/* Deleting has its own screen, which offers a break or logging out
+            first and asks for the confirmation word (Google Play wants it
+            findable in the app - here, at the bottom of Settings). */}
+        <Pressable
+          style={styles.deleteLink}
+          onPress={() => navigation.navigate("DeleteAccount")}
+          hitSlop={8}
+          accessibilityRole="link"
+        >
+          <Text style={styles.deleteLinkText}>{t("settings.deleteAccount")}</Text>
+        </Pressable>
       </ScrollView>
     </View>
   );
@@ -478,31 +467,9 @@ const styles = StyleSheet.create({
   },
   outlineBtnText: { color: colors.primary, fontWeight: "700", fontSize: 13 },
   footnote: { ...typography.bodyMuted, fontSize: 12, textAlign: "center", marginTop: spacing.sm },
-  // "Delete account": its own section, well below "Log out".
-  deleteZone: { marginTop: spacing.xl, marginBottom: spacing.lg },
-  deleteCard: { padding: spacing.md, borderWidth: 1, borderColor: "#F3B7B0" },
-  deleteText: { fontSize: 13.5, lineHeight: 19, color: colors.textSoft },
-  deleteOpen: {
-    alignSelf: "flex-start",
-    marginTop: spacing.md,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: radius.pill,
-    borderWidth: 1.5,
-    borderColor: colors.danger,
-  },
-  deleteOpenText: { color: colors.danger, fontWeight: "700", fontSize: 14 },
-  deleteConfirm: { marginTop: spacing.md, gap: spacing.sm },
-  deleteConfirmTitle: { fontSize: 15, fontWeight: "800", color: colors.text },
-  deleteYes: {
-    alignItems: "center",
-    paddingVertical: 13,
-    borderRadius: radius.pill,
-    backgroundColor: colors.danger,
-  },
-  deleteYesText: { color: "#fff", fontWeight: "800", fontSize: 14.5 },
-  deleteCancel: { alignItems: "center", paddingVertical: 10 },
-  deleteCancelText: { color: colors.textSoft, fontWeight: "700", fontSize: 14.5 },
+  // "Delete account": a quiet link under everything else.
+  deleteLink: { alignSelf: "center", marginTop: spacing.xl, paddingVertical: 6 },
+  deleteLinkText: { fontSize: 12.5, color: colors.textMuted, textDecorationLine: "underline" },
   businessNote: {
     paddingVertical: 10,
     fontSize: 13,

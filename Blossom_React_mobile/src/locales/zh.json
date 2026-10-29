@@ -448,7 +448,9 @@
     "deleteConfirm": "删除",
     "cancel": "取消",
     "deleteFailed": "无法删除照片，请重试。",
-    "notImage": "请选择一张照片（JPG、PNG、HEIC…）。"
+    "notImage": "请选择一张照片（JPG、PNG、HEIC…）。",
+    "keepTwoTitle": "至少保留 2 张照片",
+    "keepTwo": "你的资料至少需要保留 2 张照片。想更换这张照片，请先添加一张新照片，再删除它。"
   },
   "admin": {
     "section": "管理员",
@@ -1036,5 +1038,25 @@
     "showAll": "同时显示已处理的",
     "hideHandled": "隐藏已处理的",
     "handled": "已处理"
+  },
+  "pause": {
+    "title": "暂停一下",
+    "hint": "在“浏览”中隐藏你的资料。你的配对、聊天和照片都会保留。",
+    "on": "你正在暂停中：没有人能在“浏览”中看到你。关闭即可回来。",
+    "failed": "无法更改，请检查网络后重试。"
+  },
+  "deleteAccount": {
+    "title": "删除账户",
+    "intro": "离开之前，也许这些就是你需要的：",
+    "breakTitle": "☕ 不如先暂停一下",
+    "breakText": "在“浏览”中隐藏你的资料。配对、聊天和照片都会保留，在设置中一键即可回来。",
+    "breakButton": "隐藏我的资料",
+    "breakDone": "✓ 你的资料已隐藏。随时可在 设置 → 暂停一下 中回来。",
+    "logoutTitle": "👋 只是暂时离开？",
+    "logoutText": "退出登录：一切都会保持原样，等你回来。",
+    "logoutButton": "改为退出登录",
+    "foreverTitle": "永久删除我的账户",
+    "typeLabel": "请在下方输入 {{word}} 以确认：",
+    "word": "删除"
   }
 }

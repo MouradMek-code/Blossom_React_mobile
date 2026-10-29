@@ -8,6 +8,7 @@ import DateSpotsScreen from "../screens/DateSpotsScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import ChatScreen from "../screens/ChatScreen";
 import SettingsScreen from "../screens/SettingsScreen";
+import DeleteAccountScreen from "../screens/DeleteAccountScreen";
 import AdminScreen from "../screens/AdminScreen";
 import FriendProfilesScreen from "../screens/FriendProfilesScreen";
 import VouchersScreen from "../screens/VouchersScreen";
@@ -39,6 +40,8 @@ export default function RootNavigator({ initialRouteName = "Home" }) {
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      {/* From the small link at the bottom of Settings. */}
+      <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
       <Stack.Screen name="Admin" component={AdminScreen} />
       <Stack.Screen name="FriendProfiles" component={FriendProfilesScreen} />
       <Stack.Screen name="Vouchers" component={VouchersScreen} />

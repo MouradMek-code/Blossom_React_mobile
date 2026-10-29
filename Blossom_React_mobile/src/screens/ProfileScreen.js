@@ -9,7 +9,7 @@ import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
 import { postJson } from "../api/errors";
 import { invalidate, useAutoRefresh } from "../navigation/useAutoRefresh";
-import { deletePhoto, pickPhotos, uploadPhoto } from "../api/photoUpload";
+import { MIN_PROFILE_PHOTOS, deletePhoto, pickPhotos, uploadPhoto } from "../api/photoUpload";
 import { endSessionAndGoToLogin } from "../api/session";
 import { getToken, setProfileId } from "../api/storage";
 import { peekCache, readCache, writeCache } from "../api/cache";
@@ -143,6 +143,11 @@ export default function ProfileScreen() {
   }
 
   function handleDeletePhoto(photoId) {
+    // The last 2 stay: add a new one first, then remove this one.
+    if ((profile?.photos || []).length <= MIN_PROFILE_PHOTOS) {
+      Alert.alert(t("photos.keepTwoTitle"), t("photos.keepTwo"));
+      return;
+    }
     Alert.alert(t("photos.deleteTitle"), t("photos.deleteText"), [
       { text: t("photos.cancel"), style: "cancel" },
       {
@@ -155,8 +160,9 @@ export default function ProfileScreen() {
               ...prev,
               photos: (prev.photos || []).filter((p) => p.id !== photoId),
             }));
-          } catch {
-            Alert.alert(t("photos.deleteFailed"));
+          } catch (err) {
+            if (err?.keepTwo) Alert.alert(t("photos.keepTwoTitle"), t("photos.keepTwo"));
+            else Alert.alert(t("photos.deleteFailed"));
           }
         },
       },

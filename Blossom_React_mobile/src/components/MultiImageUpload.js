@@ -3,7 +3,14 @@ import { View, Text, Image, Pressable, ActivityIndicator, StyleSheet } from "rea
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { IMG } from "../api/images";
-import { deletePhoto, fetchOwnPhotos, findSavedPhoto, pickPhotos, uploadPhoto } from "../api/photoUpload";
+import {
+  MIN_PROFILE_PHOTOS,
+  deletePhoto,
+  fetchOwnPhotos,
+  findSavedPhoto,
+  pickPhotos,
+  uploadPhoto,
+} from "../api/photoUpload";
 import { colors, radius, spacing, shadow } from "../theme";
 
 const MAX = 6;
@@ -87,16 +94,21 @@ export default function MultiImageUpload() {
 
   async function remove(slot) {
     setError("");
+    // Saved photos: the last 2 stay (add another first to swap one).
+    if (slot.status === "done" && slots.filter((s) => s.status === "done").length <= MIN_PROFILE_PHOTOS) {
+      setError(t("photos.keepTwo"));
+      return;
+    }
     setSlots((prev) => prev.filter((s) => s.key !== slot.key));
     if (slot.status !== "done") return;
     try {
       await deletePhoto(slot.id);
       knownIds.current?.delete(slot.id);
-    } catch {
+    } catch (err) {
       // Still on the server: put it back and say so.
       if (!mounted.current) return;
       setSlots((prev) => [...prev, slot]);
-      setError(t("photos.deleteFailed"));
+      setError(t(err?.keepTwo ? "photos.keepTwo" : "photos.deleteFailed"));
     }
   }
 

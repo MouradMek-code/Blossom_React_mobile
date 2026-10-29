@@ -448,7 +448,9 @@
     "deleteConfirm": "Delete",
     "cancel": "Cancel",
     "deleteFailed": "Couldn't delete the photo. Please try again.",
-    "notImage": "Please choose a photo (JPG, PNG, HEIC…)."
+    "notImage": "Please choose a photo (JPG, PNG, HEIC…).",
+    "keepTwoTitle": "Keep at least 2 photos",
+    "keepTwo": "Keep at least 2 photos on your profile. To change this one, add a new photo first, then remove it."
   },
   "admin": {
     "section": "Admin",
@@ -1036,5 +1038,25 @@
     "showAll": "Show handled ones too",
     "hideHandled": "Hide handled ones",
     "handled": "Handled"
+  },
+  "pause": {
+    "title": "Take a break",
+    "hint": "Hides your profile from Browse. Your matches, chats and photos stay.",
+    "on": "You're on a break: nobody sees you in Browse. Switch off to come back.",
+    "failed": "Couldn't change this. Check your connection and try again."
+  },
+  "deleteAccount": {
+    "title": "Delete account",
+    "intro": "Before you go, maybe one of these is all you need:",
+    "breakTitle": "☕ Take a break instead",
+    "breakText": "Hide your profile from Browse. Your matches, chats and photos stay, and you come back with one tap in Settings.",
+    "breakButton": "Hide my profile",
+    "breakDone": "✓ Your profile is hidden. Come back anytime in Settings → Take a break.",
+    "logoutTitle": "👋 Just leaving for now?",
+    "logoutText": "Log out: everything stays as it is for when you come back.",
+    "logoutButton": "Log out instead",
+    "foreverTitle": "Delete my account forever",
+    "typeLabel": "To confirm, type {{word}} below:",
+    "word": "DELETE"
   }
 }

@@ -24,6 +24,15 @@ export async function setAutoLocation(on) {
   await AsyncStorage.setItem(SETTING_KEY, on ? "on" : "off").catch(() => {});
 }
 
+// The phone's time zone, e.g. "Europe/Paris" (sent with a new profile).
+export function deviceTimezone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
 // Asks the phone for permission (the system's own window). True if granted.
 export async function askPermission() {
   try {
