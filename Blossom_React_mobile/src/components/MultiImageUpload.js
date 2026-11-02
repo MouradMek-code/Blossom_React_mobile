@@ -186,8 +186,8 @@ export default function MultiImageUpload() {
       ) : (
         <Pressable
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-          // Sign-up is over: start the app fresh on the tabs.
-          onPress={() => navigation.reset({ index: 0, routes: [{ name: "Main" }] })}
+          // One last step before Browse: the location page.
+          onPress={() => navigation.reset({ index: 0, routes: [{ name: "EnableLocation" }] })}
         >
           <Text style={styles.buttonText}>{t("photos.continue")}</Text>
         </Pressable>

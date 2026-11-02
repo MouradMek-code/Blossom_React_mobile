@@ -9,6 +9,8 @@ import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import ChatScreen from "../screens/ChatScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import DeleteAccountScreen from "../screens/DeleteAccountScreen";
+import VerifyScreen from "../screens/VerifyScreen";
+import EnableLocationScreen from "../screens/EnableLocationScreen";
 import AdminScreen from "../screens/AdminScreen";
 import FriendProfilesScreen from "../screens/FriendProfilesScreen";
 import VouchersScreen from "../screens/VouchersScreen";
@@ -42,6 +44,10 @@ export default function RootNavigator({ initialRouteName = "Home" }) {
       <Stack.Screen name="Settings" component={SettingsScreen} />
       {/* From the small link at the bottom of Settings. */}
       <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
+      {/* The ✓ badge: copy a pose, take a selfie (from your profile). */}
+      <Stack.Screen name="Verify" component={VerifyScreen} />
+      {/* After the photos at sign-up: no way back past it. */}
+      <Stack.Screen name="EnableLocation" component={EnableLocationScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="Admin" component={AdminScreen} />
       <Stack.Screen name="FriendProfiles" component={FriendProfilesScreen} />
       <Stack.Screen name="Vouchers" component={VouchersScreen} />

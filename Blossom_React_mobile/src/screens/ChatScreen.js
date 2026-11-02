@@ -26,6 +26,7 @@ import { getToken, getProfileId } from "../api/storage";
 import { peekCache, readCache, writeCache } from "../api/cache";
 import { goToTab } from "../navigation/goToTab";
 import { formatDeadline } from "../api/offers";
+import { firstRiskyMessageId } from "../api/chatSafety";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
 // A date spot sent with "Invite a match": the message text plus a tappable
@@ -336,6 +337,8 @@ export default function ChatScreen() {
 
   const myProfileId = details?.me_profile_id ?? profileId;
   const partner = details?.profile;
+  // WhatsApp, crypto, money...: a warning under the first such message.
+  const riskyId = useMemo(() => firstRiskyMessageId(messages, myProfileId), [messages, myProfileId]);
 
   function goBack() {
     if (navigation.canGoBack()) navigation.goBack();
@@ -543,6 +546,7 @@ export default function ChatScreen() {
           const isMine =
             message.pending || Number(message.sender_profile_id) === Number(myProfileId);
           return (
+            <>
             <View style={[styles.row, isMine ? styles.right : styles.left]}>
               <View
                 style={[
@@ -570,6 +574,17 @@ export default function ChatScreen() {
                 ) : null}
               </View>
             </View>
+            {message.id === riskyId ? (
+              <View style={styles.safety}>
+                <Text style={styles.safetyText}>⚠️ {t("chatSafety.text")}</Text>
+                {partner ? (
+                  <Pressable onPress={openProfile} hitSlop={6} accessibilityRole="button">
+                    <Text style={styles.safetyLink}>🚩 {t("chatSafety.report")}</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
+            </>
           );
         }}
       />
@@ -657,6 +672,18 @@ const styles = StyleSheet.create({
   dot: { color: colors.textMuted, fontSize: 12.5 },
   unmatchText: { color: colors.danger, fontSize: 12.5, fontWeight: "700" },
   messagesContainer: { padding: spacing.md },
+  // Seen only here, by the person reading: the check runs on the phone.
+  safety: {
+    marginBottom: spacing.sm,
+    padding: 12,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: "#F0CE8A",
+    backgroundColor: "#FFF6E3",
+    gap: 6,
+  },
+  safetyText: { fontSize: 13.5, lineHeight: 19, color: "#6B4A10", fontWeight: "600" },
+  safetyLink: { fontSize: 13.5, color: colors.danger, fontWeight: "800" },
   errorText: {
     color: colors.danger,
     textAlign: "center",

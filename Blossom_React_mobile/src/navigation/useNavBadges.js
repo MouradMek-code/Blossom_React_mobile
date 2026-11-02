@@ -1,11 +1,15 @@
 import { useCallback, useRef, useState } from "react";
-import { AppState } from "react-native";
+import { Alert, AppState } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { BASE_URL } from "../api/config";
 import { peekCache, writeCache } from "../api/cache";
 import { clearSession, getToken } from "../api/storage";
+import { formatDeadline } from "../api/offers";
 
 const REFRESH_MS = 30000;
+// "Verify your profile before ...": shown once per app session.
+let verifyWarningShown = false;
 
 // Backends from before /user/badges: the old three requests.
 async function legacyBadges(headers) {
@@ -21,6 +25,7 @@ async function legacyBadges(headers) {
 // in a single request, asked for in one place instead of by every screen.
 // Starts from the numbers the last screen saw, so the bar never flickers.
 export function useNavBadges() {
+  const { t, i18n } = useTranslation();
   const cached = peekCache("nav");
   const [badges, setBadges] = useState(() => ({
     likes: cached?.likes || 0,
@@ -53,6 +58,18 @@ export function useNavBadges() {
         navigation.reset({ index: 0, routes: [{ name: "SignUp" }] });
         return;
       }
+      // An admin asked them to verify (suspicious profile): say it, once.
+      if (nav.verify_by && !nav.is_admin && !verifyWarningShown) {
+        verifyWarningShown = true;
+        Alert.alert(
+          t("verified.warnTitle"),
+          t("verified.warnText", { date: formatDeadline(nav.verify_by, i18n.language) }),
+          [
+            { text: t("verified.warnLater"), style: "cancel" },
+            { text: t("verified.warnNow"), onPress: () => navigation.navigate("Verify") },
+          ],
+        );
+      }
       setBadges({
         likes: nav.likes || 0,
         messages: nav.messages || 0,
@@ -63,7 +80,7 @@ export function useNavBadges() {
     } finally {
       loadingRef.current = false;
     }
-  }, [navigation]);
+  }, [navigation, t, i18n]);
 
   // Opening the tab that shows them counts as seen: drop the number now
   // rather than a refresh later, since the screen is telling the server too.

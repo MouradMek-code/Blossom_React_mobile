@@ -107,6 +107,12 @@ export function openNotificationTarget(navigationRef, data = {}) {
     navigationRef.navigate("EventDetail", { id: Number(data.eventId) });
   } else if (data.type === "event_report") {
     navigationRef.navigate("Admin", { tab: "promos" });
+  } else if (data.type === "verification_request") {
+    // Admins: "✓ Sara sent a selfie to get verified".
+    navigationRef.navigate("Admin", { tab: "verify" });
+  } else if (data.type === "verification") {
+    // Verified, or "try again with a new pose".
+    navigationRef.navigate("Verify");
   } else if (data.type === "profile_report") {
     // "🚩 Sara reported Tom: ..." - straight to the reports.
     navigationRef.navigate("Admin", { tab: "reports" });

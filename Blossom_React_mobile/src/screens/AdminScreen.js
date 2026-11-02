@@ -20,6 +20,8 @@ import PageNav from "../components/PageNav";
 import AdminDashboard from "../components/AdminDashboard";
 import AdminOffers from "../components/AdminOffers";
 import AdminReports from "../components/AdminReports";
+import AdminVerifications from "../components/AdminVerifications";
+import AskToVerify from "../components/AskToVerify";
 import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
 import { getToken } from "../api/storage";
@@ -235,6 +237,19 @@ export default function AdminScreen() {
                   {t("admin.photos", { count: p.photos_count ?? 0 })}
                 </Text>
               </Text>
+              {!u.is_admin && (
+                <View style={styles.verifyLine}>
+                  <AskToVerify
+                    profile={p}
+                    name={p.first_name || u.username}
+                    onAsked={(deadline) =>
+                      setUsers((cur) =>
+                        cur.map((x) => (x.id === u.id ? { ...x, profile: { ...x.profile, verify_by: deadline } } : x)),
+                      )
+                    }
+                  />
+                </View>
+              )}
             </>
           ) : (
             <Text style={[styles.meta, styles.warn]}>{t("admin.noProfile")}</Text>
@@ -290,6 +305,7 @@ export default function AdminScreen() {
           ["members", t("dashboard.membersLink")],
           ["promos", t("offers.tab")],
           ["reports", `🚩 ${t("profileReports.tab")}`],
+          ["verify", `✓ ${t("verified.adminTab")}`],
         ].map(([key, label]) => (
           <Pressable
             key={key}
@@ -307,6 +323,8 @@ export default function AdminScreen() {
         <AdminDashboard bottomInset={bottomInset} />
       ) : tab === "promos" ? (
         <AdminOffers bottomInset={bottomInset} />
+      ) : tab === "verify" ? (
+        <AdminVerifications bottomInset={bottomInset} />
       ) : tab === "reports" ? (
         <AdminReports
           bottomInset={bottomInset}
@@ -507,6 +525,7 @@ const styles = StyleSheet.create({
   friendsBtnArrow: { fontSize: 18, color: colors.primaryDeep },
   meta: { fontSize: 12, color: colors.textMuted, marginTop: 3 },
   warn: { color: colors.danger, fontWeight: "600" },
+  verifyLine: { marginTop: 6, flexDirection: "row" },
   deleteBtn: {
     width: 38,
     height: 38,

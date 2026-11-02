@@ -10,6 +10,7 @@ import { getToken } from "./storage";
 // country Blossom isn't open to, removes the account.
 const SETTING_KEY = "blossom_auto_location"; // "on" | "off" | null = never asked
 const EVERY_MS = 3 * 3600 * 1000; // at most every 3 hours
+const PAGE_WAIT_MS = 12000; // how long the location page waits for a position
 let lastRun = 0;
 
 export async function getAutoLocation() {
@@ -41,6 +42,19 @@ export async function askPermission() {
   } catch {
     return false;
   }
+}
+
+// The location page's button: the phone's permission window, then one check.
+// Never fails and never hangs - whatever goes wrong (refused, no signal, too
+// slow), the answer is just null and the person carries on.
+export async function enableAutoLocation() {
+  const granted = await askPermission();
+  await setAutoLocation(granted);
+  if (!granted) return null;
+  return Promise.race([
+    syncLocation({ force: true }),
+    new Promise((resolve) => setTimeout(() => resolve(null), PAGE_WAIT_MS)),
+  ]);
 }
 
 // { removed, updated, city, country } from the server, or null when nothing

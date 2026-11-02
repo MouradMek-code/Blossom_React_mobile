@@ -16,6 +16,7 @@ import { IMG } from "../api/images";
 import { isNewMember } from "../api/newMember";
 import { CONNECTION_DOTS, connectionOf, languagesLine } from "../api/connection";
 import { colors, radius, spacing, shadow } from "../theme";
+import VerifiedBadge from "./VerifiedBadge";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
@@ -202,12 +203,17 @@ export default function SwipeCard({ profile, onSwipeLeft, onSwipeRight, onOpenPr
               </View>
               <Text style={styles.connectionText}>{t(`connection.${connection}`)}</Text>
             </View>
-            <Text style={styles.name}>
-              {profile.first_name}
-              {profile.age ? <Text style={styles.age}>, {profile.age}</Text> : null}
-            </Text>
+            <View style={styles.nameRow}>
+              <Text style={styles.name} numberOfLines={1}>
+                {profile.first_name}
+                {profile.age ? <Text style={styles.age}>, {profile.age}</Text> : null}
+              </Text>
+              {profile.verified ? <VerifiedBadge size={24} /> : null}
+            </View>
             {profile.city || profile.country ? (
-              <Text style={styles.location}>📍 {[profile.city, profile.country].filter(Boolean).join(", ")}</Text>
+              <Text style={styles.location} numberOfLines={1}>
+                📍 {[profile.city, profile.country].filter(Boolean).join(", ")}
+              </Text>
             ) : null}
             {languages ? (
               <Text style={styles.languages} numberOfLines={1}>{languages}</Text>
@@ -321,7 +327,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
   },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   name: {
+    flexShrink: 1,
     color: "#fff",
     fontFamily: "serif",
     fontWeight: "700",
@@ -332,7 +340,19 @@ const styles = StyleSheet.create({
     textShadowRadius: 10,
   },
   age: { fontWeight: "400", fontSize: 26 },
-  location: { color: "#fff", fontSize: 15, fontWeight: "600", marginTop: 4 },
+  location: {
+    alignSelf: "flex-start",
+    maxWidth: "100%",
+    marginTop: 6,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    overflow: "hidden",
+    backgroundColor: "rgba(20,14,12,0.58)",
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
+  },
   // Dating / language exchange / both: a quiet dark-glass chip with a colour
   // dot, readable on any photo.
   connection: {

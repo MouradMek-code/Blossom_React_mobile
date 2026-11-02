@@ -6,6 +6,7 @@ import { useBottomInset } from "../navigation/useBottomInset";
 import { useAutoRefresh } from "../navigation/useAutoRefresh";
 import PageNav from "../components/PageNav";
 import SwipeCard from "../components/SwipeCard";
+import BrowseEnd from "../components/BrowseEnd";
 import ProfileFilterModal from "../components/ProfileFilterModal";
 import { matchesFilters, getDefaultFilters } from "../api/profileFilters";
 import { seededShuffle } from "../api/shuffle";
@@ -251,13 +252,18 @@ export default function ProfilesScreen() {
     setFilterModalVisible(true);
   }
 
-  async function applyFilters() {
-    setAppliedFilters(draftFilters);
+  async function changeFilters(next) {
+    setDraftFilters(next);
+    setAppliedFilters(next);
     // New filters start the deck over, people passed earlier included.
     setPassed(new Set());
-    setFilterModalVisible(false);
     await AsyncStorage.setItem(FILTERS_VERSION_KEY, FILTERS_VERSION);
-    await AsyncStorage.setItem(FILTERS_KEY, JSON.stringify(draftFilters));
+    await AsyncStorage.setItem(FILTERS_KEY, JSON.stringify(next));
+  }
+
+  async function applyFilters() {
+    setFilterModalVisible(false);
+    await changeFilters(draftFilters);
   }
 
   if (loading) {
@@ -322,29 +328,17 @@ export default function ProfilesScreen() {
 
       <View style={[styles.deck, { marginBottom: bottomInset + spacing.sm }]}>
         {remaining.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>
-              {activeFilterCount > 0 ? "🔍" : "🌸"}
-            </Text>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              {activeFilterCount > 0 ? t("browse.noMatchTitle") : t("browse.emptyTitle")}
-            </Text>
-            <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
-              {activeFilterCount > 0 ? t("browse.noMatchText") : t("browse.emptyText")}
-            </Text>
-            {/* The latest people, and everyone passed this session again. */}
-            <Pressable
-              style={[styles.refreshButton, startingOver && { opacity: 0.7 }]}
-              onPress={startOver}
-              disabled={startingOver}
-            >
-              {startingOver ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.refreshButtonText}>🔄 {t("browse.refresh")}</Text>
-              )}
-            </Pressable>
-          </View>
+          // Never a dead end: other cities, events, a spot, a friend to invite.
+          <BrowseEnd
+            own={ownRef.current}
+            profiles={profiles}
+            passed={passed}
+            filters={appliedFilters}
+            filtered={activeFilterCount > 0}
+            onApplyFilters={changeFilters}
+            onStartOver={startOver}
+            startingOver={startingOver}
+          />
         ) : (
           remaining
             .map((profile, i) => (
@@ -402,33 +396,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: spacing.xl,
   },
-  emptyIcon: {
-    fontSize: 56,
-    marginBottom: spacing.md,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: spacing.sm,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 22,
-    maxWidth: 280,
-  },
-  refreshButton: {
-    marginTop: spacing.lg,
-    minWidth: 150,
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 13,
-    ...shadow.md,
-  },
-  refreshButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   // The one-time "how it works".
   hintOverlay: {
     ...StyleSheet.absoluteFillObject,

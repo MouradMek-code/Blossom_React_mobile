@@ -14,6 +14,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { LinearGradient } from "expo-linear-gradient";
 import { IMG } from "../api/images";
+import VerifiedBadge, { VERIFIED_BLUE } from "./VerifiedBadge";
 import { CONNECTION_EMOJI, CONNECTION_TYPES, connectionLabel, connectionOf } from "../api/connection";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
@@ -49,6 +50,8 @@ export default function ProfileView({
   onChangeConnection,
   // Only on your own profile: "♡ My saved places".
   savedSection = null,
+  // Only on your own profile: the way to the ✓ badge (VerifyScreen).
+  onVerify,
 }) {
   const { t } = useTranslation();
   const [editingBio, setEditingBio] = useState(false);
@@ -112,10 +115,13 @@ export default function ProfileView({
             </View>
           ) : null}
           <View style={styles.heroInfo} pointerEvents="none">
-            <Text style={styles.heroName}>
-              {profile.first_name}
-              <Text style={styles.heroAge}>, {profile.age}</Text>
-            </Text>
+            <View style={styles.nameRow}>
+              <Text style={[styles.heroName, styles.nameShrink]} numberOfLines={1}>
+                {profile.first_name}
+                <Text style={styles.heroAge}>, {profile.age}</Text>
+              </Text>
+              {profile.verified ? <VerifiedBadge size={26} /> : null}
+            </View>
             <View style={styles.heroBadges}>
               <Text style={[styles.heroBadge, styles.heroConnection]}>
                 {connectionLabel(connection, t)}
@@ -137,10 +143,13 @@ export default function ProfileView({
       {/* Fallback header (no photo) */}
       {!coverPhoto && (
         <View style={styles.heroCard}>
-          <Text style={styles.name}>
-            {profile.first_name}
-            <Text style={styles.age}>, {profile.age}</Text>
-          </Text>
+          <View style={styles.nameRow}>
+            <Text style={[styles.name, styles.nameShrink]}>
+              {profile.first_name}
+              <Text style={styles.age}>, {profile.age}</Text>
+            </Text>
+            {profile.verified ? <VerifiedBadge size={24} /> : null}
+          </View>
           {showLocationLine && (
             <Text style={styles.location}>
               📍 {profile.city || "Location not set"}, {profile.country || ""}
@@ -172,6 +181,22 @@ export default function ProfileView({
             <Text style={styles.settingsSubtitle} numberOfLines={1}>
               {t("settings.subtitle")}
             </Text>
+          </View>
+          <Text style={styles.settingsChevron}>›</Text>
+        </Pressable>
+      )}
+
+      {/* Your own profile, not verified yet: the ✓ badge in 30 seconds. */}
+      {onVerify && !profile.verified && (
+        <Pressable
+          style={({ pressed }) => [styles.verifyRow, pressed && styles.verifyRowPressed]}
+          onPress={onVerify}
+          accessibilityRole="button"
+        >
+          <VerifiedBadge size={30} />
+          <View style={styles.settingsText}>
+            <Text style={styles.settingsTitle}>{t("verified.ctaTitle")}</Text>
+            <Text style={styles.settingsSubtitle} numberOfLines={2}>{t("verified.ctaText")}</Text>
           </View>
           <Text style={styles.settingsChevron}>›</Text>
         </Pressable>
@@ -519,6 +544,22 @@ const styles = StyleSheet.create({
     ...shadow.sm,
   },
   settingsRowPressed: { backgroundColor: colors.primaryTint },
+  verifyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
+    backgroundColor: "#EEF4FE",
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: VERIFIED_BLUE,
+  },
+  verifyRowPressed: { opacity: 0.8 },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  nameShrink: { flexShrink: 1 },
   settingsIcon: { width: 26, height: 26, tintColor: colors.primary },
   settingsText: { flex: 1 },
   settingsTitle: { fontSize: 16, fontWeight: "700", color: colors.text },

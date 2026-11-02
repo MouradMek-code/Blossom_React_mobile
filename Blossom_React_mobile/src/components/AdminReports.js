@@ -8,6 +8,7 @@ import { getToken } from "../api/storage";
 import { IMG } from "../api/images";
 import { formatDeadline } from "../api/offers";
 import { useAutoRefresh } from "../navigation/useAutoRefresh";
+import AskToVerify from "./AskToVerify";
 import { colors, radius, spacing, shadow } from "../theme";
 
 async function call(path, method = "GET") {
@@ -127,6 +128,19 @@ export default function AdminReports({ bottomInset = 0, onDeleted }) {
                   <Pressable style={styles.secondary} onPress={() => navigation.navigate("ProfileDetails", { id: person.id })}>
                     <Text style={styles.secondaryText}>👤 {t("profileReports.seeProfile")}</Text>
                   </Pressable>
+                ) : null}
+                {!person.deleted && person.id ? (
+                  <AskToVerify
+                    profile={person}
+                    name={person.name}
+                    onAsked={(deadline) =>
+                      setReports((cur) =>
+                        cur.map((r) =>
+                          r.reported.id === person.id ? { ...r, reported: { ...r.reported, verify_by: deadline } } : r,
+                        ),
+                      )
+                    }
+                  />
                 ) : null}
                 {!person.deleted && person.user_id ? (
                   <Pressable style={styles.danger} onPress={() => confirmDelete(report)} disabled={busy === report.id}>

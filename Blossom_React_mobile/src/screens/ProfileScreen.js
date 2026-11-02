@@ -219,6 +219,7 @@ export default function ProfileScreen() {
         onDeletePhoto={handleDeletePhoto}
         uploadingPhoto={uploadingPhoto}
         onOpenSettings={() => navigation.navigate("Settings")}
+        onVerify={() => navigation.navigate("Verify")}
         onChangeConnection={handleChangeConnection}
         savedSection={<SavedSpots />}
       />

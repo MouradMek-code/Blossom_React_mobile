@@ -22,7 +22,7 @@ import MultiImageUpload from "../components/MultiImageUpload";
 import Localisation from "../components/Localisation";
 import { BASE_URL } from "../api/config";
 import { clearSession, getToken, setProfileId, getSignupDraft, clearSignupDraft } from "../api/storage";
-import { askPermission, deviceTimezone, setAutoLocation, syncLocation } from "../api/autoLocation";
+import { deviceTimezone } from "../api/autoLocation";
 
 export default function SignUpScreen() {
   const { t } = useTranslation();
@@ -194,28 +194,6 @@ export default function SignUpScreen() {
     navigation.reset({ index: 0, routes: [{ name: "Home" }] });
   }
 
-  // Right after the profile is made (over the photo step): where the phone
-  // really is, with permission - in India the account is removed. Asked here
-  // once, so the tabs don't ask again (useAutoLocation).
-  async function checkWhereThePhoneIs() {
-    const allow = await new Promise((resolve) => {
-      Alert.alert(
-        t("location.autoTitle"),
-        t("location.autoText"),
-        [
-          { text: t("location.autoNotNow"), style: "cancel", onPress: () => resolve(false) },
-          { text: t("location.autoAllow"), onPress: () => resolve(true) },
-        ],
-        { cancelable: false },
-      );
-    });
-    const granted = allow && (await askPermission());
-    await setAutoLocation(granted);
-    if (!granted) return;
-    const result = await syncLocation({ force: true });
-    if (result?.removed) await endRemoved();
-  }
-
   useEffect(() => {
     async function submit() {
       if (!questionEnded) return;
@@ -230,7 +208,6 @@ export default function SignUpScreen() {
       clearSignupDraft();
       createLanguage(token);
       createLearningLanguage(token);
-      checkWhereThePhoneIs();
     }
     submit();
   }, [questionEnded]);
