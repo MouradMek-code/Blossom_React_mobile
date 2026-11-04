@@ -264,6 +264,26 @@ function RequestCard({ request: r, language, onDone }) {
     max_couples: r.max_couples == null ? "" : String(r.max_couples),
   });
 
+  // Spam: deleted without a word to the sender ("Refuse" emails them).
+  function confirmRemove() {
+    Alert.alert(t("partners.deleteRequest"), t("partners.deleteRequestConfirm"), [
+      { text: t("offers.cancel"), style: "cancel" },
+      { text: t("partners.deleteRequest"), style: "destructive", onPress: remove },
+    ]);
+  }
+
+  async function remove() {
+    setBusy(true);
+    setError("");
+    const result = await call(`/partners/requests/${r.id}`, "DELETE");
+    setBusy(false);
+    if (!result.ok) {
+      setError(result.message || t("partners.failed"));
+      return;
+    }
+    onDone();
+  }
+
   async function send(path, body) {
     setBusy(true);
     setError("");
@@ -377,6 +397,9 @@ function RequestCard({ request: r, language, onDone }) {
             <Pressable style={[styles.btn, styles.btnDanger]} onPress={() => setRefusing(true)} disabled={busy}>
               <Text style={[styles.btnText, { color: colors.danger }]}>{t("partners.refuse")}</Text>
             </Pressable>
+            <Pressable style={[styles.btn, styles.btnDanger]} onPress={confirmRemove} disabled={busy}>
+              <Text style={[styles.btnText, { color: colors.danger }]}>{t("partners.deleteRequest")}</Text>
+            </Pressable>
           </>
         )}
         {busy && <ActivityIndicator size="small" color={colors.primary} />}
@@ -457,6 +480,7 @@ export function BusinessMessages() {
   return (
     <View style={styles.block}>
       <Text style={styles.blockTitle}>{t("business.messages")}</Text>
+      <Text style={styles.muted}>{t("business.handledHint")}</Text>
       {messages.length === 0 ? <Text style={styles.muted}>{t("business.noMessages")}</Text> : null}
       {messages.map((m) => (
         <View key={m.id} style={[styles.card, m.handled && { opacity: 0.6 }]}>

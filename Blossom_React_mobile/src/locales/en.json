@@ -692,7 +692,9 @@
     "err_used": "This code was already used.",
     "err_expired": "This code has expired.",
     "suggestSaved": "♡ Your saved places",
-    "suggestAll": "All places"
+    "suggestAll": "All places",
+    "delete": "🗑 Delete",
+    "deleteConfirm": "Delete “{{title}}” for good? Couples who already got its code lose it. To stop it but keep its history, use Pause or End now instead."
   },
   "partners": {
     "link": "🏪 Partner with Blossom",
@@ -770,7 +772,9 @@
     "suggestionsEmpty": "No suggestions waiting.",
     "suggestedBy": "Suggested by {{name}} · {{date}}",
     "wantsGiftAdmin": "💡 Would love a gift here",
-    "refuseSuggestionConfirm": "Refuse “{{name}}”? The suggestion is deleted."
+    "refuseSuggestionConfirm": "Refuse “{{name}}”? The suggestion is deleted.",
+    "deleteRequest": "🗑 Delete",
+    "deleteRequestConfirm": "Delete this request? Nothing is sent to the sender – best for spam. (“Refuse” sends them an email.)"
   },
   "business": {
     "navLink": "For venues",
@@ -819,14 +823,15 @@
     "messages": "📩 Business messages",
     "noMessages": "No message.",
     "reply": "Reply by email",
-    "markHandled": "Mark as handled",
-    "reopen": "Not handled",
-    "handled": "Handled ✓",
+    "markHandled": "Mark as done",
+    "reopen": "Not done yet",
+    "handled": "Done ✓",
     "noAccount": "✅ No account needed. No sign-up, no password: your private link is all you need.",
     "noAccountShort": "No account needed",
     "noAccountTag": "no account",
     "membersOnly": "Sign-up is for people looking for a date or a language exchange.",
-    "venueNoAccount": "Running a café or restaurant? You don't need an account"
+    "venueNoAccount": "Running a café or restaurant? You don't need an account",
+    "handledHint": "“Mark as done” only files the message away for you – nothing is sent to the business. Use “Reply by email” to answer them."
   },
   "friends": {
     "backToAdmin": "Admin panel",

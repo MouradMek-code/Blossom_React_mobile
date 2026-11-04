@@ -692,7 +692,9 @@
     "err_used": "这个优惠码已被使用。",
     "err_expired": "这个优惠码已过期。",
     "suggestSaved": "♡ 你收藏的地点",
-    "suggestAll": "所有地点"
+    "suggestAll": "所有地点",
+    "delete": "🗑 删除",
+    "deleteConfirm": "永久删除“{{title}}”？已经领到优惠码的情侣将失去它。如果只想停止并保留记录，请改用“暂停”或“立即结束”。"
   },
   "partners": {
     "link": "🏪 成为 Blossom 合作伙伴",
@@ -770,7 +772,9 @@
     "suggestionsEmpty": "没有待审核的推荐。",
     "suggestedBy": "由 {{name}} 推荐 · {{date}}",
     "wantsGiftAdmin": "💡 希望这里有礼物",
-    "refuseSuggestionConfirm": "拒绝“{{name}}”？该推荐将被删除。"
+    "refuseSuggestionConfirm": "拒绝“{{name}}”？该推荐将被删除。",
+    "deleteRequest": "🗑 删除",
+    "deleteRequestConfirm": "删除这条申请？不会给发送者发送任何内容，适合处理垃圾信息。（“拒绝”会给对方发邮件。）"
   },
   "business": {
     "navLink": "商家合作",
@@ -819,14 +823,15 @@
     "messages": "📩 商家留言",
     "noMessages": "没有留言。",
     "reply": "通过邮件回复",
-    "markHandled": "标记为已处理",
-    "reopen": "未处理",
-    "handled": "已处理 ✓",
+    "markHandled": "标记为已完成",
+    "reopen": "尚未完成",
+    "handled": "已完成 ✓",
     "noAccount": "✅ 无需账号。无需注册、无需密码：只需你的私人链接。",
     "noAccountShort": "无需账号",
     "noAccountTag": "免注册",
     "membersOnly": "注册仅适用于想约会或语言交换的人。",
-    "venueNoAccount": "你经营咖啡馆或餐厅？无需账号"
+    "venueNoAccount": "你经营咖啡馆或餐厅？无需账号",
+    "handledHint": "“标记为已完成”只是帮你归档这条消息，不会给商家发送任何内容。要回复对方，请使用“通过邮件回复”。"
   },
   "friends": {
     "backToAdmin": "管理面板",

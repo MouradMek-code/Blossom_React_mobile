@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
+  Alert,
   RefreshControl,
   Share,
   Linking,
@@ -66,6 +67,25 @@ export default function AdminOffers({ bottomInset = 0 }) {
   }, [t]);
 
   useAutoRefresh(load, { minIntervalMs: 15000 });
+
+  // Gone for good, with the couples' codes; Pause / End now keep the history.
+  function confirmRemove(offer) {
+    Alert.alert(t("offers.delete"), t("offers.deleteConfirm", { title: offer.title }), [
+      { text: t("offers.cancel"), style: "cancel" },
+      { text: t("offers.delete"), style: "destructive", onPress: () => remove(offer) },
+    ]);
+  }
+
+  async function remove(offer) {
+    setBusy(offer.id);
+    const result = await send(`/offers/admin/${offer.id}`, "DELETE");
+    setBusy(null);
+    if (!result.ok) {
+      setError(result.message || t("offers.saveFailed"));
+      return;
+    }
+    setOffers((cur) => cur.filter((o) => o.id !== offer.id));
+  }
 
   async function change(offer, changes) {
     setBusy(offer.id);
@@ -199,6 +219,9 @@ export default function AdminOffers({ bottomInset = 0 }) {
                 </Pressable>
                 <Pressable style={styles.actionBtn} onPress={() => Linking.openURL(`${SITE_URL}/poster/${o.id}`)}>
                   <Text style={styles.actionText}>{t("offers.poster")}</Text>
+                </Pressable>
+                <Pressable style={styles.actionBtn} onPress={() => confirmRemove(o)} disabled={busy === o.id}>
+                  <Text style={[styles.actionText, { color: colors.danger }]}>{t("offers.delete")}</Text>
                 </Pressable>
                 {busy === o.id && <ActivityIndicator size="small" color={colors.primary} />}
               </View>

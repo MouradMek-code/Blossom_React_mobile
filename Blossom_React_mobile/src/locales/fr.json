@@ -692,7 +692,9 @@
     "err_used": "Ce code a déjà été utilisé.",
     "err_expired": "Ce code a expiré.",
     "suggestSaved": "♡ Tes lieux enregistrés",
-    "suggestAll": "Tous les lieux"
+    "suggestAll": "Tous les lieux",
+    "delete": "🗑 Supprimer",
+    "deleteConfirm": "Supprimer « {{title}} » définitivement ? Les couples qui ont déjà reçu son code le perdent. Pour l'arrêter en gardant l'historique, utilisez plutôt Mettre en pause ou Terminer."
   },
   "partners": {
     "link": "🏪 Devenir partenaire de Blossom",
@@ -770,7 +772,9 @@
     "suggestionsEmpty": "Aucune suggestion en attente.",
     "suggestedBy": "Suggéré par {{name}} · {{date}}",
     "wantsGiftAdmin": "💡 Aimerait un cadeau ici",
-    "refuseSuggestionConfirm": "Refuser « {{name}} » ? La suggestion est supprimée."
+    "refuseSuggestionConfirm": "Refuser « {{name}} » ? La suggestion est supprimée.",
+    "deleteRequest": "🗑 Supprimer",
+    "deleteRequestConfirm": "Supprimer cette demande ? Rien n'est envoyé à l'expéditeur – idéal pour le spam. (« Refuser » lui envoie un e-mail.)"
   },
   "business": {
     "navLink": "Pour les établissements",
@@ -819,14 +823,15 @@
     "messages": "📩 Messages des professionnels",
     "noMessages": "Aucun message.",
     "reply": "Répondre par e-mail",
-    "markHandled": "Marquer comme traité",
-    "reopen": "Non traité",
-    "handled": "Traité ✓",
+    "markHandled": "Marquer comme fait",
+    "reopen": "Pas encore fait",
+    "handled": "Fait ✓",
     "noAccount": "✅ Pas besoin de compte. Ni inscription, ni mot de passe : ton lien privé suffit.",
     "noAccountShort": "Sans compte",
     "noAccountTag": "sans compte",
     "membersOnly": "L'inscription, c'est pour celles et ceux qui cherchent un date ou un échange linguistique.",
-    "venueNoAccount": "Tu tiens un café ou un restaurant ? Pas besoin de compte"
+    "venueNoAccount": "Tu tiens un café ou un restaurant ? Pas besoin de compte",
+    "handledHint": "« Marquer comme fait » range seulement le message pour vous – rien n'est envoyé à l'établissement. Utilisez « Répondre par e-mail » pour lui répondre."
   },
   "friends": {
     "backToAdmin": "Panneau d'administration",
