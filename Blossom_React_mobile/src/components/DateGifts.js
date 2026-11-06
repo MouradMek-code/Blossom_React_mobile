@@ -3,7 +3,8 @@ import { View, Text, Pressable, Image, ScrollView, Linking, StyleSheet } from "r
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { LinearGradient } from "expo-linear-gradient";
-import { BASE_URL, SITE_URL } from "../api/config";
+import { SITE_URL } from "../api/config";
+import { loadPublicSpots } from "../api/publicSpots";
 import { IMG } from "../api/images";
 import { categoryEmoji, categoryGradient } from "../api/categories";
 import { colors, radius, spacing, shadow, typography } from "../theme";
@@ -27,12 +28,9 @@ export default function DateGifts({ style }) {
 
   useEffect(() => {
     let alive = true;
-    fetch(`${BASE_URL}/date_spots`)
-      .then((resp) => (resp.ok ? resp.json() : []))
-      .then((spots) => {
-        if (alive && Array.isArray(spots)) setGifts(spots.filter((s) => s.offer).slice(0, 3));
-      })
-      .catch(() => {});
+    loadPublicSpots().then((spots) => {
+      if (alive) setGifts(spots.filter((s) => s.offer).slice(0, 3));
+    });
     return () => {
       alive = false;
     };

@@ -1200,5 +1200,10 @@
   "direction": {
     "restartTitle": "Redémarrez Blossom",
     "restartText": "Fermez Blossom puis rouvrez-le pour terminer le changement de mise en page."
+  },
+  "spotsWall": {
+    "title": "Des lieux pour vos rendez-vous",
+    "text": "Cafés, balades et points de vue choisis pour un premier rendez-vous.",
+    "button": "Découvrir les lieux"
   }
 }

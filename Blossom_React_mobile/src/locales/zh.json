@@ -1200,5 +1200,10 @@
   "direction": {
     "restartTitle": "重新打开 Blossom",
     "restartText": "关闭 Blossom 后重新打开，即可完成布局切换。"
+  },
+  "spotsWall": {
+    "title": "约会好去处",
+    "text": "为第一次约会精选的咖啡馆、散步路线和美景。",
+    "button": "去看看"
   }
 }

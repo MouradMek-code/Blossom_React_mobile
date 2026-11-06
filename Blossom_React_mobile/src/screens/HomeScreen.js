@@ -8,6 +8,7 @@ import HowItWorks from "../components/HowItWorks";
 import FounderProjects from "../components/FounderProjects";
 import ForVenuesCard from "../components/ForVenuesCard";
 import DateGifts from "../components/DateGifts";
+import SpotsWallpaper from "../components/SpotsWallpaper";
 import InstagramCard from "../components/InstagramCard";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -50,6 +51,8 @@ export default function HomeScreen() {
         <PageNav variant="transparent" />
         <StartHome />
       </View>
+      {/* Real date spots, one photo after another - a tap opens them. */}
+      <SpotsWallpaper />
       <HowItWorks />
       {/* The venue gifts, for the people who date. */}
       <DateGifts />

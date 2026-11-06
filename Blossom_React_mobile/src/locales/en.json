@@ -1200,5 +1200,10 @@
   "direction": {
     "restartTitle": "Restart Blossom",
     "restartText": "Close Blossom and open it again to finish switching the layout."
+  },
+  "spotsWall": {
+    "title": "Spots for dating",
+    "text": "Cafés, walks and views picked for a first date.",
+    "button": "Discover the spots"
   }
 }
