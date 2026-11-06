@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, Image, Pressable, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { useBottomInset } from "../navigation/useBottomInset";
@@ -7,13 +7,14 @@ import { useAutoRefresh } from "../navigation/useAutoRefresh";
 import PageNav from "../components/PageNav";
 import SwipeCard from "../components/SwipeCard";
 import BrowseEnd from "../components/BrowseEnd";
+import MatchCelebration from "../components/MatchCelebration";
+import { SkeletonCard } from "../ui";
 import ProfileFilterModal from "../components/ProfileFilterModal";
 import { matchesFilters, getDefaultFilters } from "../api/profileFilters";
 import { seededShuffle } from "../api/shuffle";
 import { mergeDeck } from "../api/deck";
 import LoadError from "../components/LoadError";
 import { BASE_URL } from "../api/config";
-import { IMG } from "../api/images";
 import { endSessionAndGoToLogin } from "../api/session";
 import { getToken } from "../api/storage";
 import { peekCache, readCache, writeCache } from "../api/cache";
@@ -109,10 +110,8 @@ export default function ProfilesScreen() {
       if (resp.status !== 200) {
         throw new Error(`error happened on like service : ${data.detail?.[0]?.msg}`);
       }
-      if (data.matched) {
-        setMatchedProfile(profile);
-        setTimeout(() => setMatchedProfile(null), 2000);
-      }
+      // It stays until they say hello or keep browsing (MatchCelebration).
+      if (data.matched) setMatchedProfile(profile);
     } catch (err) {
       console.log(err);
     }
@@ -270,8 +269,9 @@ export default function ProfilesScreen() {
     return (
       <View style={[styles.head, { backgroundColor: colors.background }]}>
         <PageNav />
-        <View style={styles.empty}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        {/* The card's shape while the first people load, not a spinner. */}
+        <View style={[styles.deck, { marginBottom: bottomInset + spacing.sm }]}>
+          <SkeletonCard />
         </View>
       </View>
     );
@@ -311,20 +311,17 @@ export default function ProfilesScreen() {
         profiles={profiles}
       />
 
-      {matchedProfile && (
-        <View style={styles.matchOverlay}>
-          <View style={[styles.matchCard, { backgroundColor: colors.surface }]}>
-            <Text style={styles.matchHeart}>❤️</Text>
-            <Text style={styles.matchTitle}>{t("likesYou.matchTitle")}</Text>
-            <Image
-              source={{ uri: IMG.thumb(matchedProfile.photos?.[0]?.image_url) }}
-              style={styles.matchImage}
-            />
-            <Text style={styles.matchName}>{matchedProfile.first_name}</Text>
-            <Text>{t("likesYou.matchText")}</Text>
-          </View>
-        </View>
-      )}
+      {matchedProfile ? (
+        <MatchCelebration
+          me={ownRef.current}
+          them={matchedProfile}
+          onClose={() => setMatchedProfile(null)}
+          onMessage={() => {
+            setMatchedProfile(null);
+            navigation.navigate("Messages");
+          }}
+        />
+      ) : null}
 
       <View style={[styles.deck, { marginBottom: bottomInset + spacing.sm }]}>
         {remaining.length === 0 ? (
@@ -390,12 +387,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     marginTop: spacing.sm,
   },
-  empty: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: spacing.xl,
-  },
   // The one-time "how it works".
   hintOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -424,25 +415,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   hintButtonText: { color: "#fff", fontWeight: "800", fontSize: 15.5 },
-  matchOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-  },
-  matchCard: {
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    alignItems: "center",
-    ...shadow.lg,
-  },
-  matchHeart: { fontSize: 40 },
-  matchTitle: { ...typography.h2, marginVertical: spacing.sm },
-  matchImage: { width: 100, height: 100, borderRadius: 50, marginVertical: spacing.sm },
-  matchName: { ...typography.h3 },
 });

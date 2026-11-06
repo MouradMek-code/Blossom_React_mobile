@@ -22,6 +22,7 @@ import { getToken } from "../api/storage";
 import { peekCache, readCache, writeCache } from "../api/cache";
 import { shortTime } from "../api/chatTime";
 import { colors, radius, spacing, shadow, typography } from "../theme";
+import { SkeletonRows } from "../ui";
 
 // Refresh while the screen is open, so new messages and badges show up
 // without leaving it (there's no push channel).
@@ -209,9 +210,8 @@ export default function MessagesScreen() {
             <Text style={styles.title}>{t("messages.title")}</Text>
             <Text style={styles.subtitle}>{t("messages.subtitle")}</Text>
             {error !== "" ? <Text style={styles.error}>{error}</Text> : null}
-            {items === null ? (
-              <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
-            ) : null}
+            {/* The rows' shape while the chats load, not a spinner. */}
+            {items === null ? <SkeletonRows count={6} /> : null}
 
             {/* Likes and new matches, always on top: the "Likes you" circle
                 first (their photo blurred - tap to see who), then the faces

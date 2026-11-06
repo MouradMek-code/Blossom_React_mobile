@@ -9,6 +9,7 @@ import { IMG } from "../api/images";
 import { formatDeadline } from "../api/offers";
 import { useAutoRefresh } from "../navigation/useAutoRefresh";
 import AskToVerify from "./AskToVerify";
+import AdminFeedback from "./AdminFeedback";
 import { colors, radius, spacing, shadow } from "../theme";
 
 async function call(path, method = "GET") {
@@ -159,6 +160,8 @@ export default function AdminReports({ bottomInset = 0, onDeleted }) {
           );
         })
       )}
+      {/* "Report a problem" from members and visitors. */}
+      <AdminFeedback />
     </ScrollView>
   );
 }

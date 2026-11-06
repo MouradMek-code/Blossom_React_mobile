@@ -28,6 +28,7 @@ import { goToTab } from "../navigation/goToTab";
 import { formatDeadline } from "../api/offers";
 import { firstRiskyMessageId } from "../api/chatSafety";
 import { colors, radius, spacing, shadow, typography } from "../theme";
+import { Icon } from "../ui";
 
 // A date spot sent with "Invite a match": the message text plus a tappable
 // card that opens the place in Date Spots. The invited person answers
@@ -489,7 +490,7 @@ export default function ChatScreen() {
           accessibilityRole="button"
           accessibilityLabel={t("messages.back")}
         >
-          <Text style={styles.backText}>←</Text>
+          <Icon name="arrow-left" size={22} color={colors.text} />
         </Pressable>
         {partner ? (
           <View style={styles.partner}>
@@ -576,10 +577,14 @@ export default function ChatScreen() {
             </View>
             {message.id === riskyId ? (
               <View style={styles.safety}>
-                <Text style={styles.safetyText}>⚠️ {t("chatSafety.text")}</Text>
+                <View style={styles.safetyRow}>
+                  <Icon name="alert-triangle" size={17} color="#8A5A0B" />
+                  <Text style={[styles.safetyText, { flex: 1 }]}>{t("chatSafety.text")}</Text>
+                </View>
                 {partner ? (
-                  <Pressable onPress={openProfile} hitSlop={6} accessibilityRole="button">
-                    <Text style={styles.safetyLink}>🚩 {t("chatSafety.report")}</Text>
+                  <Pressable onPress={openProfile} hitSlop={8} accessibilityRole="button" style={styles.safetyRow}>
+                    <Icon name="flag" size={15} color={colors.danger} />
+                    <Text style={styles.safetyLink}>{t("chatSafety.report")}</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -655,7 +660,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   back: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  backText: { fontSize: 22, color: colors.text },
   partner: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
   partnerPhoto: { width: 44, height: 44, borderRadius: 22 },
   partnerPhotoEmpty: { alignItems: "center", justifyContent: "center", backgroundColor: colors.primarySoft },
@@ -682,6 +686,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF6E3",
     gap: 6,
   },
+  safetyRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
   safetyText: { fontSize: 13.5, lineHeight: 19, color: "#6B4A10", fontWeight: "600" },
   safetyLink: { fontSize: 13.5, color: colors.danger, fontWeight: "800" },
   errorText: {

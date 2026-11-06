@@ -5,72 +5,103 @@ import allQuestions from "../data/questions.json";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 import { saveSignupDraft } from "../api/storage";
 import { CONNECTION_EMOJI, CONNECTION_TYPES, questionsFor } from "../api/connection";
+import { Button } from "../ui";
+
+// The questions in a few short steps (2-4 each) instead of one per screen.
+// Only what Browse needs is required; everything else can be skipped.
+export const SIGNUP_STEPS = [
+  { key: "intent", fields: ["connection_type"], required: ["connection_type"] },
+  { key: "you", fields: ["gender", "sexual_orientation", "age"], required: ["gender", "sexual_orientation", "age"] },
+  { key: "looking", fields: ["relationship_goal", "first_date_preference"], required: ["relationship_goal"] },
+  { key: "story", fields: ["bio", "occupation"], required: [] },
+  { key: "languages", fields: ["language_name", "learning_language_name"], required: ["language_name"] },
+  { key: "basics", fields: ["height_cm", "education", "personality_type"], required: [] },
+  { key: "lifestyle", fields: ["smoking", "drinking", "exercise_frequency", "has_pets"], required: [] },
+  { key: "personal", fields: ["has_children", "wants_children", "past_relationships_count", "last_breakup_reason"], required: [] },
+];
+
+function filled(value) {
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "string") return value.trim().length > 0;
+  return value != null;
+}
 
 const StartProfile = forwardRef(function StartProfile(
   { setQuestionEnded, answer, setAnswer, initialIndex = 0, autoStart = false, onReadyChange },
   ref,
 ) {
+  const { t } = useTranslation();
   const [started, setStart] = useState(autoStart);
-  const [indiceQuestion, setIndiceQuestion] = useState(initialIndex);
-  const [clicked, setClicked] = useState(false);
+  const [step, setStep] = useState(initialIndex);
   // Someone here only for language exchange skips the dating questions.
   const questions = useMemo(
     () => questionsFor(allQuestions, answer.connection_type),
     [answer.connection_type],
   );
+  const steps = useMemo(
+    () =>
+      SIGNUP_STEPS.map((s) => ({
+        ...s,
+        questions: s.fields.map((f) => questions.find((q) => q.field === f)).filter(Boolean),
+      })).filter((s) => s.questions.length > 0),
+    [questions],
+  );
+  const current = steps[Math.min(step, steps.length - 1)];
+  const ready = current.required.every((f) => !current.questions.some((q) => q.field === f) || filled(answer[f]));
 
   useEffect(() => {
-    onReadyChange?.(started && clicked);
-  }, [started, clicked, onReadyChange]);
+    onReadyChange?.(started && ready);
+  }, [started, ready, onReadyChange]);
 
   function handleClicked(question, value) {
-    setClicked(true);
-    if ((question.field === "language_name" || question.field === "learning_language_name") && question.field in answer) {
-      const prev = answer[question.field];
-      setAnswer((c) => ({ ...c, [question.field]: [...prev, ...value] }));
-      return;
-    }
     setAnswer((c) => ({ ...c, [question.field]: value }));
   }
 
   function handleLetStart() {
-    setStart((s) => !s);
-    setIndiceQuestion(0);
-    setClicked(false);
+    setStart(true);
+    setStep(0);
     saveSignupDraft({ started: true, questionIndex: 0, answer });
   }
 
   function handleNext() {
-    setClicked(false);
-    if (indiceQuestion >= questions.length - 1) {
+    if (step >= steps.length - 1) {
       setQuestionEnded((c) => !c);
+      return;
     }
-    const nextIndex = indiceQuestion + 1;
-    setIndiceQuestion(nextIndex);
-    saveSignupDraft({ started: true, questionIndex: nextIndex, answer });
+    const next = step + 1;
+    setStep(next);
+    saveSignupDraft({ started: true, questionIndex: next, answer });
   }
 
   useImperativeHandle(ref, () => ({ next: handleNext }));
 
+  // Each question reports "answered" through this; the step works it out
+  // from the answers instead.
+  const noop = () => {};
+  const index = Math.min(step, steps.length - 1);
+  const optionalStep = current.required.length === 0;
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Create Your Profile Here</Text>
-
       {started ? (
-        <ProgressBar indiceQuestion={indiceQuestion} length={questions.length} />
+        <>
+          <ProgressBar step={index} total={steps.length} label={t("signupSteps.step", { n: index + 1, total: steps.length })} />
+          <Text style={styles.title}>{t(`signupSteps.${current.key}`)}</Text>
+          {optionalStep ? <Text style={styles.optionalNote}>{t("signupSteps.optionalStep")}</Text> : null}
+          {current.questions.map((question) => (
+            <QuestionOption
+              key={question.field}
+              question={question}
+              optional={!current.required.includes(question.field)}
+              handleClicked={handleClicked}
+              setAnswer={setAnswer}
+              answer={answer}
+              setClicked={noop}
+            />
+          ))}
+        </>
       ) : (
-        <LetsStartButton length={questions.length} onPress={handleLetStart} />
-      )}
-
-      {started && indiceQuestion < questions.length && (
-        <QuestionOption
-          question={questions[indiceQuestion]}
-          handleClicked={handleClicked}
-          clicked={clicked}
-          setAnswer={setAnswer}
-          answer={answer}
-          setClicked={setClicked}
-        />
+        <LetsStartButton count={steps.length} onPress={handleLetStart} />
       )}
     </View>
   );
@@ -237,46 +268,41 @@ export default StartProfile;
 // One question on its own (the admin's "profile for a friend" form shows them all).
 export { Question as ProfileQuestion };
 
-function LetsStartButton({ length, onPress }) {
+function LetsStartButton({ count, onPress }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.letStart}>
-      <Text style={styles.letStartTitle}>Create Your Profile</Text>
-      <Text style={styles.letStartSubtitle}>{length} questions to create your profile</Text>
-      <Pressable style={styles.button} onPress={onPress}>
-        <Text style={styles.buttonText}>let's start</Text>
-      </Pressable>
+      <Text style={styles.letStartTitle}>{t("signupSteps.startTitle")}</Text>
+      <Text style={styles.letStartSubtitle}>{t("signupSteps.startText", { count })}</Text>
+      <Button title={t("signupSteps.startButton")} icon="arrow-right" onPress={onPress} />
     </View>
   );
 }
 
-function ProgressBar({ indiceQuestion, length }) {
+// "Step 2 of 8" and a bar that fills up.
+function ProgressBar({ step, total, label }) {
   return (
-    <View style={styles.progressWrapper}>
+    <View style={styles.progressWrapper} accessibilityRole="progressbar" accessibilityLabel={label}>
       <View style={styles.progressTrack}>
-        <View
-          style={[
-            styles.progressFill,
-            { width: `${((indiceQuestion + 1) / length) * 100}%` },
-          ]}
-        />
+        <View style={[styles.progressFill, { width: `${((step + 1) / total) * 100}%` }]} />
       </View>
-      <Text style={styles.progressText}>
-        {indiceQuestion + 1}/{length} Question
-      </Text>
+      <Text style={styles.progressText}>{label}</Text>
     </View>
   );
 }
 
-function QuestionOption({ question, handleClicked, clicked, setAnswer, answer, setClicked }) {
+function QuestionOption({ question, optional, handleClicked, setAnswer, answer, setClicked }) {
   const { t } = useTranslation();
   const title = question.field === "connection_type" ? t("connection.question") : question.question;
   return (
     <View style={styles.questions}>
-      <Text style={styles.questionTitle}>{title}</Text>
+      <View style={styles.questionHead}>
+        <Text style={styles.questionTitle}>{title}</Text>
+        {optional ? <Text style={styles.optionalTag}>{t("signupSteps.optional")}</Text> : null}
+      </View>
       <Question
         question={question}
         handleClicked={handleClicked}
-        clicked={clicked}
         setAnswer={setAnswer}
         answer={answer}
         setClicked={setClicked}
@@ -496,7 +522,8 @@ const styles = StyleSheet.create({
   radioDot: { width: 11, height: 11, borderRadius: 6, backgroundColor: colors.primary },
 
   container: { padding: spacing.md },
-  title: { ...typography.h2, textAlign: "center", marginBottom: spacing.md },
+  title: { ...typography.h2, textAlign: "center", marginBottom: spacing.sm },
+  optionalNote: { ...typography.bodyMuted, textAlign: "center", marginBottom: spacing.sm },
   letStart: { alignItems: "center", padding: spacing.md },
   letStartTitle: { ...typography.h3 },
   letStartSubtitle: { ...typography.bodyMuted, marginVertical: spacing.sm },
@@ -504,8 +531,19 @@ const styles = StyleSheet.create({
   progressTrack: { height: 8, backgroundColor: colors.border, borderRadius: radius.pill },
   progressFill: { height: 8, backgroundColor: colors.primary, borderRadius: radius.pill },
   progressText: { marginTop: spacing.sm, textAlign: "center", ...typography.bodyMuted },
-  questions: { padding: spacing.sm },
-  questionTitle: { ...typography.h3, fontSize: 18, marginBottom: spacing.md, textAlign: "center" },
+  questions: { padding: spacing.sm, marginBottom: spacing.md },
+  questionHead: { flexDirection: "row", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, marginBottom: spacing.md },
+  questionTitle: { ...typography.h3, fontSize: 17, textAlign: "center" },
+  optionalTag: {
+    fontSize: 11.5,
+    fontWeight: "800",
+    color: colors.textMuted,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+    overflow: "hidden",
+  },
   optionGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: spacing.sm },
   optionCard: {
     borderWidth: 1.5,
@@ -624,13 +662,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
     color: colors.text,
   },
-  button: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.pill,
-    padding: spacing.md,
-    alignItems: "center",
-    marginTop: spacing.md,
-    ...shadow.md,
-  },
-  buttonText: { color: "#fff", fontWeight: "700", letterSpacing: 0.5 },
 });

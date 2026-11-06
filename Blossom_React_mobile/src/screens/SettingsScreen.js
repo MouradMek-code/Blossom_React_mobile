@@ -24,6 +24,7 @@ import { peekCache, readCache, subscribeCache, writeCache } from "../api/cache";
 import { useBottomInset } from "../navigation/useBottomInset";
 import { askPermission, getAutoLocation, setAutoLocation, syncLocation } from "../api/autoLocation";
 import { colors, radius, spacing, shadow, typography } from "../theme";
+import { Icon, ScreenHeader } from "../ui";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -214,18 +215,7 @@ export default function SettingsScreen() {
     <View style={styles.screen}>
       <PageNav />
 
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          hitSlop={10}
-          style={styles.back}
-          accessibilityRole="button"
-          accessibilityLabel={t("settings.back")}
-        >
-          <Text style={styles.backText}>←</Text>
-        </Pressable>
-        <Text style={styles.title}>{t("settings.title")}</Text>
-      </View>
+      <ScreenHeader title={t("settings.title")} />
 
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: bottomInset + spacing.xl }]}
@@ -237,8 +227,8 @@ export default function SettingsScreen() {
               onPress={() => navigation.navigate("Admin")}
               accessibilityRole="button"
             >
-              <Text style={styles.rowLabel}>🛡️ {t("admin.allMembers")}</Text>
-              <Text style={styles.chevron}>›</Text>
+              <RowLabel icon="shield" text={t("admin.allMembers")} />
+              <Icon name="chevron-right" size={20} color={colors.textMuted} />
             </Pressable>
           </Section>
         )}
@@ -296,7 +286,7 @@ export default function SettingsScreen() {
               onPress={startEditingLocation}
               accessibilityRole="button"
             >
-              <Text style={styles.rowLabel}>📍 {place || t("location.notSet")}</Text>
+              <RowLabel icon="map-pin" text={place || t("location.notSet")} />
               <Text style={styles.rowAction}>{t("location.change")}</Text>
             </Pressable>
           )}
@@ -318,23 +308,32 @@ export default function SettingsScreen() {
         <Section title={t("business.settingsSection")}>
           {/* Venues never need a Blossom account. */}
           <Text style={styles.businessNote}>{t("business.noAccount")}</Text>
-          <LinkRow label={t("business.settingsPartner")} url={`${SITE_URL}/partner`} />
-          <LinkRow label={t("business.settingsCheck")} url={`${SITE_URL}/venue`} />
-          <LinkRow label={t("business.settingsLost")} url={`${SITE_URL}/business#lost-link`} />
-          <LinkRow label={t("business.settingsContact")} url={`${SITE_URL}/business#contact`} last />
+          <LinkRow icon="gift" label={t("business.settingsPartner")} url={`${SITE_URL}/partner`} />
+          <LinkRow icon="search" label={t("business.settingsCheck")} url={`${SITE_URL}/venue`} />
+          <LinkRow icon="key" label={t("business.settingsLost")} url={`${SITE_URL}/business#lost-link`} />
+          <LinkRow icon="mail" label={t("business.settingsContact")} url={`${SITE_URL}/business#contact`} last />
         </Section>
 
         <Section title={t("settings.about")}>
-          <LinkRow label={t("settings.privacy")} url={`${PRIVACY_URL}?lang=${language}`} />
-          <LinkRow label={t("settings.terms")} url={TERMS_URL} />
-          <LinkRow label={t("settings.support")} url={SUPPORT_EMAIL} last />
+          <LinkRow icon="lock" label={t("settings.privacy")} url={`${PRIVACY_URL}?lang=${language}`} />
+          <LinkRow icon="book-open" label={t("settings.terms")} url={TERMS_URL} />
+          {/* In the app, without leaving it (Google Play's Child Safety Standards). */}
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            onPress={() => navigation.navigate("ReportProblem")}
+            accessibilityRole="button"
+          >
+            <RowLabel icon="life-buoy" text={t("feedback.settingsRow")} />
+            <Icon name="chevron-right" size={20} color={colors.textMuted} />
+          </Pressable>
+          <LinkRow icon="mail" label={t("settings.support")} url={SUPPORT_EMAIL} last />
         </Section>
 
         <Section title={t("settings.account")}>
           {profile ? (
             <View style={[styles.row, styles.autoRow]}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowLabel}>☕ {t("pause.title")}</Text>
+                <RowLabel icon="moon" text={t("pause.title")} />
                 <Text style={styles.autoHint}>{t(profile.paused ? "pause.on" : "pause.hint")}</Text>
               </View>
               <Switch
@@ -351,8 +350,8 @@ export default function SettingsScreen() {
             onPress={confirmLogout}
             accessibilityRole="button"
           >
-            <Text style={styles.rowLabel}>{t("settings.logout")}</Text>
-            <Text style={styles.chevron}>›</Text>
+            <RowLabel icon="log-out" text={t("settings.logout")} />
+            <Icon name="chevron-right" size={20} color={colors.textMuted} />
           </Pressable>
         </Section>
 
@@ -385,34 +384,32 @@ function Section({ title, children }) {
   );
 }
 
-function LinkRow({ label, url, last }) {
+// A row's icon and text.
+function RowLabel({ icon, text }) {
+  return (
+    <View style={styles.rowLabelWrap}>
+      <Icon name={icon} size={19} color={colors.textSoft} />
+      <Text style={styles.rowLabel}>{text}</Text>
+    </View>
+  );
+}
+
+function LinkRow({ icon, label, url, last }) {
   return (
     <Pressable
       style={({ pressed }) => [styles.row, last && styles.rowLast, pressed && styles.rowPressed]}
       onPress={() => Linking.openURL(url)}
       accessibilityRole="link"
     >
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.chevron}>›</Text>
+      <RowLabel icon={icon} text={label} />
+      <Icon name="chevron-right" size={20} color={colors.textMuted} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  back: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  backText: { fontSize: 22, color: colors.text },
-  title: { ...typography.h3, fontSize: 18 },
+  rowLabelWrap: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
   content: { padding: spacing.md },
   section: { marginBottom: spacing.lg },
   sectionTitle: {
@@ -445,8 +442,6 @@ const styles = StyleSheet.create({
   rowLabelActive: { color: colors.primary, fontWeight: "700" },
   rowAction: { color: colors.primary, fontWeight: "700", fontSize: 14 },
   check: { color: colors.primary, fontSize: 17, fontWeight: "700" },
-  chevron: { fontSize: 22, color: colors.textMuted },
-  danger: { color: colors.danger },
   editor: { paddingVertical: spacing.md },
   editorActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
   error: { color: colors.danger, marginTop: spacing.sm, fontSize: 13 },

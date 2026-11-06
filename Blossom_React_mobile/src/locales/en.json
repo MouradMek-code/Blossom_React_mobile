@@ -367,7 +367,9 @@
     "empty": "No likes yet — check back soon!",
     "likeBack": "Like back",
     "matchTitle": "It's a match!",
-    "matchText": "You both liked each other"
+    "matchText": "You both liked each other",
+    "matchMessage": "Send a message",
+    "matchKeepGoing": "Keep browsing"
   },
   "safety": {
     "back": "Back",
@@ -414,7 +416,9 @@
     "factExercise": "Exercise",
     "factPets": "Pets",
     "factChildren": "Children",
-    "factWantsChildren": "Wants children"
+    "factWantsChildren": "Wants children",
+    "previousPhoto": "Previous photo",
+    "nextPhoto": "Next photo"
   },
   "connection": {
     "question": "What brings you to Blossom?",
@@ -1140,5 +1144,61 @@
   "chatSafety": {
     "text": "Be careful: never send money, bank details or codes to someone you haven't met, and take your time before moving to another app.",
     "report": "Report this person"
+  },
+  "feedback": {
+    "title": "Report a problem",
+    "intro": "Tell the Blossom team about a safety concern or anything that isn't right. It stays between you and us.",
+    "reasonLabel": "What is it about?",
+    "kind_child_safety": "Child safety concern",
+    "kind_scam": "Scam or fake profile",
+    "kind_harassment": "Harassment or abuse",
+    "kind_bug": "Something doesn't work",
+    "kind_other": "Something else",
+    "childNote": "We act on these at once, and report child sexual abuse or exploitation to the authorities. If a child is in immediate danger, call your local emergency number.",
+    "messageLabel": "What happened?",
+    "messagePlaceholder": "Who, what, when – any detail helps.",
+    "emailLabel": "Your email (optional, so we can answer you)",
+    "send": "Send",
+    "sending": "Sending…",
+    "doneTitle": "Thank you",
+    "doneText": "The Blossom team has your report and will look at it quickly.",
+    "back": "Back",
+    "settingsRow": "Report a problem",
+    "homeLink": "Report a problem or a safety concern",
+    "childSafetyLink": "Child safety",
+    "adminTitle": "Problems reported",
+    "adminEmpty": "Nothing reported. 🎉",
+    "adminShowAll": "Show done ones too",
+    "adminHideDone": "Hide done ones",
+    "adminFrom": "From {{name}}",
+    "adminVisitor": "Visitor (not logged in)",
+    "adminAbout": "About {{name}}",
+    "adminDone": "Mark as done",
+    "adminReopen": "Not done yet",
+    "adminDelete": "🗑 Delete",
+    "adminDeleteConfirm": "Delete this report?",
+    "adminReply": "Reply by email"
+  },
+  "signupSteps": {
+    "step": "Step {{n}} of {{total}}",
+    "intent": "What brings you here",
+    "you": "About you",
+    "looking": "What you're looking for",
+    "story": "Your story",
+    "languages": "Your languages",
+    "basics": "A few more details",
+    "lifestyle": "Your lifestyle",
+    "personal": "Family and past relationships",
+    "optional": "Optional",
+    "optionalStep": "All optional – skip what you prefer.",
+    "startTitle": "Create your profile",
+    "startText": "{{count}} short steps – about 2 minutes.",
+    "startButton": "Let's start",
+    "next": "Next",
+    "finish": "Finish"
+  },
+  "direction": {
+    "restartTitle": "Restart Blossom",
+    "restartText": "Close Blossom and open it again to finish switching the layout."
   }
 }

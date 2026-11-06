@@ -17,6 +17,7 @@ import { isNewMember } from "../api/newMember";
 import { CONNECTION_DOTS, connectionOf, languagesLine } from "../api/connection";
 import { colors, radius, spacing, shadow } from "../theme";
 import VerifiedBadge from "./VerifiedBadge";
+import { Icon, haptics } from "../ui";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
@@ -38,6 +39,8 @@ export default function SwipeCard({ profile, onSwipeLeft, onSwipeRight, onOpenPr
   const latinScript = !/^(ar|zh)/.test(i18n.language || "");
   const position = useRef(new Animated.Value(0)).current;
   const [cardHeight, setCardHeight] = useState(0);
+  // Which photo the top of the card shows: tap its right or left side.
+  const [photoIndex, setPhotoIndex] = useState(0);
 
   // PanResponder.create's callbacks close over whatever these refs pointed to
   // at creation time, so re-renders (e.g. isTop flipping false -> true when a
@@ -51,6 +54,8 @@ export default function SwipeCard({ profile, onSwipeLeft, onSwipeRight, onOpenPr
   onSwipeRightRef.current = onSwipeRight;
 
   function flyAway(direction) {
+    if (direction > 0) haptics.like();
+    else haptics.tap();
     Animated.timing(position, {
       toValue: direction * SCREEN_WIDTH * 1.5,
       duration: 230,
@@ -167,7 +172,11 @@ export default function SwipeCard({ profile, onSwipeLeft, onSwipeRight, onOpenPr
           onAccessibilityAction={(e) => flyAway(e.nativeEvent.actionName === "like" ? 1 : -1)}
         >
           {photos[0] ? (
-            <Image source={{ uri: IMG.full(photos[0].image_url) }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <Image
+              source={{ uri: IMG.full((photos[photoIndex] || photos[0]).image_url) }}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+            />
           ) : (
             <View style={[StyleSheet.absoluteFill, styles.noPhoto]}>
               <Text style={styles.noPhotoEmoji}>🌸</Text>
@@ -184,13 +193,32 @@ export default function SwipeCard({ profile, onSwipeLeft, onSwipeRight, onOpenPr
           {isNewMember(profile) ? (
             <Animated.View style={[styles.newBadge, { opacity: badgeOpacity }]}>
               <View style={styles.newDot} />
-              <Text style={[styles.newBadgeText, latinScript && styles.smallCaps]}>{t("browse.new")}</Text>
+              <Text style={[styles.newBadgeText, latinScript && styles.smallCaps]} maxFontSizeMultiplier={1.3}>{t("browse.new")}</Text>
             </Animated.View>
           ) : null}
+          {/* One bar per photo; tap the right or left of the picture to move. */}
           {photos.length > 1 ? (
-            <View style={styles.photoCount}>
-              <Text style={styles.photoCountText}>📷 {photos.length}</Text>
+            <View style={styles.bars} pointerEvents="none">
+              {photos.map((p, i) => (
+                <View key={p.id || p.image_url} style={[styles.bar, i === photoIndex && styles.barOn]} />
+              ))}
             </View>
+          ) : null}
+          {photos.length > 1 && isTop ? (
+            <>
+              <Pressable
+                style={[styles.tapZone, styles.tapLeft]}
+                onPress={() => setPhotoIndex((i) => Math.max(0, i - 1))}
+                accessibilityRole="button"
+                accessibilityLabel={t("browse.previousPhoto")}
+              />
+              <Pressable
+                style={[styles.tapZone, styles.tapRight]}
+                onPress={() => setPhotoIndex((i) => Math.min(photos.length - 1, i + 1))}
+                accessibilityRole="button"
+                accessibilityLabel={t("browse.nextPhoto")}
+              />
+            </>
           ) : null}
 
           <View style={styles.overlay}>
@@ -201,24 +229,32 @@ export default function SwipeCard({ profile, onSwipeLeft, onSwipeRight, onOpenPr
                   <View key={color} style={[styles.dot, { backgroundColor: color }, i > 0 && styles.dotOverlap]} />
                 ))}
               </View>
-              <Text style={styles.connectionText}>{t(`connection.${connection}`)}</Text>
+              <Text style={styles.connectionText} maxFontSizeMultiplier={1.3}>{t(`connection.${connection}`)}</Text>
             </View>
             <View style={styles.nameRow}>
-              <Text style={styles.name} numberOfLines={1}>
+              <Text style={styles.name} numberOfLines={1} maxFontSizeMultiplier={1.3}>
                 {profile.first_name}
                 {profile.age ? <Text style={styles.age}>, {profile.age}</Text> : null}
               </Text>
               {profile.verified ? <VerifiedBadge size={24} /> : null}
             </View>
             {profile.city || profile.country ? (
-              <Text style={styles.location} numberOfLines={1}>
-                📍 {[profile.city, profile.country].filter(Boolean).join(", ")}
-              </Text>
+              <View style={styles.pill}>
+                <Icon name="map-pin" size={14} color="#fff" />
+                <Text style={styles.pillText} numberOfLines={1} maxFontSizeMultiplier={1.3}>
+                  {[profile.city, profile.country].filter(Boolean).join(", ")}
+                </Text>
+              </View>
             ) : null}
             {languages ? (
-              <Text style={styles.languages} numberOfLines={1}>{languages}</Text>
+              <Text style={styles.languages} numberOfLines={1} maxFontSizeMultiplier={1.3}>{languages}</Text>
             ) : null}
-            {profile.occupation ? <Text style={styles.tag}>💼 {profile.occupation}</Text> : null}
+            {profile.occupation ? (
+              <View style={styles.pill}>
+                <Icon name="briefcase" size={14} color="#fff" />
+                <Text style={styles.pillText} numberOfLines={1} maxFontSizeMultiplier={1.3}>{profile.occupation}</Text>
+              </View>
+            ) : null}
 
             <Animated.View
               style={[
@@ -226,7 +262,10 @@ export default function SwipeCard({ profile, onSwipeLeft, onSwipeRight, onOpenPr
                 { transform: [{ translateY: bob.interpolate({ inputRange: [0, 1], outputRange: [0, 5] }) }] },
               ]}
             >
-              <Text style={styles.moreText}>⌄ {t("browse.moreAbout", { name: profile.first_name })}</Text>
+              <View style={styles.moreRow}>
+                <Icon name="chevron-down" size={16} color="rgba(255,255,255,0.92)" />
+                <Text style={styles.moreText} maxFontSizeMultiplier={1.3}>{t("browse.moreAbout", { name: profile.first_name })}</Text>
+              </View>
             </Animated.View>
           </View>
         </View>
@@ -340,19 +379,6 @@ const styles = StyleSheet.create({
     textShadowRadius: 10,
   },
   age: { fontWeight: "400", fontSize: 26 },
-  location: {
-    alignSelf: "flex-start",
-    maxWidth: "100%",
-    marginTop: 6,
-    paddingHorizontal: 11,
-    paddingVertical: 5,
-    borderRadius: radius.pill,
-    overflow: "hidden",
-    backgroundColor: "rgba(20,14,12,0.58)",
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "700",
-  },
   // Dating / language exchange / both: a quiet dark-glass chip with a colour
   // dot, readable on any photo.
   connection: {
@@ -379,30 +405,30 @@ const styles = StyleSheet.create({
   dotOverlap: { marginLeft: -3 },
   connectionText: { color: "#fff", fontSize: 12.5, fontWeight: "700", letterSpacing: 0.2 },
   languages: { color: "#fff", fontSize: 14, marginTop: 5 },
-  tag: {
-    color: "#fff",
-    fontSize: 13.5,
-    fontWeight: "700",
-    marginTop: spacing.sm,
+  more: { alignSelf: "center", marginTop: spacing.md },
+  moreText: { color: "rgba(255,255,255,0.92)", fontSize: 13, fontWeight: "700" },
+  // The photo bars at the top, and the two halves you tap to move.
+  bars: { position: "absolute", top: 8, left: 10, right: 10, flexDirection: "row", gap: 4 },
+  bar: { flex: 1, height: 3.5, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.4)" },
+  barOn: { backgroundColor: "#fff" },
+  tapZone: { position: "absolute", top: 0, bottom: "42%", width: "40%" },
+  tapLeft: { left: 0 },
+  tapRight: { right: 0 },
+  // City, job: a dark pill, readable on any photo.
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     alignSelf: "flex-start",
-    backgroundColor: "rgba(20,14,12,0.5)",
+    maxWidth: "100%",
+    marginTop: 7,
     paddingHorizontal: 11,
     paddingVertical: 5,
     borderRadius: radius.pill,
-    overflow: "hidden",
+    backgroundColor: "rgba(20,14,12,0.58)",
   },
-  more: { alignSelf: "center", marginTop: spacing.md },
-  moreText: { color: "rgba(255,255,255,0.92)", fontSize: 13, fontWeight: "700" },
-  photoCount: {
-    position: "absolute",
-    top: spacing.md,
-    right: spacing.md,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: radius.pill,
-    backgroundColor: "rgba(20,14,12,0.55)",
-  },
-  photoCountText: { color: "#fff", fontSize: 12.5, fontWeight: "700" },
+  pillText: { color: "#fff", fontSize: 14.5, fontWeight: "700", flexShrink: 1 },
+  moreRow: { flexDirection: "row", alignItems: "center", gap: 4 },
 
   // Below the first photo.
   details: { padding: spacing.md, paddingBottom: spacing.xl, gap: spacing.md, backgroundColor: colors.background },

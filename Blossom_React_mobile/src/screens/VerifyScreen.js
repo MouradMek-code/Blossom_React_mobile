@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
-import { View, Text, Image, Pressable, ScrollView, ActivityIndicator, Alert, StyleSheet } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { View, Text, Image, ScrollView, ActivityIndicator, Alert, StyleSheet } from "react-native";
+
 import { useTranslation } from "react-i18next";
 import * as ImagePicker from "expo-image-picker";
 import PageNav from "../components/PageNav";
@@ -10,14 +10,14 @@ import { POSE_EMOJI, fetchVerification, sendSelfie } from "../api/verification";
 import { useAutoRefresh } from "../navigation/useAutoRefresh";
 import { useBottomInset } from "../navigation/useBottomInset";
 import { formatDeadline } from "../api/offers";
-import { colors, radius, spacing, shadow, typography } from "../theme";
+import { colors, radius, spacing, shadow } from "../theme";
+import { Button, ScreenHeader } from "../ui";
 
 // The ✓ verified badge, in two taps: copy the pose on screen, take a selfie
 // with the front camera, send. The Blossom team compares it with the profile
 // photos; the selfie is deleted once checked.
 export default function VerifyScreen() {
   const { t, i18n } = useTranslation();
-  const navigation = useNavigation();
   const bottomInset = useBottomInset();
   const [state, setState] = useState(null); // { status, pose, reason }
   const [loadError, setLoadError] = useState(false);
@@ -72,18 +72,7 @@ export default function VerifyScreen() {
   return (
     <View style={styles.screen}>
       <PageNav />
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          hitSlop={10}
-          style={styles.back}
-          accessibilityRole="button"
-          accessibilityLabel={t("settings.back")}
-        >
-          <Text style={styles.backText}>←</Text>
-        </Pressable>
-        <Text style={styles.title}>{t("verified.title")}</Text>
-      </View>
+      <ScreenHeader title={t("verified.title")} />
 
       {loadError ? (
         <LoadError onRetry={load} />
@@ -139,35 +128,11 @@ export default function VerifyScreen() {
                 {photo ? (
                   <>
                     <Image source={{ uri: photo.uri }} style={styles.preview} />
-                    <Pressable
-                      style={({ pressed }) => [styles.primaryBtn, (pressed || sending) && styles.pressed]}
-                      onPress={send}
-                      disabled={sending}
-                      accessibilityRole="button"
-                    >
-                      {sending ? (
-                        <ActivityIndicator color="#fff" />
-                      ) : (
-                        <Text style={styles.primaryBtnText}>{t("verified.send")}</Text>
-                      )}
-                    </Pressable>
-                    <Pressable
-                      style={styles.linkBtn}
-                      onPress={takeSelfie}
-                      disabled={sending}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.linkBtnText}>{t("verified.retake")}</Text>
-                    </Pressable>
+                    <Button title={t("verified.send")} icon="send" variant="info" onPress={send} loading={sending} full />
+                    <Button title={t("verified.retake")} icon="refresh-cw" variant="ghost" onPress={takeSelfie} disabled={sending} />
                   </>
                 ) : (
-                  <Pressable
-                    style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
-                    onPress={takeSelfie}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.primaryBtnText}>📸 {t("verified.take")}</Text>
-                  </Pressable>
+                  <Button title={t("verified.take")} icon="camera" variant="info" onPress={takeSelfie} full />
                 )}
               </View>
 
@@ -182,19 +147,6 @@ export default function VerifyScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  back: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  backText: { fontSize: 22, color: colors.text },
-  title: { ...typography.h3, fontSize: 18 },
   content: { padding: spacing.md, gap: spacing.md },
   center: { alignItems: "center", gap: spacing.sm, paddingVertical: spacing.sm },
   card: {
@@ -240,16 +192,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
     marginTop: spacing.xs,
   },
-  primaryBtn: {
-    alignItems: "center",
-    marginTop: spacing.xs,
-    paddingVertical: 14,
-    borderRadius: radius.pill,
-    backgroundColor: VERIFIED_BLUE,
-  },
-  primaryBtnText: { color: "#fff", fontWeight: "800", fontSize: 15.5 },
-  pressed: { opacity: 0.8 },
-  linkBtn: { alignItems: "center", paddingVertical: 8 },
-  linkBtnText: { color: colors.textSoft, fontWeight: "700", fontSize: 14 },
   privacy: { fontSize: 12.5, lineHeight: 18, color: colors.textMuted, textAlign: "center", paddingHorizontal: spacing.md },
 });

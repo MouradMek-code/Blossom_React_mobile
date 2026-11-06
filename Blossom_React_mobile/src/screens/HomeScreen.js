@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
-import { Animated, Dimensions, ScrollView, View, StyleSheet } from "react-native";
+import { Animated, Dimensions, Pressable, ScrollView, Text, View, StyleSheet } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import PageNav from "../components/PageNav";
 import StartHome from "../components/StartHome";
 import HowItWorks from "../components/HowItWorks";
@@ -11,6 +13,8 @@ import InstagramCard from "../components/InstagramCard";
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
+  const navigation = useNavigation();
   const scale = useRef(new Animated.Value(1)).current;
 
   // Slow "Ken Burns" zoom, looping back and forth - mirrors the same
@@ -54,6 +58,14 @@ export default function HomeScreen() {
       {/* Instagram @blossomfordate */}
       <InstagramCard style={styles.instagram} />
       <FounderProjects />
+      {/* For visitors too: reporting needs no account. */}
+      <Pressable
+        style={styles.report}
+        onPress={() => navigation.navigate("ReportProblem")}
+        accessibilityRole="button"
+      >
+        <Text style={styles.reportText}>🛟 {t("feedback.homeLink")}</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -63,6 +75,8 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1 },
   venues: { marginHorizontal: 16, marginVertical: 24 },
   instagram: { marginHorizontal: 16, marginBottom: 24 },
+  report: { alignSelf: "center", paddingVertical: 14, paddingHorizontal: 20, marginBottom: 24 },
+  reportText: { fontSize: 13.5, color: "#8A7E76", fontWeight: "600", textDecorationLine: "underline" },
   hero: {
     width: "100%",
     overflow: "hidden",

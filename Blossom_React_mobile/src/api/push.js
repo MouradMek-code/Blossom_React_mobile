@@ -113,6 +113,9 @@ export function openNotificationTarget(navigationRef, data = {}) {
   } else if (data.type === "verification") {
     // Verified, or "try again with a new pose".
     navigationRef.navigate("Verify");
+  } else if (data.type === "feedback") {
+    // "🚨 Child safety report: ..." / "🛟 Problem reported: ...".
+    navigationRef.navigate("Admin", { tab: "reports" });
   } else if (data.type === "profile_report") {
     // "🚩 Sara reported Tom: ..." - straight to the reports.
     navigationRef.navigate("Admin", { tab: "reports" });

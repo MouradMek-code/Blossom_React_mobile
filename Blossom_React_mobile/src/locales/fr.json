@@ -367,7 +367,9 @@
     "empty": "Pas encore de like — revenez bientôt !",
     "likeBack": "Liker aussi",
     "matchTitle": "C'est un match !",
-    "matchText": "Vous vous êtes likés tous les deux"
+    "matchText": "Vous vous êtes likés tous les deux",
+    "matchMessage": "Envoyer un message",
+    "matchKeepGoing": "Continuer à explorer"
   },
   "safety": {
     "back": "Retour",
@@ -414,7 +416,9 @@
     "factExercise": "Sport",
     "factPets": "Animaux",
     "factChildren": "Enfants",
-    "factWantsChildren": "Veut des enfants"
+    "factWantsChildren": "Veut des enfants",
+    "previousPhoto": "Photo précédente",
+    "nextPhoto": "Photo suivante"
   },
   "connection": {
     "question": "Qu'est-ce qui vous amène sur Blossom ?",
@@ -1140,5 +1144,61 @@
   "chatSafety": {
     "text": "Prudence : n'envoyez jamais d'argent, de coordonnées bancaires ou de codes à une personne que vous n'avez pas rencontrée, et prenez votre temps avant de passer sur une autre application.",
     "report": "Signaler cette personne"
+  },
+  "feedback": {
+    "title": "Signaler un problème",
+    "intro": "Signalez à l'équipe Blossom un problème de sécurité ou quelque chose qui ne va pas. Cela reste entre vous et nous.",
+    "reasonLabel": "De quoi s'agit-il ?",
+    "kind_child_safety": "Sécurité d'un enfant",
+    "kind_scam": "Arnaque ou faux profil",
+    "kind_harassment": "Harcèlement ou abus",
+    "kind_bug": "Quelque chose ne marche pas",
+    "kind_other": "Autre chose",
+    "childNote": "Nous agissons immédiatement et signalons tout abus ou exploitation sexuelle d'enfants aux autorités. Si un enfant est en danger immédiat, appelez le numéro d'urgence local.",
+    "messageLabel": "Que s'est-il passé ?",
+    "messagePlaceholder": "Qui, quoi, quand – chaque détail aide.",
+    "emailLabel": "Votre e-mail (facultatif, pour vous répondre)",
+    "send": "Envoyer",
+    "sending": "Envoi…",
+    "doneTitle": "Merci",
+    "doneText": "L'équipe Blossom a bien reçu votre signalement et va l'examiner rapidement.",
+    "back": "Retour",
+    "settingsRow": "Signaler un problème",
+    "homeLink": "Signaler un problème ou un souci de sécurité",
+    "childSafetyLink": "Sécurité des enfants",
+    "adminTitle": "Problèmes signalés",
+    "adminEmpty": "Rien de signalé. 🎉",
+    "adminShowAll": "Voir aussi ceux faits",
+    "adminHideDone": "Masquer ceux faits",
+    "adminFrom": "De {{name}}",
+    "adminVisitor": "Visiteur (non connecté)",
+    "adminAbout": "Concerne {{name}}",
+    "adminDone": "Marquer comme fait",
+    "adminReopen": "Pas encore fait",
+    "adminDelete": "🗑 Supprimer",
+    "adminDeleteConfirm": "Supprimer ce signalement ?",
+    "adminReply": "Répondre par e-mail"
+  },
+  "signupSteps": {
+    "step": "Étape {{n}} sur {{total}}",
+    "intent": "Ce qui vous amène",
+    "you": "À propos de vous",
+    "looking": "Ce que vous recherchez",
+    "story": "Votre histoire",
+    "languages": "Vos langues",
+    "basics": "Quelques détails de plus",
+    "lifestyle": "Votre mode de vie",
+    "personal": "Famille et relations passées",
+    "optional": "Facultatif",
+    "optionalStep": "Tout est facultatif – passez ce que vous préférez.",
+    "startTitle": "Créez votre profil",
+    "startText": "{{count}} étapes courtes – environ 2 minutes.",
+    "startButton": "C'est parti",
+    "next": "Suivant",
+    "finish": "Terminer"
+  },
+  "direction": {
+    "restartTitle": "Redémarrez Blossom",
+    "restartText": "Fermez Blossom puis rouvrez-le pour terminer le changement de mise en page."
   }
 }

@@ -11,6 +11,7 @@ import SettingsScreen from "../screens/SettingsScreen";
 import DeleteAccountScreen from "../screens/DeleteAccountScreen";
 import VerifyScreen from "../screens/VerifyScreen";
 import EnableLocationScreen from "../screens/EnableLocationScreen";
+import ReportProblemScreen from "../screens/ReportProblemScreen";
 import AdminScreen from "../screens/AdminScreen";
 import FriendProfilesScreen from "../screens/FriendProfilesScreen";
 import VouchersScreen from "../screens/VouchersScreen";
@@ -56,6 +57,8 @@ export default function RootNavigator({ initialRouteName = "Home" }) {
       <Stack.Screen name="LikedYou" component={LikedYouScreen} />
       <Stack.Screen name="EventDetail" component={EventDetailScreen} />
       <Stack.Screen name="EventForm" component={EventFormScreen} />
+      {/* "Report a problem": from Settings, and from Home for visitors. */}
+      <Stack.Screen name="ReportProblem" component={ReportProblemScreen} />
       <Stack.Screen name="NotFound" component={NotFoundScreen} />
     </Stack.Navigator>
   );

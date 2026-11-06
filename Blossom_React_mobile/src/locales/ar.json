@@ -367,7 +367,9 @@
     "empty": "لا توجد إعجابات بعد — تحقق مرة أخرى قريبًا!",
     "likeBack": "بادله الإعجاب",
     "matchTitle": "لقد تطابقتما!",
-    "matchText": "كلاكما أعجب بالآخر"
+    "matchText": "كلاكما أعجب بالآخر",
+    "matchMessage": "أرسل رسالة",
+    "matchKeepGoing": "متابعة التصفح"
   },
   "safety": {
     "back": "رجوع",
@@ -414,7 +416,9 @@
     "factExercise": "الرياضة",
     "factPets": "الحيوانات الأليفة",
     "factChildren": "الأطفال",
-    "factWantsChildren": "يريد أطفالًا"
+    "factWantsChildren": "يريد أطفالًا",
+    "previousPhoto": "الصورة السابقة",
+    "nextPhoto": "الصورة التالية"
   },
   "connection": {
     "question": "ما الذي أتى بك إلى Blossom؟",
@@ -1140,5 +1144,61 @@
   "chatSafety": {
     "text": "انتبه: لا ترسل أبدًا مالًا أو بيانات بنكية أو رموزًا لشخص لم تقابله، وخذ وقتك قبل الانتقال إلى تطبيق آخر.",
     "report": "الإبلاغ عن هذا الشخص"
+  },
+  "feedback": {
+    "title": "الإبلاغ عن مشكلة",
+    "intro": "أخبر فريق Blossom عن مشكلة أمان أو أي شيء غير صحيح. يبقى ذلك بينك وبيننا.",
+    "reasonLabel": "بخصوص ماذا؟",
+    "kind_child_safety": "مخاوف تتعلق بسلامة طفل",
+    "kind_scam": "احتيال أو ملف مزيف",
+    "kind_harassment": "تحرش أو إساءة",
+    "kind_bug": "شيء لا يعمل",
+    "kind_other": "شيء آخر",
+    "childNote": "نتصرف فورًا ونبلغ السلطات عن أي اعتداء أو استغلال جنسي للأطفال. إذا كان طفل في خطر فوري، اتصل برقم الطوارئ المحلي.",
+    "messageLabel": "ماذا حدث؟",
+    "messagePlaceholder": "من، ماذا، متى – كل تفصيل يساعد.",
+    "emailLabel": "بريدك الإلكتروني (اختياري، لنتمكن من الرد عليك)",
+    "send": "إرسال",
+    "sending": "جارٍ الإرسال…",
+    "doneTitle": "شكرًا لك",
+    "doneText": "تلقى فريق Blossom بلاغك وسيراجعه بسرعة.",
+    "back": "رجوع",
+    "settingsRow": "الإبلاغ عن مشكلة",
+    "homeLink": "الإبلاغ عن مشكلة أو مخاوف تتعلق بالأمان",
+    "childSafetyLink": "سلامة الأطفال",
+    "adminTitle": "المشاكل المُبلغ عنها",
+    "adminEmpty": "لا توجد بلاغات. 🎉",
+    "adminShowAll": "عرض المنجزة أيضًا",
+    "adminHideDone": "إخفاء المنجزة",
+    "adminFrom": "من {{name}}",
+    "adminVisitor": "زائر (غير مسجل الدخول)",
+    "adminAbout": "بخصوص {{name}}",
+    "adminDone": "تحديد كمنجز",
+    "adminReopen": "غير منجز بعد",
+    "adminDelete": "🗑 حذف",
+    "adminDeleteConfirm": "حذف هذا البلاغ؟",
+    "adminReply": "الرد بالبريد"
+  },
+  "signupSteps": {
+    "step": "الخطوة {{n}} من {{total}}",
+    "intent": "ما الذي يأتي بك إلى هنا",
+    "you": "عنك",
+    "looking": "ما الذي تبحث عنه",
+    "story": "قصتك",
+    "languages": "لغاتك",
+    "basics": "بعض التفاصيل الإضافية",
+    "lifestyle": "نمط حياتك",
+    "personal": "العائلة والعلاقات السابقة",
+    "optional": "اختياري",
+    "optionalStep": "كل شيء اختياري – تخطَّ ما تفضّل.",
+    "startTitle": "أنشئ ملفك الشخصي",
+    "startText": "{{count}} خطوات قصيرة – حوالي دقيقتين.",
+    "startButton": "لنبدأ",
+    "next": "التالي",
+    "finish": "إنهاء"
+  },
+  "direction": {
+    "restartTitle": "أعد تشغيل Blossom",
+    "restartText": "أغلق Blossom ثم افتحه من جديد لإكمال تغيير اتجاه الواجهة."
   }
 }

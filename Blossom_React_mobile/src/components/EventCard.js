@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { IMG } from "../api/images";
 import { KIND_EMOJI, KIND_GRADIENT, eventDay, eventWhen } from "../api/events";
 import { colors, radius, spacing, shadow } from "../theme";
+import { Icon } from "../ui";
 
 // One event in the Events list: photo (or the type's colours), the date
 // badge, what/when/where, who organises and how many are interested.
@@ -40,8 +41,14 @@ export default function EventCard({ event, t, language, onPress }) {
       </View>
       <View style={styles.body}>
         <Text style={styles.title} numberOfLines={2}>{event.title}</Text>
-        <Text style={styles.line}>🕒 {eventWhen(event.starts_at, language)}</Text>
-        <Text style={styles.line} numberOfLines={1}>📍 {event.place_name} · {event.city}</Text>
+        <View style={styles.lineRow}>
+          <Icon name="clock" size={14} color={colors.textMuted} />
+          <Text style={styles.line}>{eventWhen(event.starts_at, language)}</Text>
+        </View>
+        <View style={styles.lineRow}>
+          <Icon name="map-pin" size={14} color={colors.textMuted} />
+          <Text style={styles.line} numberOfLines={1}>{event.place_name} · {event.city}</Text>
+        </View>
         {(event.spot?.offer || event.women_only || event.status === "cancelled") && (
           <View style={styles.tags}>
             {event.spot?.offer && (
@@ -74,6 +81,7 @@ export default function EventCard({ event, t, language, onPress }) {
 }
 
 const styles = StyleSheet.create({
+  lineRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

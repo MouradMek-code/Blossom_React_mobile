@@ -6,6 +6,8 @@ import { useBottomInset } from "../navigation/useBottomInset";
 import { useAutoRefresh } from "../navigation/useAutoRefresh";
 import PageNav from "../components/PageNav";
 import LoadError from "../components/LoadError";
+import MatchCelebration from "../components/MatchCelebration";
+import { Button, EmptyState, Icon, SkeletonTiles, haptics } from "../ui";
 import { BASE_URL } from "../api/config";
 import { IMG } from "../api/images";
 import { endSessionAndGoToLogin } from "../api/session";
@@ -26,7 +28,7 @@ export default function LikedYouScreen() {
   const navigation = useNavigation();
   const bottomInset = useBottomInset();
   // Last list from this session, shown immediately while it refreshes.
-  const [likedByProfiles, setLikedByProfiles] = useState(() => peekCache("likedYou") || []);
+  const [likedByProfiles, setLikedByProfiles] = useState(() => peekCache("likedYou") || null);
   const [matchedProfile, setMatchedProfile] = useState(null);
   const [loadError, setLoadError] = useState(false);
 
@@ -110,6 +112,7 @@ export default function LikedYouScreen() {
   useAutoRefresh(fetchLikedBy, { minIntervalMs: 5000 });
 
   async function handleLikeBack(profile) {
+    haptics.like();
     const token = await getToken();
     try {
       const resp = await fetch(`${BASE_URL}/likes/${profile.id}`, {
@@ -123,12 +126,10 @@ export default function LikedYouScreen() {
       if (resp.status !== 200) {
         throw new Error(`error happened on like service : ${data.detail?.[0]?.msg}`);
       }
-      if (data.matched) {
-        setMatchedProfile(profile);
-        setTimeout(() => setMatchedProfile(null), 2000);
-      }
+      // The match moment stays until they choose: write, or keep going.
+      if (data.matched) setMatchedProfile(profile);
       setLikedByProfiles((prev) => {
-        const next = prev.filter((p) => p.id !== profile.id);
+        const next = (prev || []).filter((p) => p.id !== profile.id);
         writeCache("likedYou", next);
         return next;
       });
@@ -142,27 +143,35 @@ export default function LikedYouScreen() {
       <PageNav />
       {/* Opened from the banner at the top of Chats (or a "like" notification). */}
       <View style={styles.titleRow}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.back} accessibilityRole="button">
-          <Text style={styles.backText}>←</Text>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          hitSlop={6}
+          style={styles.back}
+          accessibilityRole="button"
+          accessibilityLabel={t("messages.back")}
+        >
+          <Icon name="arrow-left" size={24} />
         </Pressable>
         <Text style={styles.title}>{t("likesYou.title")}</Text>
       </View>
       {loadError ? <LoadError onRetry={fetchLikedBy} /> : null}
 
-      {matchedProfile && (
-        <View style={styles.matchOverlay}>
-          <View style={styles.matchCard}>
-            <Text style={styles.matchHeart}>❤️</Text>
-            <Text style={styles.matchTitle}>{t("likesYou.matchTitle")}</Text>
-            <Image source={{ uri: matchedProfile.photoUrl }} style={styles.matchImage} />
-            <Text style={styles.matchName}>{matchedProfile.first_name}</Text>
-            <Text>{t("likesYou.matchText")}</Text>
-          </View>
-        </View>
-      )}
+      {matchedProfile ? (
+        <MatchCelebration
+          me={peekCache("browse")?.own}
+          them={{ first_name: matchedProfile.first_name, photos: [{ image_url: matchedProfile.photoUrl }] }}
+          onClose={() => setMatchedProfile(null)}
+          onMessage={() => {
+            setMatchedProfile(null);
+            navigation.navigate("Main", { screen: "Messages" });
+          }}
+        />
+      ) : null}
+
+      {likedByProfiles === null && !loadError ? <SkeletonTiles count={2} /> : null}
 
       <FlatList
-        data={likedByProfiles}
+        data={likedByProfiles || []}
         keyExtractor={(item) => String(item.id)}
         numColumns={2}
         // Room below the last row, so its Like back buttons can scroll clear
@@ -172,33 +181,53 @@ export default function LikedYouScreen() {
           { paddingBottom: bottomInset + spacing.lg },
         ]}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>{t("likesYou.empty")}</Text>
-          </View>
+          likedByProfiles === null ? null : (
+            <EmptyState
+              icon="heart"
+              text={t("likesYou.empty")}
+              actionTitle={t("messages.browse")}
+              actionIcon="users"
+              onAction={() => navigation.navigate("Main", { screen: "Profiles" })}
+            />
+          )
         }
         renderItem={({ item: profile }) => (
           <View style={styles.card}>
             <Pressable
               style={styles.imageWrapper}
               onPress={() => navigation.navigate("ProfileDetails", { id: profile.id })}
+              accessibilityRole="button"
+              accessibilityLabel={`${profile.first_name}, ${profile.age}`}
             >
               <Image source={{ uri: profile.photoUrl }} style={styles.image} />
               <View style={styles.overlay}>
-                <Text style={styles.name}>
+                <Text style={styles.name} numberOfLines={1}>
                   {profile.first_name}, {profile.age}
                 </Text>
-                <Text style={styles.location}>
-                  📍 {profile.city}, {profile.country}
-                </Text>
+                {profile.city || profile.country ? (
+                  <View style={styles.line}>
+                    <Icon name="map-pin" size={12} color="#fff" />
+                    <Text style={styles.lineText} numberOfLines={1}>
+                      {[profile.city, profile.country].filter(Boolean).join(", ")}
+                    </Text>
+                  </View>
+                ) : null}
                 {profile.occupation ? (
-                  <Text style={styles.tag}>💼 {profile.occupation}</Text>
+                  <View style={styles.line}>
+                    <Icon name="briefcase" size={12} color="#fff" />
+                    <Text style={styles.lineText} numberOfLines={1}>{profile.occupation}</Text>
+                  </View>
                 ) : null}
               </View>
             </Pressable>
 
-            <Pressable style={styles.likeButton} onPress={() => handleLikeBack(profile)}>
-              <Text style={styles.likeButtonText}>❤️ {t("likesYou.likeBack")}</Text>
-            </Pressable>
+            <Button
+              title={t("likesYou.likeBack")}
+              icon="heart"
+              small
+              onPress={() => handleLikeBack(profile)}
+              style={styles.likeButton}
+            />
           </View>
         )}
       />
@@ -209,12 +238,9 @@ export default function LikedYouScreen() {
 const styles = StyleSheet.create({
   head: { flex: 1, backgroundColor: colors.background },
   titleRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.sm, paddingTop: spacing.sm },
-  back: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  backText: { fontSize: 22, color: colors.text },
+  back: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   title: { ...typography.h3, paddingHorizontal: spacing.xs },
   container: { padding: spacing.sm },
-  empty: { alignItems: "center", justifyContent: "center", padding: spacing.xl },
-  emptyText: { ...typography.bodyMuted, fontSize: 15 },
   card: {
     flex: 1,
     margin: 6,
@@ -223,44 +249,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
     ...shadow.sm,
   },
-  imageWrapper: { height: 200 },
+  imageWrapper: { height: 210 },
   image: { width: "100%", height: "100%" },
   overlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(20,14,12,0.6)",
     padding: spacing.sm,
+    gap: 3,
   },
-  name: { color: "#fff", fontWeight: "700" },
-  location: { color: "#fff", fontSize: 12 },
-  tag: { color: "#fff", fontSize: 12, marginTop: 2 },
-  likeButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  likeButtonText: { color: "#fff", fontWeight: "700", fontSize: 13 },
-  matchOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-  },
-  matchCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
-    alignItems: "center",
-  },
-  matchHeart: { fontSize: 40 },
-  matchTitle: { fontSize: 22, fontWeight: "700", marginVertical: 8 },
-  matchImage: { width: 100, height: 100, borderRadius: 50, marginVertical: 8 },
-  matchName: { fontSize: 18, fontWeight: "700" },
+  name: { color: "#fff", fontWeight: "800", fontSize: 15 },
+  line: { flexDirection: "row", alignItems: "center", gap: 5 },
+  lineText: { color: "#fff", fontSize: 12, fontWeight: "600", flexShrink: 1 },
+  // Square bottom: the button is the card's foot.
+  likeButton: { borderRadius: 0, minHeight: 44 },
 });

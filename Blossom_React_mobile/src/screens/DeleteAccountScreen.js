@@ -1,14 +1,5 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  TextInput,
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
-} from "react-native";
+import { View, Text, ScrollView, TextInput, Alert, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import PageNav from "../components/PageNav";
@@ -18,7 +9,8 @@ import { unregisterPushNotifications } from "../api/push";
 import { clearSession, getToken } from "../api/storage";
 import { peekCache, writeCache } from "../api/cache";
 import { useBottomInset } from "../navigation/useBottomInset";
-import { colors, radius, spacing, shadow, typography } from "../theme";
+import { colors, radius, spacing } from "../theme";
+import { Button, Card, ScreenHeader } from "../ui";
 
 // Reached from the small "Delete account" link at the very bottom of
 // Settings. A break or logging out is often all someone needs, so those come
@@ -82,18 +74,7 @@ export default function DeleteAccountScreen() {
     <View style={styles.screen}>
       <PageNav />
 
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          hitSlop={10}
-          style={styles.back}
-          accessibilityRole="button"
-          accessibilityLabel={t("settings.back")}
-        >
-          <Text style={styles.backText}>←</Text>
-        </Pressable>
-        <Text style={styles.title}>{t("deleteAccount.title")}</Text>
-      </View>
+      <ScreenHeader title={t("deleteAccount.title")} />
 
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: bottomInset + spacing.xl }]}
@@ -101,40 +82,23 @@ export default function DeleteAccountScreen() {
       >
         <Text style={styles.intro}>{t("deleteAccount.intro")}</Text>
 
-        <View style={styles.card}>
+        <Card>
           <Text style={styles.cardTitle}>{t("deleteAccount.breakTitle")}</Text>
           <Text style={styles.cardText}>{t("deleteAccount.breakText")}</Text>
           {paused ? (
             <Text style={styles.done}>{t("deleteAccount.breakDone")}</Text>
           ) : (
-            <Pressable
-              style={({ pressed }) => [styles.primaryBtn, (pressed || pausing) && styles.pressed]}
-              onPress={takeBreak}
-              disabled={pausing}
-              accessibilityRole="button"
-            >
-              {pausing ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.primaryBtnText}>{t("deleteAccount.breakButton")}</Text>
-              )}
-            </Pressable>
+            <Button title={t("deleteAccount.breakButton")} icon="moon" onPress={takeBreak} loading={pausing} full />
           )}
-        </View>
+        </Card>
 
-        <View style={styles.card}>
+        <Card>
           <Text style={styles.cardTitle}>{t("deleteAccount.logoutTitle")}</Text>
           <Text style={styles.cardText}>{t("deleteAccount.logoutText")}</Text>
-          <Pressable
-            style={({ pressed }) => [styles.outlineBtn, pressed && styles.pressed]}
-            onPress={logout}
-            accessibilityRole="button"
-          >
-            <Text style={styles.outlineBtnText}>{t("deleteAccount.logoutButton")}</Text>
-          </Pressable>
-        </View>
+          <Button title={t("deleteAccount.logoutButton")} icon="log-out" variant="secondary" onPress={logout} full />
+        </Card>
 
-        <View style={[styles.card, styles.deleteCard]}>
+        <Card tone="danger" style={styles.deleteCard}>
           <Text style={styles.cardTitle}>{t("deleteAccount.foreverTitle")}</Text>
           <Text style={styles.cardText}>{t("settings.deleteMessage")}</Text>
           <Text style={styles.typeLabel}>{t("deleteAccount.typeLabel", { word })}</Text>
@@ -148,24 +112,16 @@ export default function DeleteAccountScreen() {
             autoCorrect={false}
             editable={!deleting}
           />
-          <Pressable
-            style={({ pressed }) => [
-              styles.deleteBtn,
-              !confirmed && styles.disabled,
-              (pressed || deleting) && confirmed && styles.pressed,
-            ]}
+          <Button
+            title={t("settings.deleteYes")}
+            icon="trash-2"
+            variant="dangerSolid"
             onPress={deleteAccount}
-            disabled={!confirmed || deleting}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !confirmed || deleting }}
-          >
-            {deleting ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.deleteBtnText}>{t("settings.deleteYes")}</Text>
-            )}
-          </Pressable>
-        </View>
+            disabled={!confirmed}
+            loading={deleting}
+            full
+          />
+        </Card>
       </ScrollView>
     </View>
   );
@@ -173,48 +129,11 @@ export default function DeleteAccountScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  back: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  backText: { fontSize: 22, color: colors.text },
-  title: { ...typography.h3, fontSize: 18 },
   content: { padding: spacing.md, gap: spacing.md },
   intro: { fontSize: 15, lineHeight: 21, color: colors.textSoft, marginHorizontal: spacing.xs },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.sm,
-    ...shadow.sm,
-  },
   cardTitle: { fontSize: 16, fontWeight: "800", color: colors.text },
   cardText: { fontSize: 13.5, lineHeight: 19, color: colors.textSoft },
   done: { fontSize: 14, lineHeight: 20, fontWeight: "700", color: "#1F6B45", marginTop: spacing.xs },
-  primaryBtn: {
-    alignItems: "center",
-    marginTop: spacing.xs,
-    paddingVertical: 12,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primary,
-  },
-  primaryBtnText: { color: "#fff", fontWeight: "800", fontSize: 14.5 },
-  outlineBtn: {
-    alignItems: "center",
-    marginTop: spacing.xs,
-    paddingVertical: 11,
-    borderRadius: radius.pill,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-  },
-  outlineBtnText: { color: colors.primary, fontWeight: "800", fontSize: 14.5 },
   // Last, and well apart from the two gentler options.
   deleteCard: { marginTop: spacing.lg, borderWidth: 1, borderColor: "#F3B7B0" },
   typeLabel: { fontSize: 13.5, fontWeight: "700", color: colors.text, marginTop: spacing.xs },
@@ -228,14 +147,4 @@ const styles = StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.background,
   },
-  deleteBtn: {
-    alignItems: "center",
-    marginTop: spacing.xs,
-    paddingVertical: 13,
-    borderRadius: radius.pill,
-    backgroundColor: colors.danger,
-  },
-  deleteBtnText: { color: "#fff", fontWeight: "800", fontSize: 14.5 },
-  disabled: { opacity: 0.4 },
-  pressed: { opacity: 0.75 },
 });

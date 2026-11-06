@@ -15,6 +15,7 @@ import { getToken } from "../api/storage";
 import { postJson } from "../api/errors";
 import { KIND_EMOJI, KIND_GRADIENT, eventWhen } from "../api/events";
 import { colors, radius, spacing, shadow, typography } from "../theme";
+import { Icon } from "../ui";
 
 const WOMEN = ["Woman", "Trans Woman"];
 
@@ -173,8 +174,14 @@ export default function EventDetailScreen() {
 
   const header = (
     <View style={styles.topBar}>
-      <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.back} accessibilityRole="button">
-        <Text style={styles.backText}>←</Text>
+      <Pressable
+        onPress={() => navigation.goBack()}
+        hitSlop={6}
+        style={styles.back}
+        accessibilityRole="button"
+        accessibilityLabel={t("safety.back")}
+      >
+        <Icon name="arrow-left" size={24} />
       </Pressable>
       <Text style={styles.topTitle}>📅 {t("events.title")}</Text>
     </View>
@@ -228,13 +235,13 @@ export default function EventDetailScreen() {
           {status && <Text style={styles.statusBar}>{t(`events.${status}`)}</Text>}
           <Text style={styles.title}>{event.title}</Text>
 
-          <Fact icon="🕒">
+          <Fact icon="clock">
             <Text style={styles.factStrong}>
               {eventWhen(event.starts_at, language)}
               {event.ends_at ? ` – ${timeOnly(event.ends_at, language)}` : ""}
             </Text>
           </Fact>
-          <Fact icon="📍">
+          <Fact icon="map-pin">
             <Text style={styles.factText}>
               <Text style={styles.factStrong}>{event.place_name}</Text> · {event.city}
             </Text>
@@ -256,16 +263,16 @@ export default function EventDetailScreen() {
             </Pressable>
           ) : null}
           {event.max_people ? (
-            <Fact icon="👥"><Text style={styles.factText}>{t("events.upTo", { count: event.max_people })}</Text></Fact>
+            <Fact icon="users"><Text style={styles.factText}>{t("events.upTo", { count: event.max_people })}</Text></Fact>
           ) : null}
           {event.languages.length > 0 && (
-            <Fact icon="🗣️">
+            <Fact icon="message-circle">
               <View style={styles.langs}>
                 {event.languages.map((l) => <Text key={l} style={styles.lang}>{l}</Text>)}
               </View>
             </Fact>
           )}
-          {event.women_only && <Fact icon="👩"><Text style={styles.factText}>{t("events.womenOnly")}</Text></Fact>}
+          {event.women_only && <Fact icon="user"><Text style={styles.factText}>{t("events.womenOnly")}</Text></Fact>}
 
           <Text style={styles.description}>{event.description}</Text>
 
@@ -388,7 +395,7 @@ export default function EventDetailScreen() {
 function Fact({ icon, children }) {
   return (
     <View style={styles.fact}>
-      <Text style={styles.factIcon}>{icon}</Text>
+      <Icon name={icon} size={18} color={colors.primary} style={styles.factIcon} />
       <View style={{ flex: 1, gap: 2 }}>{children}</View>
     </View>
   );
@@ -588,8 +595,7 @@ function Comments({ event, loggedIn, isAdmin, blocked, onReport, onCount }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   topBar: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: spacing.md, paddingVertical: 6 },
-  back: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  backText: { fontSize: 22, color: colors.text },
+  back: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   topTitle: { ...typography.h3, fontSize: 17 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg, gap: 10 },
   missingText: { ...typography.body, color: colors.textSoft, textAlign: "center" },
@@ -612,7 +618,7 @@ const styles = StyleSheet.create({
   title: { ...typography.h2, marginBottom: 12 },
   fact: { flexDirection: "row", gap: 10, alignItems: "flex-start", marginBottom: 9 },
   giftFact: { padding: 10, borderRadius: radius.sm, backgroundColor: "#fff4e5" },
-  factIcon: { width: 22, textAlign: "center", fontSize: 15 },
+  factIcon: { width: 22, textAlign: "center", marginTop: 1 },
   factText: { fontSize: 15, color: colors.text },
   factStrong: { fontSize: 15, fontWeight: "700", color: colors.text },
   link: { fontSize: 14.5, fontWeight: "700", color: colors.primaryDeep },

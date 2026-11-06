@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { View, Text, Pressable, ActivityIndicator, Alert, StyleSheet } from "react-native";
+import { View, Text, Alert, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { enableAutoLocation } from "../api/autoLocation";
 import { clearSession } from "../api/storage";
-import { colors, radius, spacing, shadow, typography } from "../theme";
+import { colors, spacing, typography } from "../theme";
+import { Button, Icon } from "../ui";
 
 // The last sign-up step, after the photos, as on Bumble: one page, one button.
 // It leads to the phone's own permission window; whatever happens there
@@ -33,27 +34,19 @@ export default function EnableLocationScreen() {
     <View style={[styles.screen, { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.lg }]}>
       <View style={styles.middle}>
         <View style={styles.circle}>
-          <Text style={styles.pin}>📍</Text>
+          <Icon name="map-pin" size={56} color={colors.primary} />
         </View>
         <Text style={styles.title}>{t("location.pageTitle")}</Text>
         <Text style={styles.text}>{t("location.pageText")}</Text>
       </View>
 
-      <Pressable
-        style={({ pressed }) => [styles.button, (pressed || busy) && styles.pressed]}
+      <Button
+        title={busy ? t("location.pageBusy") : t("location.pageButton")}
+        icon="navigation"
         onPress={enable}
-        disabled={busy}
-        accessibilityRole="button"
-      >
-        {busy ? (
-          <View style={styles.busyRow}>
-            <ActivityIndicator color="#fff" size="small" />
-            <Text style={styles.buttonText}>{t("location.pageBusy")}</Text>
-          </View>
-        ) : (
-          <Text style={styles.buttonText}>{t("location.pageButton")}</Text>
-        )}
-      </Pressable>
+        loading={busy}
+        full
+      />
       <Text style={styles.note}>{t("location.pageNote")}</Text>
     </View>
   );
@@ -71,19 +64,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
     marginBottom: spacing.sm,
   },
-  pin: { fontSize: 60 },
   title: { ...typography.h2, fontSize: 27, textAlign: "center" },
   text: { fontSize: 16, lineHeight: 24, color: colors.textSoft, textAlign: "center", maxWidth: 340 },
-  button: {
-    alignItems: "center",
-    paddingVertical: 16,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primary,
-    ...shadow.md,
-  },
-  pressed: { opacity: 0.8 },
-  busyRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  buttonText: { color: "#fff", fontWeight: "800", fontSize: 16.5 },
   note: {
     marginTop: spacing.sm,
     fontSize: 12.5,

@@ -367,7 +367,9 @@
     "empty": "还没有人喜欢你 — 稍后再来看看！",
     "likeBack": "回喜欢",
     "matchTitle": "配对成功！",
-    "matchText": "你们互相喜欢"
+    "matchText": "你们互相喜欢",
+    "matchMessage": "发消息",
+    "matchKeepGoing": "继续浏览"
   },
   "safety": {
     "back": "返回",
@@ -414,7 +416,9 @@
     "factExercise": "运动",
     "factPets": "宠物",
     "factChildren": "孩子",
-    "factWantsChildren": "想要孩子"
+    "factWantsChildren": "想要孩子",
+    "previousPhoto": "上一张照片",
+    "nextPhoto": "下一张照片"
   },
   "connection": {
     "question": "你来 Blossom 是为了什么？",
@@ -1140,5 +1144,61 @@
   "chatSafety": {
     "text": "请注意：不要向没见过面的人汇款、提供银行信息或验证码；转到其他应用前也请三思。",
     "report": "举报此人"
+  },
+  "feedback": {
+    "title": "反馈问题",
+    "intro": "向 Blossom 团队反馈安全问题或任何不对劲的地方。内容只有你和我们知道。",
+    "reasonLabel": "是关于什么的？",
+    "kind_child_safety": "儿童安全问题",
+    "kind_scam": "诈骗或虚假资料",
+    "kind_harassment": "骚扰或辱骂",
+    "kind_bug": "功能无法使用",
+    "kind_other": "其他",
+    "childNote": "我们会立即处理，并将任何儿童性虐待或性剥削行为报告给有关部门。如果有儿童正处于紧急危险中，请拨打当地紧急电话。",
+    "messageLabel": "发生了什么？",
+    "messagePlaceholder": "谁、什么事、什么时候——任何细节都有帮助。",
+    "emailLabel": "你的邮箱（可选，方便我们回复你）",
+    "send": "发送",
+    "sending": "发送中…",
+    "doneTitle": "谢谢",
+    "doneText": "Blossom 团队已收到你的反馈，会尽快查看。",
+    "back": "返回",
+    "settingsRow": "反馈问题",
+    "homeLink": "反馈问题或安全隐患",
+    "childSafetyLink": "儿童安全",
+    "adminTitle": "用户反馈的问题",
+    "adminEmpty": "暂无反馈。🎉",
+    "adminShowAll": "显示已完成的",
+    "adminHideDone": "隐藏已完成的",
+    "adminFrom": "来自 {{name}}",
+    "adminVisitor": "访客（未登录）",
+    "adminAbout": "关于 {{name}}",
+    "adminDone": "标记为已完成",
+    "adminReopen": "尚未完成",
+    "adminDelete": "🗑 删除",
+    "adminDeleteConfirm": "删除这条反馈？",
+    "adminReply": "通过邮件回复"
+  },
+  "signupSteps": {
+    "step": "第 {{n}} 步，共 {{total}} 步",
+    "intent": "你来这里的目的",
+    "you": "关于你",
+    "looking": "你在寻找什么",
+    "story": "你的故事",
+    "languages": "你的语言",
+    "basics": "更多细节",
+    "lifestyle": "你的生活方式",
+    "personal": "家庭与过往感情",
+    "optional": "可选",
+    "optionalStep": "全部可选——不想回答的可以跳过。",
+    "startTitle": "创建你的资料",
+    "startText": "{{count}} 个简短步骤，大约 2 分钟。",
+    "startButton": "开始吧",
+    "next": "下一步",
+    "finish": "完成"
+  },
+  "direction": {
+    "restartTitle": "重新打开 Blossom",
+    "restartText": "关闭 Blossom 后重新打开，即可完成布局切换。"
   }
 }

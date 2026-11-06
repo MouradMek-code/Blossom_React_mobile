@@ -10,6 +10,7 @@ import { peekCache, writeCache } from "../api/cache";
 import { goToTab } from "../navigation/goToTab";
 import { useTheme } from "../context/ThemeContext";
 import { radius, spacing, shadow, typography } from "../theme";
+import { Icon } from "../ui";
 
 // Someone's full profile. Liking and passing happen on the Browse cards, not
 // here. Opened from a chat (`matched`), it also offers Unmatch next to Report
@@ -122,7 +123,7 @@ export default function ProfileDetailsScreen() {
         accessibilityRole="button"
         accessibilityLabel={t("safety.back")}
       >
-        <Text style={[styles.backText, { color: colors.text }]}>←</Text>
+        <Icon name="arrow-left" size={24} color={colors.text} />
       </Pressable>
       {profile ? (
         <Text style={styles.headerTitle} numberOfLines={1}>
@@ -225,8 +226,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderBottomWidth: 1,
   },
-  back: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  backText: { fontSize: 22 },
+  back: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   headerTitle: { ...typography.h3, flex: 1 },
 
   /* Modals */

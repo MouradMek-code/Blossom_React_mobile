@@ -29,6 +29,7 @@ import { mapPoints } from "../api/spotMap";
 import SpotsMap from "../components/SpotsMap";
 import SpotPhotoMode from "../components/SpotPhotoMode";
 import PageNav from "../components/PageNav";
+import { Icon, SkeletonTiles } from "../ui";
 import LocationFields from "../components/LocationFields";
 import { readCache } from "../api/cache";
 import { useBottomInset } from "../navigation/useBottomInset";
@@ -655,9 +656,11 @@ ${SITE_URL}/date-spots/${spot.id}`,
             accessibilityRole="button"
             accessibilityLabel={t("dateSpots.city")}
           >
-            <Text style={[styles.toolPillText, city && styles.toolPillTextOn]} numberOfLines={1}>
-              📍 {city || t("dateSpots.allCities")} ▾
+            <Icon name="map-pin" size={15} color={city ? colors.primaryDeep : colors.textSoft} />
+            <Text style={[styles.toolPillText, city && styles.toolPillTextOn, styles.toolPillLabel]} numberOfLines={1}>
+              {city || t("dateSpots.allCities")}
             </Text>
+            <Icon name="chevron-down" size={15} color={city ? colors.primaryDeep : colors.textSoft} />
           </Pressable>
           <Pressable
             style={[styles.toolPill, panelCount > 0 && styles.toolPillOn]}
@@ -697,7 +700,7 @@ ${SITE_URL}/date-spots/${spot.id}`,
           />
           {searching ? (
             <Pressable onPress={() => setQuery("")} hitSlop={10} accessibilityLabel={t("dateSpots.clearSearch")}>
-              <Text style={styles.searchClear}>✕</Text>
+              <Icon name="x" size={18} color={colors.textSoft} style={styles.searchClear} />
             </Pressable>
           ) : null}
         </View>
@@ -817,10 +820,10 @@ ${SITE_URL}/date-spots/${spot.id}`,
         </Text>
 
         {loading ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
+          <SkeletonTiles count={2} />
         ) : shownSpots.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>📍</Text>
+            <Icon name="map-pin" size={46} color={colors.primary} style={styles.emptyIcon} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
               {t("dateSpots.emptyTitle")}
             </Text>
@@ -1024,7 +1027,10 @@ ${SITE_URL}/date-spots/${spot.id}`,
                 </View>
               ) : null}
               <Text style={styles.detailTitle}>{selected?.name}</Text>
-              <Text style={styles.detailPlace}>📍 {fullPlace(selected)}</Text>
+              <View style={styles.detailPlaceRow}>
+                <Icon name="map-pin" size={15} color={colors.primary} />
+                <Text style={styles.detailPlace}>{fullPlace(selected)}</Text>
+              </View>
               {/* Right away, no scrolling: organise something here, or (for
                   the café's staff) offer couples a gift here. */}
               {selected ? (
@@ -1091,8 +1097,9 @@ ${SITE_URL}/date-spots/${spot.id}`,
                     onPress={() => confirmDelete(selected)}
                     disabled={deleting}
                   >
+                    <Icon name="trash-2" size={15} color={colors.danger} />
                     <Text style={[styles.editBtnText, styles.deleteBtnText]}>
-                      🗑️ {deleting ? t("dateSpots.deleting") : t("dateSpots.delete")}
+                      {deleting ? t("dateSpots.deleting") : t("dateSpots.delete")}
                     </Text>
                   </Pressable>
                 </View>
@@ -1174,8 +1181,10 @@ ${SITE_URL}/date-spots/${spot.id}`,
             style={[styles.detailClose, { top: insets.top + 12 }]}
             onPress={() => setSelected(null)}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t("dateSpots.close", "Close")}
           >
-            <Text style={styles.detailCloseText}>✕</Text>
+            <Icon name="x" size={22} />
           </Pressable>
           {/* On the photo, opposite the ✕: the screenshot-ready poster. */}
           <Pressable
@@ -1497,8 +1506,14 @@ function InvitePicker({ spot, token, bottomInset, onClose, onSent }) {
           <Text style={styles.inviteTitle}>
             💌 {t("dateSpots.inviteTitle", { name: spot.name })}
           </Text>
-          <Pressable onPress={onClose} hitSlop={10} style={styles.inviteClose}>
-            <Text style={styles.detailCloseText}>✕</Text>
+          <Pressable
+            onPress={onClose}
+            hitSlop={10}
+            style={styles.inviteClose}
+            accessibilityRole="button"
+            accessibilityLabel={t("dateSpots.close", "Close")}
+          >
+            <Icon name="x" size={20} />
           </Pressable>
         </View>
         <Text style={styles.inviteHint}>{t("dateSpots.inviteHint")}</Text>
@@ -2070,41 +2085,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     marginBottom: spacing.md,
   },
-  addBtn: {
-    alignSelf: "center",
-    backgroundColor: colors.primary,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 13,
-    ...shadow.md,
-  },
-  addBtnText: { color: "#fff", fontWeight: "600", fontSize: 15 },
-  loginHint: { textAlign: "center", fontSize: 14 },
-  guestShare: { alignItems: "center", gap: spacing.sm },
-  loginLink: { color: colors.primary, fontWeight: "700", fontSize: 14 },
 
-  filters: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  filterBtn: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    backgroundColor: colors.surface,
-  },
-  filterBtnDisabled: { opacity: 0.55 },
-  filterBtnText: { fontSize: 13.5, color: colors.text },
-  clearText: { color: colors.primary, fontWeight: "700", fontSize: 13 },
 
   /* Filter chips */
-  filterBar: { marginTop: spacing.lg, marginBottom: spacing.md, gap: spacing.sm },
   chipRow: { gap: 8, paddingRight: spacing.md },
   chip: {
     borderWidth: 1.5,
@@ -2185,22 +2168,6 @@ const styles = StyleSheet.create({
   offerBoxDetails: { fontSize: 14, color: "#5C3A0A", marginTop: 4 },
   offerBoxTerms: { fontSize: 13, color: "#6B3E00", marginTop: 8, fontWeight: "600" },
   offerBoxHow: { fontSize: 13, color: "#6B4A1E", marginTop: 6, lineHeight: 19 },
-  promoRow: { marginTop: spacing.md },
-  promoRowTitle: { fontSize: 15, fontWeight: "800", color: colors.text, marginBottom: spacing.sm },
-  promoRowList: { gap: 10, paddingRight: spacing.md },
-  promoCard: {
-    width: 170,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    overflow: "hidden",
-    borderWidth: 1.5,
-    borderColor: "#FFD8A3",
-    ...shadow.sm,
-  },
-  promoCardImage: { width: "100%", height: 90 },
-  promoCardBody: { padding: 10 },
-  promoCardName: { fontSize: 14, fontWeight: "700", color: colors.text },
-  promoCardOffer: { fontSize: 12.5, fontWeight: "700", color: "#6B3E00", marginTop: 3 },
   myPromosBtn: {
     alignSelf: "center",
     marginTop: spacing.sm,
@@ -2270,22 +2237,6 @@ const styles = StyleSheet.create({
   giftInviteText: { color: "#fff", fontWeight: "700", fontSize: 13.5 },
   giftSee: { marginTop: 8, fontSize: 13.5, fontWeight: "700", color: colors.primaryDeep },
   sectionTitle: { ...typography.h2, fontSize: 19, marginTop: spacing.lg },
-  giftToggle: {
-    flexDirection: "row",
-    alignSelf: "flex-start",
-    marginTop: spacing.sm,
-    padding: 3,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surface,
-  },
-  giftToggleBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.pill },
-  giftToggleOn: { backgroundColor: colors.text },
-  giftToggleGift: { backgroundColor: "#FFB547" },
-  giftToggleText: { fontSize: 13.5, fontWeight: "700", color: colors.textSoft },
-  giftToggleTextOn: { color: "#fff" },
-  giftToggleTextGift: { color: "#3D2300" },
   cardGift: { borderWidth: 3, borderColor: "#FFB547" },
   featuredFlagGift: { backgroundColor: "#FFB547" },
   featuredFlagGiftText: { color: "#3D2300" },
@@ -2375,6 +2326,10 @@ const styles = StyleSheet.create({
   },
   editBtn: {
     alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 40,
     marginTop: spacing.md,
     borderWidth: 1.5,
     borderColor: colors.primary,
@@ -2430,9 +2385,9 @@ const styles = StyleSheet.create({
   inviteHeader: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
   inviteTitle: { ...typography.h3, flex: 1, fontSize: 19, lineHeight: 25 },
   inviteClose: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.surfaceMuted,
@@ -2464,7 +2419,7 @@ const styles = StyleSheet.create({
   matchAction: { color: colors.primary, fontSize: 18, fontWeight: "700" },
 
   empty: { alignItems: "center", paddingVertical: spacing.xl * 2 },
-  emptyIcon: { fontSize: 44, marginBottom: spacing.sm },
+  emptyIcon: { marginBottom: spacing.sm },
   emptyTitle: { ...typography.h3, fontSize: 17 },
   emptyText: { textAlign: "center", marginTop: spacing.xs, maxWidth: 280, lineHeight: 20 },
 
@@ -2491,7 +2446,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.surfaceMuted,
   },
-  textarea: { minHeight: 90, textAlignVertical: "top" },
   textareaSmall: { minHeight: 64, textAlignVertical: "top" },
   hint: { ...typography.bodyMuted, fontSize: 12.5, lineHeight: 18, marginBottom: spacing.xs },
   linkStatusRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
@@ -2557,7 +2511,6 @@ const styles = StyleSheet.create({
   },
   errorText: { color: colors.primaryDeep, fontSize: 13 },
 
-  readMore: { color: colors.primary, fontWeight: "700", fontSize: 13, marginTop: 6 },
 
   /* Detail */
   detail: {
@@ -2650,7 +2603,8 @@ const styles = StyleSheet.create({
 
   detailBody: { padding: spacing.lg },
   detailTitle: { ...typography.h1, fontSize: 26 },
-  detailPlace: { color: colors.primary, fontWeight: "600", fontSize: 14, marginTop: 4 },
+  detailPlaceRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 4 },
+  detailPlace: { color: colors.primary, fontWeight: "600", fontSize: 14, flexShrink: 1 },
   detailText: { fontSize: 16.5, lineHeight: 27, marginTop: spacing.md },
   detailAuthor: { fontSize: 13, marginTop: spacing.md },
   mapBtn: {
@@ -2675,15 +2629,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 44,
     right: 18,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "rgba(255,255,255,0.92)",
     alignItems: "center",
     justifyContent: "center",
     ...shadow.sm,
   },
-  detailCloseText: { fontSize: 16, fontWeight: "700", color: colors.text },
 
   /* Picker sheet */
   sheetOverlay: {
@@ -2743,25 +2696,11 @@ const styles = StyleSheet.create({
   },
   searchIcon: { fontSize: 14 },
   searchInput: { flex: 1, paddingVertical: 11, fontSize: 15, color: colors.text },
-  searchClear: { fontSize: 16, color: colors.textSoft, paddingHorizontal: 4 },
+  searchClear: { paddingHorizontal: 4 },
   tagRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   newTag: { backgroundColor: "#E8F6EE", borderColor: "#E8F6EE" },
   newTagText: { color: "#1F6B45", fontSize: 11.5, fontWeight: "700" },
-  // List | Map, under the search.
-  viewSwitch: {
-    flexDirection: "row",
-    alignSelf: "flex-start",
-    marginTop: spacing.sm,
-    padding: 3,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surface,
-  },
-  viewBtn: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: radius.pill },
   viewBtnOn: { backgroundColor: colors.text },
-  viewText: { fontSize: 13.5, fontWeight: "700", color: colors.textSoft },
-  viewTextOn: { color: "#fff" },
   mapBlock: { gap: 10, marginBottom: spacing.md },
   mapNote: { fontSize: 13, color: colors.textMuted, lineHeight: 18 },
   photoModeBtn: {
@@ -2850,6 +2789,10 @@ const styles = StyleSheet.create({
   toolbar: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: spacing.lg },
   toolPill: {
     flexShrink: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    minHeight: 44,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: radius.pill,
@@ -2860,6 +2803,7 @@ const styles = StyleSheet.create({
   toolPillOn: { borderColor: colors.primary, backgroundColor: colors.primaryTint },
   toolPillText: { fontSize: 14, fontWeight: "700", color: colors.textSoft },
   toolPillTextOn: { color: colors.primaryDeep },
+  toolPillLabel: { flexShrink: 1 },
   viewSwitchSmall: {
     flexDirection: "row",
     marginLeft: "auto",

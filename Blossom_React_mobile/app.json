@@ -58,7 +58,8 @@
           "isAndroidBackgroundLocationEnabled": false,
           "isIosBackgroundLocationEnabled": false
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {

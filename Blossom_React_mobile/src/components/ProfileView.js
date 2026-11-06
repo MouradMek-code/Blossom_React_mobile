@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { LinearGradient } from "expo-linear-gradient";
 import { IMG } from "../api/images";
 import VerifiedBadge, { VERIFIED_BLUE } from "./VerifiedBadge";
+import { Icon } from "../ui";
 import { CONNECTION_EMOJI, CONNECTION_TYPES, connectionLabel, connectionOf } from "../api/connection";
 import { colors, radius, spacing, shadow, typography } from "../theme";
 
@@ -111,7 +112,8 @@ export default function ProfileView({
           />
           {profile.photos.length > 1 ? (
             <View style={styles.heroCount} pointerEvents="none">
-              <Text style={styles.heroCountText}>📷 {profile.photos.length}</Text>
+              <Icon name="camera" size={13} color="#fff" />
+              <Text style={styles.heroCountText}>{profile.photos.length}</Text>
             </View>
           ) : null}
           <View style={styles.heroInfo} pointerEvents="none">
@@ -126,15 +128,9 @@ export default function ProfileView({
               <Text style={[styles.heroBadge, styles.heroConnection]}>
                 {connectionLabel(connection, t)}
               </Text>
-              {profile.city ? (
-                <Text style={styles.heroBadge}>📍 {profile.city}</Text>
-              ) : null}
-              {profile.relationship_goal ? (
-                <Text style={styles.heroBadge}>💘 {profile.relationship_goal}</Text>
-              ) : null}
-              {profile.occupation ? (
-                <Text style={styles.heroBadge}>💼 {profile.occupation}</Text>
-              ) : null}
+              {profile.city ? <Pill dark icon="map-pin" text={profile.city} /> : null}
+              {profile.relationship_goal ? <Pill dark icon="heart" text={profile.relationship_goal} /> : null}
+              {profile.occupation ? <Pill dark icon="briefcase" text={profile.occupation} /> : null}
             </View>
           </View>
         </Pressable>
@@ -151,15 +147,18 @@ export default function ProfileView({
             {profile.verified ? <VerifiedBadge size={24} /> : null}
           </View>
           {showLocationLine && (
-            <Text style={styles.location}>
-              📍 {profile.city || "Location not set"}, {profile.country || ""}
-            </Text>
+            <View style={styles.pillRow}>
+              <Icon name="map-pin" size={15} color={colors.textMuted} />
+              <Text style={styles.location}>
+                {profile.city || "Location not set"}, {profile.country || ""}
+              </Text>
+            </View>
           )}
           <View style={styles.badges}>
             <Text style={styles.badge}>{connectionLabel(connection, t)}</Text>
-            <Text style={styles.badge}>💘 {profile.relationship_goal || "Not specified"}</Text>
-            {profile.occupation ? <Text style={styles.badge}>💼 {profile.occupation}</Text> : null}
-            {profile.education ? <Text style={styles.badge}>🎓 {profile.education}</Text> : null}
+            <Pill icon="heart" text={profile.relationship_goal || "Not specified"} />
+            {profile.occupation ? <Pill icon="briefcase" text={profile.occupation} /> : null}
+            {profile.education ? <Pill icon="book-open" text={profile.education} /> : null}
           </View>
         </View>
       )}
@@ -299,7 +298,7 @@ export default function ProfileView({
                     accessibilityRole="button"
                     accessibilityLabel={t("photos.remove")}
                   >
-                    <Text style={styles.deletePhotoButtonText}>🗑</Text>
+                    <Icon name="trash-2" size={15} color={colors.danger} />
                   </Pressable>
                 )}
               </Pressable>
@@ -408,7 +407,7 @@ export default function ProfileView({
             <Image source={{ uri: IMG.full(lightboxPhoto) }} style={styles.lightboxImage} resizeMode="contain" />
           )}
           <Pressable style={styles.lightboxClose} onPress={() => setLightboxPhoto(null)}>
-            <Text style={styles.lightboxCloseText}>✕</Text>
+            <Icon name="x" size={26} color="#fff" />
           </Pressable>
         </Pressable>
       </Modal>
@@ -437,7 +436,32 @@ function Fact({ label, value, last }) {
   );
 }
 
+// A detail with its icon: on the cover photo (dark glass) or on white.
+function Pill({ icon, text, dark = false }) {
+  return (
+    <View style={[styles.pill, dark ? styles.pillDark : styles.pillLight]}>
+      <Icon name={icon} size={13} color={dark ? "#fff" : colors.primaryDark} />
+      <Text style={[styles.pillText, { color: dark ? "#fff" : colors.primaryDark }]} numberOfLines={1}>
+        {text}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    maxWidth: "100%",
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+  },
+  pillDark: { backgroundColor: "rgba(20,14,12,0.55)", borderWidth: 1, borderColor: "rgba(255,255,255,0.28)" },
+  pillLight: { backgroundColor: colors.primarySoft },
+  pillText: { fontSize: 13, fontWeight: "700", flexShrink: 1 },
+  pillRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   container: { paddingBottom: 120 },
 
   /* Hero */
@@ -631,7 +655,6 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
     ...shadow.sm,
   },
-  deletePhotoButtonText: { fontSize: 15 },
 
   /* Bio */
   bioInput: {
@@ -697,5 +720,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  lightboxCloseText: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });
